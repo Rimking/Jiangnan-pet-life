@@ -1,0 +1,12 @@
+{
+  "extends": ["taro/react", "prettier"],
+  "plugins": ["react-hooks"],
+  "rules": {
+    "react/jsx-uses-react": "off",
+    "react/react-in-jsx-scope": "off",
+    "jsx-quotes": ["error", "prefer-double"],
+    "import/no-commonjs": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+  }
+}

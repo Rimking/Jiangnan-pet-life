@@ -1,0 +1,15 @@
+diff --git a/es/calendar/index.js b/es/calendar/index.js
+index df43fd6e160175f542208229cf202be8238000d0..dea624e2a9c68a59350dcb27022d58dd09f5b23a 100644
+--- a/es/calendar/index.js
++++ b/es/calendar/index.js
+@@ -190,8 +190,8 @@ function Index(props, ref) {
+       });
+     });
+   }, [currentDate, maxDate, minDate, poppable, scrollIntoViewCompatible, show, type]);
+-  var reset = useCallback(function () {
+-    setCurrentDate(getInitialDate(defaultDate));
++  var reset = useCallback(function (date) {
++    setCurrentDate( date || getInitialDate(defaultDate));
+     setTimeout(function () {
+       scrollIntoViewFn();
+     }, 66);

@@ -1,0 +1,6 @@
+// 超出隐藏相关样式
+.overText {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

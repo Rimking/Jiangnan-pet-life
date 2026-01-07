@@ -1,0 +1,114 @@
+
+@keyframes slideBgUp {
+    from {
+      visibility: visible;
+      background: rgba(0, 0, 0, .1);
+    }
+    to {
+      background: rgba(0, 0, 0, .5);
+    }
+  }
+  
+  @keyframes slideBgDown {
+    from {
+      background: rgba(0, 0, 0, .5);
+    }
+    to {
+      visibility: hidden;
+      background: rgba(0, 0, 0, .1)
+    }
+  }
+  
+  .mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 99999;
+    animation: slideBgUp 0.2s linear  both;
+  }
+  
+  .mask_down {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 99999;
+    animation: slideBgDown 0.2s linear both;
+  }
+  
+  @keyframes slideContentUp {
+    from {
+      // max-height: 0;
+      transform: translate3d(0, 100%, 0);
+  
+    }
+    to {
+      // max-height: 2000px;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+  
+  @keyframes slideContentDown {
+    from {
+      // max-height: 2000px;
+      transform: translate3d(0, 0, 0);
+  
+    }
+    to {
+      // max-height: 0;
+      transform: translate3d(0, 100%, 0);
+    }
+  }
+  
+  .pop{
+    animation: slideContentUp 0.2s linear both;
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    border-radius: 24px 24px 0 0;
+    overflow: hidden;
+    z-index: 2000;
+    background-color: #fff;
+  }
+  
+  .pop_down {
+    animation: slideContentDown 0.2s linear both;
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    border-radius: 24px 24px 0 0;
+    overflow: hidden;
+    z-index: 2000;
+    background-color: #fff;
+  }
+  
+
+  
+  .filter_title {
+    display: flex;
+    justify-content:space-between;
+    align-items: center;
+    height: 126px;
+    padding-right: 32px;
+  }
+  
+  .filter_title > Text {
+    width: 93px;
+  }
+  
+  .filter_title > Text + Text {
+    color: #333;
+    font-weight: bold;
+    font-size: 36px;
+    white-space: nowrap;
+  }
+  
+  .ft_x {
+    width: 28px; height: 28px;
+    padding: 25px;
+    padding-right: 0;
+  }
+  

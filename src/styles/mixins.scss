@@ -1,0 +1,26 @@
+
+
+
+// 超出省略号
+@mixin text-ellipsis() {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+// 0.5px 水平分隔线，避开两端粗细不一
+@mixin half-divider($color: #E5E6EB) {
+    // 忽略单位转换
+    height: 1PX;
+    background-color: $color;
+    transform: scaleY(0.5);
+}
+
+  // 0.5px 垂直分隔线，避开两端粗细不一
+@mixin half-vertical-divider($color: #E5E6EB) {
+    // 忽略单位转换
+    width: 1PX;
+    background-color: $color;
+    transform: scaleX(0.5);
+}
