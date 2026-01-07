@@ -49,7 +49,9 @@ function TabBar() {
         >
           <Image
             src={path === item.path ? item.activeIcon : item.icon}
-            className={clsx('w-12 h-12 flex-shrink-0 ', { 'w-16 h-16': index === 2 })}
+            className={clsx('w-[52px] h-[52px] flex-shrink-0 mb-2 ', {
+              'w-[80px] h-[80px]': item.isAdd,
+            })}
           ></Image>
 
           {path === item.path && (
@@ -59,8 +61,8 @@ function TabBar() {
           {/* `${index === 2? "w-14 h-14 flex-shrink-0 " : "w-12 h-12 flex-shrink-0 "}` */}
           {!item.isAdd && (
             <Text
-              className={twMerge(
-                'text-[24px] mt-auto',
+              className={clsx(
+                'text-[24px]',
                 path === item.path ? 'text-second' : 'text-third'
               )}
             >
