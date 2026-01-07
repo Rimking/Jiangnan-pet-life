@@ -8,7 +8,8 @@ const PetProfile = memo(function PetProfile() {
     <BasicLayout
       wrapClassName="w-full h-full"
       wrapStyle={{
-        backgroundColor: 'linear-gradient( to bottom ,#FFE68D 50%, #FFFCE0 100%)',
+        backgroundImage: 'linear-gradient( to bottom ,#FFE68D 20%, #FFFCE0 100%)',
+        height: '100vh',
       }}
       // statusBarLoc
 

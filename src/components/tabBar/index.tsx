@@ -57,14 +57,16 @@ function TabBar() {
           )}
 
           {/* `${index === 2? "w-14 h-14 flex-shrink-0 " : "w-12 h-12 flex-shrink-0 "}` */}
-          {/* <Text
-            className={twMerge(
-              'text-[24px]',
-              path === item.path ? 'text-second' : 'text-third'
-            )}
-          >
-            {item.name}
-          </Text> */}
+          {!item.isAdd && (
+            <Text
+              className={twMerge(
+                'text-[24px] mt-auto',
+                path === item.path ? 'text-second' : 'text-third'
+              )}
+            >
+              {item.name}
+            </Text>
+          )}
         </View>
       ))}
     </View>

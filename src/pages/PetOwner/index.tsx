@@ -9,14 +9,14 @@ const PetOwner = memo(function PetOwner() {
     <BasicLayout
       wrapClassName=""
       wrapStyle={{
-        backgroundColor: 'linear-gradient( to bottom ,#EDF2F2 50%, #FFFFFF 100%)',
+        backgroundImage: 'linear-gradient( to bottom ,#EDF2F2 50%, #FFFFFF 100%)',
       }}
       // statusBarLoc
       navOptions={{
         navTitle: '铲屎官',
       }}
     >
-      11
+      11123
     </BasicLayout>
   );
 });
