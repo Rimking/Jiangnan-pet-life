@@ -6,7 +6,7 @@ import { getSystemTabBarHeight } from '@/utils/system';
 import { TAB_BAR_HEIGHT } from '@/constants/tabbar';
 import { getRouteByPath } from '@/routes/utils';
 import clsx from 'clsx';
-import PointIcon from '@/assets/tabbar/POINT.svg';
+import PointIcon from '@/assets/oldBarICon/point.svg';
 import { DEFAULT_TAB_LIST } from './dataSource';
 
 function TabBar() {
@@ -35,7 +35,7 @@ function TabBar() {
 
   return (
     <View
-      className="fixed bottom-0 w-screen  bg-[#fafafa] flex justify-center items-center z-[50]"
+      className="fixed bottom-0 w-screen  bg-[#ffffff] flex justify-center items-center z-[50]"
       style={tabBarStyle}
     >
       {/* 生成flex布局的tabbar */}
@@ -47,12 +47,29 @@ function TabBar() {
             handleClick(item);
           }}
         >
-          <Image
-            src={path === item.path ? item.activeIcon : item.icon}
-            className={clsx('w-[52px] h-[52px] flex-shrink-0 mb-2 ', {
-              'w-[80px] h-[80px]': item.isAdd,
-            })}
-          ></Image>
+          {item.isAdd ? (
+            <div className="w-[120px] h-[120px] -mt-[128px] flex justify-center items-center  rounded-[12px]"
+            style={{transform: 'rotate(45deg)',
+              backgroundColor: item.specialBackgroundColor,
+            }}>
+              <Image
+                src={path === item.path ? item.activeIcon : item.icon}
+                style={{
+                  transform: 'rotate(-45deg)',
+                }}
+                className={clsx('w-[100px] h-[100px] flex-shrink-0 ', {
+                  'w-[80px] h-[80px]': item.isAdd,
+                })}
+              ></Image>
+            </div>
+          ) : (
+            <Image
+              src={path === item.path ? item.activeIcon : item.icon}
+              className={clsx('w-[44px] h-[44px] flex-shrink-0 mb-2 ', {
+                'w-[80px] h-[80px]': item.isAdd,
+              })}
+            ></Image>
+          )}
 
           {path === item.path && (
             <Image src={PointIcon} className="w-2 h-2 absolute bottom-1 right-0"></Image>
@@ -62,7 +79,7 @@ function TabBar() {
           {!item.isAdd && (
             <Text
               className={clsx(
-                'text-[24px]',
+                'text-[20px]',
                 path === item.path ? 'text-second' : 'text-third'
               )}
             >

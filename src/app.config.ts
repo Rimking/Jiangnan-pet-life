@@ -5,6 +5,8 @@ export default defineAppConfig({
     'pages/PetKnowledge/index',
     'pages/PetSchedule/index',
     'pages/SendPetSchedule/index',
+    'pages/Login/index',
+    'pages/PetDetailPage/index',
   ],
 
   window: {

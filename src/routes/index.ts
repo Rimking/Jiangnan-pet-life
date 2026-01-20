@@ -31,6 +31,12 @@ const routeConfigList: any = [
     title: '铲屎官',
     isTabBar: true,
   },
+  // 宠物详情
+  {
+    path: '/pages/PetDetailPage/index',
+    title: '宠物详情',
+    isTabBar: false,
+  },
 ];
 
 export default routeConfigList;

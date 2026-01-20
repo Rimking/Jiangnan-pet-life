@@ -22,6 +22,7 @@ const PET_PROFILE_BAR: TabBarItem = {
   activeIcon: PetProfileIcon,
   isAdd: false,
   path: '/pages/PetProfile/index',
+  specialBackgroundColor: 'rgb(254,249,215)',
 };
 
 /** 宠物日程 */
@@ -31,6 +32,7 @@ const PET_SCHEDULE_BAR = {
   activeIcon: PetScheduleIcon,
   isAdd: false,
   path: '/pages/PetSchedule/index',
+  specialBackgroundColor: 'rgb(254,249,215)',
 };
 
 /** 日程发布 */
@@ -40,6 +42,7 @@ const SEND_PET_SCHEDULE_BAR = {
   activeIcon: PetFastSendIcon,
   isAdd: true,
   path: '/pages/SendPetSchedule/index',
+  specialBackgroundColor: 'rgb(254,249,215)',
 };
 
 /** 知识库 */
@@ -49,6 +52,7 @@ const PET_KNOWLEDGE_BAR = {
   activeIcon: PetKnowledgeIcon,
   isAdd: false,
   path: '/pages/PetKnowledge/index',
+  specialBackgroundColor: 'rgb(254,249,215)',
 };
 
 /** 铲屎官 */
@@ -58,6 +62,7 @@ const PET_OWNER_BAR = {
   activeIcon: PetHomeIcon,
   isAdd: false,
   path: '/pages/PetOwner/index',
+  specialBackgroundColor: 'rgb(254,249,215)',
 };
 
 /** 默认的TAB */

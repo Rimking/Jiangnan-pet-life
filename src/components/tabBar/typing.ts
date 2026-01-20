@@ -9,4 +9,6 @@ export interface TabBarItem {
   activeIcon: string;
   /** 中间添加图标 */
   isAdd:boolean;
+  /** 特殊背景颜色 */
+  specialBackgroundColor?:string;
 }
