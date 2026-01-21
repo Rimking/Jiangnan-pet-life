@@ -1,9 +1,10 @@
 export default defineAppConfig({
   pages: [
+    'pages/PetSchedule/index',
+
     'pages/PetProfile/index',
     'pages/PetOwner/index',
     'pages/PetKnowledge/index',
-    'pages/PetSchedule/index',
     'pages/SendPetSchedule/index',
     'pages/Login/index',
     'pages/PetDetailPage/index',
