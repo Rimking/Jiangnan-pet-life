@@ -48,10 +48,10 @@ function TabBar() {
           }}
         >
           {item.isAdd ? (
-            <div className="w-[120px] h-[120px] -mt-[128px] flex justify-center items-center  rounded-[12px]"
-            style={{transform: 'rotate(45deg)',
-              backgroundColor: item.specialBackgroundColor,
-            }}>
+            <div
+              className="w-[120px] h-[120px] flex justify-center items-center  rounded-[12px]"
+              style={{ transform: 'rotate(45deg)' }}
+            >
               <Image
                 src={path === item.path ? item.activeIcon : item.icon}
                 style={{

@@ -29,7 +29,7 @@ const PetSchedule = memo(function PetSchedule() {
     >
       <View className="px-8 pb-5 mt-4">
         {/* 标签页切换 */}
-        <View className="flex w-full h-[88px] justify-between items-center overflow-hidden mb-[16px] shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+        <View className="flex w-full h-[60px] justify-between items-center overflow-hidden mb-[16px] shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
           <View
             className={clsx(
               'w-[308px] h-full text-[28px] border-[2px] border-solid rounded-[48px] flex items-center justify-center ',

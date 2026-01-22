@@ -8,6 +8,8 @@ export default defineAppConfig({
     'pages/SendPetSchedule/index',
     'pages/Login/index',
     'pages/PetDetailPage/index',
+    'pages/AddPetReminder/index',
+    'pages/AddPetRecord/index',
   ],
 
   window: {

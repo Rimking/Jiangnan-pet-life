@@ -8,15 +8,15 @@ const ReminderTab = memo(function ReminderTab() {
       color: '#FFF7B0',
     },
     {
-      type: '走路提醒',
+      type: '护理提醒',
       color: '#B0F8FF',
     },
     {
-      type: '洗澡提醒',
+      type: '健康提醒',
       color: '#FFC2B0',
     },
     {
-      type: '用药提醒',
+      type: '行为提醒',
       color: '#D2B0FF',
     },
   ];
@@ -35,16 +35,6 @@ const ReminderTab = memo(function ReminderTab() {
     {
       title: '提醒我吃药药',
       time: '11:00',
-      isEnabled: false,
-    },
-    {
-      title: '带火火去医院体检',
-      time: '14:00',
-      isEnabled: false,
-    },
-    {
-      title: '给火火剪指甲',
-      time: '18:00',
       isEnabled: false,
     },
   ];
@@ -71,17 +61,15 @@ const ReminderTab = memo(function ReminderTab() {
         {reminderItems.map((item, index) => (
           <View
             key={index}
-            className="bg-white border-[2px] border-solid border-[black] rounded-2xl p-8 mb-6 shadow-sm flex items-center justify-between"
+            className="bg-white relative border-[2px] border-solid border-[black] rounded-2xl p-8 mb-6 shadow-sm flex items-center justify-between"
           >
+            {/* 左侧类型区分 */}
+            <View className=" absolute top-0 left-0 w-6 h-full rounded-full border-[2px] border-solid border-[black] mr-2"></View>
             <View className="flex-1">
               <Text className="text-[24px] font-medium mb-2 block">{item.title}</Text>
               <Text className="text-[24px] text-gray-600">{item.time}</Text>
             </View>
-            <View
-              className={`w-20 h-10 rounded-full ${item.isEnabled ? 'bg-green-500' : 'bg-gray-200'} flex items-center p-1 ${item.isEnabled ? 'justify-end' : 'justify-start'}`}
-            >
-              <View className="w-8 h-8 rounded-full bg-white" />
-            </View>
+            <View className="w-10 h-10 border-[2px] border-solid border-[black] rounded-full"></View>
           </View>
         ))}
         {/* 空状态 */}
