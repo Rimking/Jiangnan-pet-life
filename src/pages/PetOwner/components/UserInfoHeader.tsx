@@ -2,37 +2,50 @@ import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
 
 const UserInfoHeader = memo(function UserInfoHeader() {
+
+  const testlist = [
+    {
+      name: 'RimKing',
+      days: '20',
+    },
+    {
+      name: 'RimKing2',
+      days: '10',
+    }
+  ]
+
+  const ItemRender = (item, index) => {
+    return (
+      <View className="absolute w-full h-[80px] bg-white border-[2px] border-black border-solid rounded-[50px] text-center leading-[80px]"
+        style={{
+          transform: `rotate(${index / 2 === 0 ? 0 : 4}deg)`
+        }} key={item.name}>和{item.name}在一起{item.days}天了</View>
+    )
+  }
+
   return (
-    <View className="user-info-header" style={{ padding: '20px 16px', backgroundColor: '#FFF', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-      <View style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-        <View style={{ width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#FFE082', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '16px', boxShadow: '0 2px 6px rgba(255, 224, 130, 0.3)' }}>
-          <Text style={{ fontSize: '36px' }}>👤</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '6px', display: 'block', color: '#333' }}>Shasha</Text>
-          <Text style={{ fontSize: '14px', color: '#999', backgroundColor: '#FFF9E6', padding: '4px 12px', borderRadius: '12px', display: 'inline-block' }}>铲屎官</Text>
-        </View>
-        <View style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#E0E0E0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: '16px' }}>✏️</Text>
-        </View>
-      </View>
-      <View style={{ display: 'flex', gap: '12px', backgroundColor: '#F8F9FA', borderRadius: '12px', padding: '16px' }}>
-        <View style={{ flex: 1, textAlign: 'center' }}>
-          <Text style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '6px', display: 'block', color: '#333' }}>2</Text>
-          <Text style={{ fontSize: '13px', color: '#666' }}>宠物</Text>
-        </View>
-        <View style={{ width: '1px', backgroundColor: '#E0E0E0' }} />
-        <View style={{ flex: 1, textAlign: 'center' }}>
-          <Text style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '6px', display: 'block', color: '#333' }}>15</Text>
-          <Text style={{ fontSize: '13px', color: '#666' }}>天数</Text>
-        </View>
-        <View style={{ width: '1px', backgroundColor: '#E0E0E0' }} />
-        <View style={{ flex: 1, textAlign: 'center' }}>
-          <Text style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '6px', display: 'block', color: '#333' }}>8</Text>
-          <Text style={{ fontSize: '13px', color: '#666' }}>记录</Text>
+    <>
+      <View className=" py-[40rpx] px-[32rpx]  bg-white border-4 border-black border-solid rounded-[32rpx]" style={{ boxShadow: '0 4rpx 16rpx rgba(0,0,0,0.08)' }}>
+        <View className="flex items-center ">
+          <View className="w-[144rpx] h-[144rpx] rounded-full  border-2 border-black border-solid bg-yellow-300 flex items-center justify-center mr-[32rpx]" style={{ boxShadow: '0 4rpx 12rpx rgba(255, 224, 130, 0.3)' }}>
+          </View>
+          <View className="flex-1 h-full  flex flex-col">
+            {/* 名字 */}
+            <View className="text-[40rpx] h-[60px] font-bold mb-[12rpx] block text-gray-800">RimKing ♂</View>
+
+            {/* 基础信息 */}
+            <View className="h-[60px] ">个性签名</View>
+          </View>
         </View>
       </View>
-    </View>
+
+      {/* 和某某在一起多少天了，这里会查出来所有的pet，进行轮播 */}
+      <View className="w-full h-[100px] flex items-center justify-center relative mt-[15px]">
+        {testlist.map((item, index) => (
+          ItemRender(item, index)
+        ))}
+      </View>
+    </>
   );
 });
 

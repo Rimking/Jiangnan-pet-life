@@ -84,21 +84,21 @@ const PetOwner = memo(function PetOwner() {
         minHeight: '100vh',
       }}
       navOptions={{
-        navTitle: '铲屎官',
+        navTitle: '',
         needBack: false,
       }}
     >
-      <View style={{ padding: '16px', paddingBottom: '24px' }}>
+      <View className="p-[32rpx] pb-[48rpx]">
         <UserInfoHeader />
-        
-        <View style={{ marginTop: '20px', marginBottom: '16px' }}>
-          <View style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <Text style={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>我的宠物</Text>
-            <View style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FFD700', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(255, 215, 0, 0.4)' }}>
-              <Text style={{ fontSize: '18px', color: '#FFF' }}>+</Text>
+
+        <View className="mt-[40rpx] mb-[32rpx]">
+          <View className="flex justify-between items-center mb-[32rpx]">
+            <Text className="text-[36rpx] font-bold text-gray-800">我的宠物</Text>
+            <View className="w-[64rpx] h-[64rpx] rounded-full bg-yellow-400 flex items-center justify-center" style={{ boxShadow: '0 8rpx 24rpx rgba(255, 215, 0, 0.4)' }}>
+              <Text className="text-[36rpx] text-white">+</Text>
             </View>
           </View>
-          
+
           {pets.map((pet, index) => (
             <PetCard
               key={index}
@@ -112,8 +112,8 @@ const PetOwner = memo(function PetOwner() {
           ))}
         </View>
 
-        <View style={{ marginTop: '20px' }}>
-          <Text style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', display: 'block', color: '#333' }}>功能菜单</Text>
+        <View className="mt-[40rpx]">
+          <Text className="text-[36rpx] font-bold mb-[32rpx] block text-gray-800">功能菜单</Text>
           {menuItems.map((item, index) => (
             <MenuItem
               key={index}
