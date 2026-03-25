@@ -84,18 +84,21 @@ const PetOwner = memo(function PetOwner() {
         minHeight: '100vh',
       }}
       navOptions={{
-        navTitle: '铲屎官',
+        navTitle: '',
         needBack: false,
       }}
     >
-      <View className="p-4 pb-6">
+      <View className="p-[32rpx] pb-[48rpx]">
         <UserInfoHeader />
 
-        <View className="mt-5 mb-4">
-          <View className="flex justify-between items-center mb-4">
-            <Text className="text-[32px] font-bold text-gray-800">我的宠物</Text>
-            <View className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-md">
-              <Text className="text-lg text-white">+</Text>
+        <View className="mt-[40rpx] mb-[32rpx]">
+          <View className="flex justify-between items-center mb-[32rpx]">
+            <Text className="text-[36rpx] font-bold text-gray-800">我的宠物</Text>
+            <View
+              className="w-[64rpx] h-[64rpx] rounded-full bg-yellow-400 flex items-center justify-center"
+              style={{ boxShadow: '0 8rpx 24rpx rgba(255, 215, 0, 0.4)' }}
+            >
+              <Text className="text-[36rpx] text-white">+</Text>
             </View>
           </View>
 
@@ -112,8 +115,10 @@ const PetOwner = memo(function PetOwner() {
           ))}
         </View>
 
-        <View className="mt-5">
-          <Text className="text-[32px] font-bold mb-4 block text-gray-800">功能菜单</Text>
+        <View className="mt-[40rpx]">
+          <Text className="text-[36rpx] font-bold mb-[32rpx] block text-gray-800">
+            功能菜单
+          </Text>
           {menuItems.map((item, index) => (
             <MenuItem
               key={index}
