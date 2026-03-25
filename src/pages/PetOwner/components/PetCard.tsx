@@ -10,26 +10,43 @@ interface PetCardProps {
   avatar: string;
 }
 
-const PetCard = memo(function PetCard({ name, type, age, weight, gender, avatar }: PetCardProps) {
+const PetCard = memo(function PetCard({
+  name,
+  type,
+  age,
+  weight,
+  gender,
+  avatar,
+}: PetCardProps) {
   return (
-    <View className="pet-card" style={{ backgroundColor: '#FFF', borderRadius: '16px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '12px' }}>
-      <View style={{ display: 'flex', alignItems: 'center' }}>
-        <View style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#FFF9E6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '16px', boxShadow: '0 2px 6px rgba(255, 249, 230, 0.5)' }}>
-          <Text style={{ fontSize: '32px' }}>{avatar}</Text>
+    <View className="pet-card bg-white rounded-2xl p-4 shadow-md mb-3">
+      <View className="flex items-center">
+        <View className="w-16 h-16 rounded-full bg-yellow-50 flex items-center justify-center mr-4 shadow-sm">
+          <Text className="text-4xl">{avatar}</Text>
         </View>
-        <View style={{ flex: 1 }}>
-          <View style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-            <Text style={{ fontSize: '18px', fontWeight: 'bold', marginRight: '8px', color: '#333' }}>{name}</Text>
-            <Text style={{ fontSize: '16px', color: gender === '♂' ? '#FF6B6B' : '#FF69B4' }}>{gender}</Text>
+        <View className="flex-1">
+          <View className="flex items-center mb-2">
+            <Text className="text-lg font-bold mr-2 text-gray-800">{name}</Text>
+            <Text
+              className={`text-base ${gender === '♂' ? 'text-red-500' : 'text-pink-500'}`}
+            >
+              {gender}
+            </Text>
           </View>
-          <View style={{ display: 'flex', gap: '8px' }}>
-            <Text style={{ fontSize: '13px', color: '#666', backgroundColor: '#F8F9FA', padding: '4px 8px', borderRadius: '8px' }}>{type}</Text>
-            <Text style={{ fontSize: '13px', color: '#666', backgroundColor: '#F8F9FA', padding: '4px 8px', borderRadius: '8px' }}>{age}</Text>
-            <Text style={{ fontSize: '13px', color: '#666', backgroundColor: '#F8F9FA', padding: '4px 8px', borderRadius: '8px' }}>{weight}</Text>
+          <View className="flex gap-2">
+            <Text className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-lg">
+              {type}
+            </Text>
+            <Text className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-lg">
+              {age}
+            </Text>
+            <Text className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-lg">
+              {weight}
+            </Text>
           </View>
         </View>
-        <View style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FFE082', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: '14px' }}>→</Text>
+        <View className="w-8 h-8 rounded-full bg-yellow-200 flex items-center justify-center">
+          <Text className="text-base">→</Text>
         </View>
       </View>
     </View>

@@ -19,7 +19,7 @@ const PetOwner = memo(function PetOwner() {
       age: '6个月',
       weight: '5kg',
       gender: '♂',
-      avatar: '🐱'
+      avatar: '🐱',
     },
     {
       name: '小黑',
@@ -27,8 +27,8 @@ const PetOwner = memo(function PetOwner() {
       age: '1岁',
       weight: '3.5kg',
       gender: '♀',
-      avatar: '🐱'
-    }
+      avatar: '🐱',
+    },
   ];
 
   const menuItems = [
@@ -37,43 +37,43 @@ const PetOwner = memo(function PetOwner() {
       title: '日程管理',
       subtitle: '管理宠物日程',
       hasBadge: true,
-      badgeText: '3'
+      badgeText: '3',
     },
     {
       icon: '📊',
       title: '数据统计',
-      subtitle: '查看宠物数据'
+      subtitle: '查看宠物数据',
     },
     {
       icon: '💊',
       title: '用药记录',
-      subtitle: '记录用药情况'
+      subtitle: '记录用药情况',
     },
     {
       icon: '🏥',
       title: '医疗记录',
-      subtitle: '记录医疗信息'
+      subtitle: '记录医疗信息',
     },
     {
       icon: '🛁',
       title: '洗护记录',
-      subtitle: '记录洗护情况'
+      subtitle: '记录洗护情况',
     },
     {
       icon: '💩',
       title: '排便记录',
-      subtitle: '记录排便情况'
+      subtitle: '记录排便情况',
     },
     {
       icon: '⚙️',
       title: '设置',
-      subtitle: '应用设置'
+      subtitle: '应用设置',
     },
     {
       icon: '❓',
       title: '帮助与反馈',
-      subtitle: '获取帮助'
-    }
+      subtitle: '获取帮助',
+    },
   ];
 
   return (
@@ -88,17 +88,17 @@ const PetOwner = memo(function PetOwner() {
         needBack: false,
       }}
     >
-      <View style={{ padding: '16px', paddingBottom: '24px' }}>
+      <View className="p-4 pb-6">
         <UserInfoHeader />
-        
-        <View style={{ marginTop: '20px', marginBottom: '16px' }}>
-          <View style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <Text style={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>我的宠物</Text>
-            <View style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FFD700', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(255, 215, 0, 0.4)' }}>
-              <Text style={{ fontSize: '18px', color: '#FFF' }}>+</Text>
+
+        <View className="mt-5 mb-4">
+          <View className="flex justify-between items-center mb-4">
+            <Text className="text-[32px] font-bold text-gray-800">我的宠物</Text>
+            <View className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-md">
+              <Text className="text-lg text-white">+</Text>
             </View>
           </View>
-          
+
           {pets.map((pet, index) => (
             <PetCard
               key={index}
@@ -112,8 +112,8 @@ const PetOwner = memo(function PetOwner() {
           ))}
         </View>
 
-        <View style={{ marginTop: '20px' }}>
-          <Text style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', display: 'block', color: '#333' }}>功能菜单</Text>
+        <View className="mt-5">
+          <Text className="text-[32px] font-bold mb-4 block text-gray-800">功能菜单</Text>
           {menuItems.map((item, index) => (
             <MenuItem
               key={index}
