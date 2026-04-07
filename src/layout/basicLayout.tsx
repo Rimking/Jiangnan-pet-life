@@ -2,25 +2,22 @@
  * 基础Layout
  * 包含：
  * 1. 底部TabBar显隐
+ * 2. 现代轻量化金融/数据类小程序 UI 风格
  */
 
 import Taro, {
   useRouter,
-  useDidShow,
   useLoad,
-  redirectTo,
-  getStorageSync,
-  setStorageSync,
 } from '@tarojs/taro';
 import { getRouteByPath } from '@/routes/utils';
-import { View, Image } from '@tarojs/components';
+import { View } from '@tarojs/components';
 import { twMerge } from '@weapp-tailwindcss/merge';
-import { ReactNode, useCallback, useMemo, useState } from 'react';
-import dayjs from 'dayjs';
+import { ReactNode, useMemo } from 'react';
 import TabBar from '@/components/tabBar';
 import NavTab, { CustomNavOption } from '@/components/navBar';
 import { savedBottomPx } from '@/utils/system';
 import NavLocBox from '@/components/commom/NavLocBox';
+import { gradients, shadows } from '@/styles/theme';
 
 interface Props {
   children: ReactNode;
@@ -45,16 +42,13 @@ const BasicLayout = (props: Props) => {
     wrapStyle,
     navOptions,
     statusBarLoc,
-    bottomLogo,
-    bottomBgColor,
   } = props;
 
-  const { path, params } = useRouter();
-  console.log(path);
+  const { path } = useRouter();
 
   /** 路由信息 */
   const routerInfo = useMemo(() => getRouteByPath(path), [path]);
-  console.log('routerInfo', routerInfo);
+  
   /**
    * 头部渲染
    * 1. 优先渲染导航栏
@@ -72,8 +66,9 @@ const BasicLayout = (props: Props) => {
 
   return (
     <View
-      className={twMerge('w-screen h-screen', wrapClassName)}
+      className={twMerge('w-screen h-screen min-h-screen', wrapClassName)}
       style={{
+        background: gradients.pageBg,
         paddingBottom: routerInfo?.isTabBar ? savedBottomPx : undefined,
         ...wrapStyle,
       }}
@@ -81,7 +76,9 @@ const BasicLayout = (props: Props) => {
       {headerRender}
 
       {/* 主要内容区域 */}
-      {children}
+      <View style={{ flex: 1, overflow: 'auto' }}>
+        {children}
+      </View>
 
       {/* TabBar - 统一处理 */}
       {routerInfo?.isTabBar && <TabBar />}
