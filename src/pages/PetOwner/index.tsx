@@ -12,12 +12,12 @@ const PetOwner = memo(function PetOwner() {
 
   // 功能入口
   const menuItems = [
-    { icon: '💰', title: '花销统计', subtitle: '查看养宠花销', route: '/pages/PetDetailPage/index', color: gradients.pink },
-    { icon: '📊', title: '数据分析', subtitle: '查看宠物数据', route: '/pages/PetDetailPage/index', color: gradients.cyan },
-    { icon: '📷', title: '成长相册', subtitle: '记录美好时光', route: '/pages/PetDetailPage/index', color: gradients.orange },
+    { icon: '💰', title: '花销记录', subtitle: '查看养宠花销', route: '/pages/ExpenseRecord/index', color: gradients.pink },
+    { icon: '📊', title: '数据统计', subtitle: '查看宠物数据', route: '/pages/DataStatistics/index', color: gradients.cyan },
+    { icon: '📷', title: '成长相册', subtitle: '记录美好时光', route: '/pages/PhotoAlbum/index', color: gradients.orange },
     { icon: '📅', title: '日程管理', subtitle: '管理宠物日程', route: '/pages/PetSchedule/index', isTabBar: true, color: gradients.primary },
-    { icon: '🧮', title: '年龄换算', subtitle: '宠物年龄计算', route: '/pages/PetDetailPage/index', color: gradients.blueGreen },
-    { icon: '📏', title: '单位换算', subtitle: '体重单位转换', route: '/pages/PetDetailPage/index', color: gradients.purplePink },
+    { icon: '🧮', title: '年龄换算', subtitle: '宠物年龄计算', route: '/pages/AgeCalculator/index', color: gradients.blueGreen },
+    { icon: '⏰', title: '成长时光', subtitle: '时光轴记录', route: '/pages/Timeline/index', color: gradients.purplePink },
   ];
 
   const settingsItems = [

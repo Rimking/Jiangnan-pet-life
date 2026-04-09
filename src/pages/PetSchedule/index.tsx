@@ -1,8 +1,10 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text, ScrollView } from '@tarojs/components';
 import { memo, useState, useMemo } from 'react';
+import { useAtom } from 'jotai';
 import Taro from '@tarojs/taro';
-import { mockSchedules, mockPets } from '@/constants/mockData';
+import { schedulesAtom, completeScheduleAtom, currentPetAtom, petsAtom } from '@/store';
+import { Schedule } from '@/constants/mockData';
 import Calendar from './components/calendar';
 import { theme, gradients, shadows, borderRadius, typography } from '@/styles/theme';
 
@@ -11,31 +13,30 @@ const enum TabType {
   Reminder = 'reminder',
 }
 
-// 宠物日程
 const PetSchedule = memo(function PetSchedule() {
   const [activeTab, setActiveTab] = useState(TabType.Reminder);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [schedules] = useAtom(schedulesAtom);
+  const [, completeSchedule] = useAtom(completeScheduleAtom);
+  const [currentPet] = useAtom(currentPetAtom);
+  const [pets] = useAtom(petsAtom);
 
-  // 获取今日日程
   const today = new Date().toISOString().split('T')[0];
 
-  // 今日日程
   const todaySchedules = useMemo(() => {
-    return mockSchedules.filter(s => s.date === today);
-  }, []);
+    return schedules.filter(s => s.date === today && (!currentPet || s.petId === currentPet.id));
+  }, [schedules, today, currentPet]);
 
-  // 未完成日程
-  const uncompletedSchedules = useMemo(() => {
-    return mockSchedules.filter(s => s.status === 'pending' && s.date <= today);
-  }, []);
+  const completedCount = todaySchedules.filter(s => s.isCompleted).length;
+  const pendingCount = todaySchedules.filter(s => !s.isCompleted).length;
 
-  // 选中日期日程
   const selectedDateSchedules = useMemo(() => {
-    return mockSchedules.filter(s => s.date === selectedDate);
-  }, [selectedDate]);
+    return schedules.filter(s => s.date === selectedDate && (!currentPet || s.petId === currentPet.id));
+  }, [schedules, selectedDate, currentPet]);
 
   const handleComplete = (scheduleId: string) => {
-    Taro.showToast({ title: '标记完成', icon: 'success' });
+    Taro.vibrateShort();
+    completeSchedule(scheduleId);
   };
 
   const handleDelete = (scheduleId: string) => {
@@ -50,19 +51,8 @@ const PetSchedule = memo(function PetSchedule() {
     });
   };
 
-  const getScheduleIcon = (type: string) => {
-    const iconMap: Record<string, string> = {
-      health: '💊',
-      daily: '🍖',
-      care: '🛁',
-      custom: '📌',
-    };
-    return iconMap[type] || '📌';
-  };
-
   const getPetName = (petId: string) => {
-    if (petId === 'all') return '全部宠物';
-    const pet = mockPets.find(p => p.id === petId);
+    const pet = pets.find(p => p.id === petId);
     return pet?.name || '未知';
   };
 
@@ -81,7 +71,6 @@ const PetSchedule = memo(function PetSchedule() {
         }}
         scrollY
       >
-        {/* 标签切换 */}
         <View
           style={{
             margin: '0 32rpx 32rpx',
@@ -141,7 +130,6 @@ const PetSchedule = memo(function PetSchedule() {
           </View>
         </View>
 
-        {/* 日历组件 - 保留现有实现 */}
         <View
           style={{
             margin: '0 32rpx 32rpx',
@@ -154,7 +142,6 @@ const PetSchedule = memo(function PetSchedule() {
           <Calendar />
         </View>
 
-        {/* 今日日程 */}
         <View
           style={{
             margin: '0 32rpx 32rpx',
@@ -167,8 +154,7 @@ const PetSchedule = memo(function PetSchedule() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24rpx' }}>
             <Text style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: theme.text.primary }}>今日日程</Text>
             <Text style={{ fontSize: typography.fontSize.sm, color: theme.text.tertiary }}>
-              完成{todaySchedules.filter(s => s.status === 'completed').length}/
-              未完成{todaySchedules.filter(s => s.status === 'pending').length}
+              完成{completedCount}/未完成{pendingCount}
             </Text>
           </View>
 
@@ -197,61 +183,42 @@ const PetSchedule = memo(function PetSchedule() {
                         width: '64rpx',
                         height: '64rpx',
                         borderRadius: borderRadius.medium,
-                        background: schedule.type === 'health' 
-                          ? `${theme.status.danger}20`
-                          : schedule.type === 'daily'
-                          ? `${theme.orange.main}20`
-                          : `${theme.cyan.main}20`,
+                        background: `${theme.primary.light}`,
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontSize: '32rpx' }}>{getScheduleIcon(schedule.type)}</Text>
+                      <Text style={{ fontSize: '32rpx' }}>{schedule.icon}</Text>
                     </View>
                     <View>
                       <Text style={{
                         fontSize: typography.fontSize.md,
-                        color: schedule.status === 'completed' ? theme.text.tertiary : theme.text.primary,
-                        textDecoration: schedule.status === 'completed' ? 'line-through' : 'none',
+                        color: schedule.isCompleted ? theme.text.tertiary : theme.text.primary,
+                        textDecoration: schedule.isCompleted ? 'line-through' : 'none',
                       }}>
-                        {schedule.specificItem}
+                        {schedule.title}
                       </Text>
                       <Text style={{ fontSize: typography.fontSize.xs, color: theme.text.tertiary }}>{getPetName(schedule.petId)}</Text>
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: '16rpx' }}>
                     <Text style={{ fontSize: typography.fontSize.sm, color: theme.text.tertiary }}>{schedule.time}</Text>
-                    {schedule.status === 'pending' ? (
-                      <View style={{ flexDirection: 'row', gap: '12rpx' }}>
-                        <View
-                          style={{
-                            paddingHorizontal: '20rpx',
-                            paddingVertical: '8rpx',
-                            borderRadius: borderRadius.full,
-                            background: gradients.cyan,
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}
-                          onClick={() => handleComplete(schedule.id)}
-                        >
-                          <Text style={{ fontSize: typography.fontSize.xs, color: 'white', fontWeight: typography.fontWeight.medium }}>完成</Text>
-                        </View>
-                        <View
-                          style={{
-                            paddingHorizontal: '20rpx',
-                            paddingVertical: '8rpx',
-                            borderRadius: borderRadius.full,
-                            background: `${theme.status.danger}20`,
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}
-                          onClick={() => handleDelete(schedule.id)}
-                        >
-                          <Text style={{ fontSize: typography.fontSize.xs, color: theme.status.danger, fontWeight: typography.fontWeight.medium }}>删除</Text>
-                        </View>
+                    {!schedule.isCompleted ? (
+                      <View
+                        style={{
+                          paddingHorizontal: '20rpx',
+                          paddingVertical: '8rpx',
+                          borderRadius: borderRadius.full,
+                          borderWidth: '2rpx',
+                          borderColor: theme.primary.main,
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                        onClick={() => handleComplete(schedule.id)}
+                      >
+                        <Text style={{ fontSize: typography.fontSize.xs, color: theme.primary.main, fontWeight: typography.fontWeight.medium }}>完成</Text>
                       </View>
                     ) : (
                       <View
@@ -259,10 +226,10 @@ const PetSchedule = memo(function PetSchedule() {
                           paddingHorizontal: '20rpx',
                           paddingVertical: '8rpx',
                           borderRadius: borderRadius.full,
-                          background: `${theme.status.success}20`,
+                          background: theme.success.main,
                         }}
                       >
-                        <Text style={{ fontSize: typography.fontSize.xs, color: theme.status.success, fontWeight: typography.fontWeight.medium }}>已完成</Text>
+                        <Text style={{ fontSize: typography.fontSize.xs, color: 'white', fontWeight: typography.fontWeight.medium }}>已完成</Text>
                       </View>
                     )}
                   </View>
@@ -272,103 +239,6 @@ const PetSchedule = memo(function PetSchedule() {
           )}
         </View>
 
-        {/* 未完成高亮 */}
-        {uncompletedSchedules.length > 0 && (
-          <View
-            style={{
-              margin: '0 32rpx 32rpx',
-              padding: '32rpx',
-              background: gradients.cardBg,
-              borderRadius: borderRadius.large,
-              boxShadow: shadows.card,
-              borderWidth: '2rpx',
-              borderColor: `${theme.status.danger}30`,
-            }}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24rpx' }}>
-              <Text style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: theme.status.danger }}>
-                未完成日程（{uncompletedSchedules.length}条）
-              </Text>
-              <View
-                style={{
-                  paddingHorizontal: '24rpx',
-                  paddingVertical: '8rpx',
-                  borderRadius: borderRadius.full,
-                  background: `${theme.primary.main}20`,
-                }}
-              >
-                <Text style={{ fontSize: typography.fontSize.sm, color: theme.primary.main, fontWeight: typography.fontWeight.medium }}>全部处理</Text>
-              </View>
-            </View>
-            <View style={{ flexDirection: 'column', gap: '20rpx' }}>
-              {uncompletedSchedules.slice(0, 3).map(schedule => (
-                <View
-                  key={schedule.id}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingVertical: '20rpx',
-                    borderBottomWidth: '1rpx',
-                    borderBottomColor: '#F0F0F5',
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: '20rpx', flex: 1 }}>
-                    <View
-                      style={{
-                        width: '64rpx',
-                        height: '64rpx',
-                        borderRadius: borderRadius.medium,
-                        background: `${theme.status.danger}20`,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text style={{ fontSize: '32rpx' }}>{getScheduleIcon(schedule.type)}</Text>
-                    </View>
-                    <View>
-                      <Text style={{ fontSize: typography.fontSize.md, color: theme.text.primary }}>{schedule.specificItem}</Text>
-                      <Text style={{ fontSize: typography.fontSize.xs, color: theme.text.tertiary }}>{schedule.date} {schedule.time}</Text>
-                    </View>
-                  </View>
-                  <View style={{ flexDirection: 'row', gap: '12rpx' }}>
-                    <View
-                      style={{
-                        paddingHorizontal: '20rpx',
-                        paddingVertical: '8rpx',
-                        borderRadius: borderRadius.full,
-                        background: gradients.cyan,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                      onClick={() => handleComplete(schedule.id)}
-                    >
-                      <Text style={{ fontSize: typography.fontSize.xs, color: 'white', fontWeight: typography.fontWeight.medium }}>完成</Text>
-                    </View>
-                    <View
-                      style={{
-                        paddingHorizontal: '20rpx',
-                        paddingVertical: '8rpx',
-                        borderRadius: borderRadius.full,
-                        background: `${theme.status.danger}20`,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                      onClick={() => handleDelete(schedule.id)}
-                    >
-                      <Text style={{ fontSize: typography.fontSize.xs, color: theme.status.danger, fontWeight: typography.fontWeight.medium }}>删除</Text>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* 添加日程按钮 */}
         <View style={{ margin: '0 32rpx' }}>
           <View
             style={{

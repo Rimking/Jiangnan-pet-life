@@ -1,29 +1,34 @@
 import BasicLayout from '@/layout/basicLayout';
-import { View, Text } from '@tarojs/components';
-import { memo, useState } from 'react';
+import { View, ScrollView } from '@tarojs/components';
+import { memo } from 'react';
 import PetHeader from './components/PetHeader';
-import PetInfoCard from './components/PetInfoCard';
-import FunctionGrid from './components/FunctionGrid';
-import DailyTip from './components/DailyTip';
+import PetSwitchCard from './components/PetSwitchCard';
+import QuickEntry from './components/QuickEntry';
+import TodayTodo from './components/TodayTodo';
+import { theme } from '@/styles/theme';
 
-// 宠物档案
 const PetProfile = memo(function PetProfile() {
-
   return (
     <BasicLayout
       wrapClassName="w-full h-full"
       wrapStyle={{
-        backgroundImage: 'linear-gradient( to bottom ,#FFE68D 10%, #FFFCE0 100%)',
+        backgroundColor: theme.background.default,
         minHeight: '100vh',
       }}
-      
     >
-      <View className='pt-[60px]'>
+      <ScrollView
+        scrollY
+        style={{
+          paddingTop: '60px',
+          paddingBottom: '140px',
+          height: '100vh',
+        }}
+      >
         <PetHeader />
-        <PetInfoCard />
-        <FunctionGrid />
-        <DailyTip />
-      </View>
+        <PetSwitchCard />
+        <QuickEntry />
+        <TodayTodo />
+      </ScrollView>
     </BasicLayout>
   );
 });

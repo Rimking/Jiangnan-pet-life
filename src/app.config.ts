@@ -1,7 +1,6 @@
 export default defineAppConfig({
   pages: [
     'pages/PetSchedule/index',
-
     'pages/PetProfile/index',
     'pages/PetOwner/index',
     'pages/PetKnowledge/index',
@@ -10,6 +9,16 @@ export default defineAppConfig({
     'pages/PetDetailPage/index',
     'pages/AddPetReminder/index',
     'pages/AddPetRecord/index',
+    'pages/PetList/index',
+    'pages/AddPet/index',
+    'pages/ExpenseRecord/index',
+    'pages/CareRecord/index',
+    'pages/DataStatistics/index',
+    'pages/Timeline/index',
+    'pages/PhotoAlbum/index',
+    'pages/AgeCalculator/index',
+    'pages/KnowledgeDetail/index',
+    'pages/AIConversation/index',
   ],
 
   window: {
