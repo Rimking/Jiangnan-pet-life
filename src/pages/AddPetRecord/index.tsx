@@ -1,22 +1,338 @@
-import NavTab from '@/components/navBar';
-import BasicLayout from '@/layout/basicLayout';
-import { View } from '@tarojs/components';
-import { memo } from 'react';
+﻿import BasicLayout from '@/layout/basicLayout';
+import { View, Text, Input } from '@tarojs/components';
+import Taro, { useRouter } from '@tarojs/taro';
+import { memo, useMemo, useState } from 'react';
+import { addCareLog, addExpense, addRecord } from '@/utils/petData';
+import { PET_UI } from '@/constants/petUi';
 
-// 新增记录
-const AddPetRecord = memo(function PetKnowledge() {
+type RecordMode = 'record' | 'expense' | 'care';
+
+const CARE_TEMPLATE = [
+  { name: '驱虫', result: '已完成', nextAfterDays: 30 },
+  { name: '疫苗', result: '已接种', nextAfterDays: 365 },
+  { name: '体检', result: '已完成', nextAfterDays: 180 },
+  { name: '洗护', result: '已完成', nextAfterDays: 14 },
+];
+
+const RESULT_TEMPLATE = ['已完成', '待观察', '需复查'];
+const RECORD_TEMPLATE = ['喂食', '喝水', '排便', '运动'];
+const EXPENSE_TEMPLATE = ['猫粮', '零食', '洗护', '医疗'];
+
+const toDateInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const addDays = (baseDate: string, days: number) => {
+  const target = new Date(`${baseDate}T00:00:00`);
+  if (Number.isNaN(target.getTime())) {
+    return '';
+  }
+  target.setDate(target.getDate() + days);
+  return toDateInput(target);
+};
+
+const AddPetRecord = memo(function AddPetRecord() {
+  const { params } = useRouter();
+
+  const defaultDate = useMemo(() => {
+    return params.date || toDateInput(new Date());
+  }, [params.date]);
+
+  const initialMode = (params.mode as RecordMode) || 'record';
+  const petId = params.petId || 'pet-fire';
+
+  const [mode, setMode] = useState<RecordMode>(initialMode);
+
+  const [category, setCategory] = useState('喂食');
+  const [value, setValue] = useState('');
+  const [note, setNote] = useState('');
+  const [date, setDate] = useState(defaultDate);
+  const [time, setTime] = useState('09:00');
+
+  const [amount, setAmount] = useState('');
+
+  const [careType, setCareType] = useState('驱虫');
+  const [careResult, setCareResult] = useState('已完成');
+  const [nextDate, setNextDate] = useState('');
+
+  const handleSelectCareTemplate = (name: string) => {
+    const target = CARE_TEMPLATE.find((item) => item.name === name);
+    if (!target) {
+      return;
+    }
+    setCareType(target.name);
+    setCareResult(target.result);
+    setNextDate(addDays(date, target.nextAfterDays));
+  };
+
+  const handleSave = () => {
+    if (mode === 'record') {
+      if (!category.trim()) {
+        Taro.showToast({ title: '请填写记录分类', icon: 'none' });
+        return;
+      }
+      addRecord({
+        petId,
+        category: category.trim(),
+        value: value.trim(),
+        note: note.trim(),
+        date,
+        time,
+      });
+    }
+
+    if (mode === 'expense') {
+      const amountNumber = Number(amount);
+      if (!category.trim() || Number.isNaN(amountNumber) || amountNumber <= 0) {
+        Taro.showToast({ title: '请填写正确花销', icon: 'none' });
+        return;
+      }
+      addExpense({
+        petId,
+        category: category.trim(),
+        amount: amountNumber,
+        note: note.trim(),
+        date,
+        time,
+      });
+    }
+
+    if (mode === 'care') {
+      if (!careType.trim()) {
+        Taro.showToast({ title: '请填写护理类型', icon: 'none' });
+        return;
+      }
+      addCareLog({
+        petId,
+        careType: careType.trim(),
+        result: careResult.trim() || '已完成',
+        note: note.trim(),
+        date,
+        time,
+        nextDate: nextDate.trim() || undefined,
+      });
+    }
+
+    Taro.showToast({ title: '记录已保存', icon: 'success' });
+    setTimeout(() => Taro.navigateBack(), 300);
+  };
+
   return (
     <BasicLayout
-      wrapClassName=""
+      wrapClassName="w-full h-full"
       wrapStyle={{
-        backgroundColor: 'linear-gradient( to bottom ,#EDF2F2 50%, #FFFFFF 100%)',
+        backgroundImage: PET_UI.pageBackground,
+        minHeight: '100vh',
       }}
-      // statusBarLoc
       navOptions={{
-        navTitle: '知识库',
+        navTitle: '新增记录',
+        needBack: true,
       }}
     >
-      11
+      <View className="p-8 pb-[120px]">
+        <View className="flex gap-2 mb-5">
+          <View
+            className="flex-1 h-[64px] rounded-[14px] border-[2px] border-solid border-[#262626] flex items-center justify-center"
+            style={{ backgroundColor: mode === 'record' ? '#ffd93b' : '#f4f4f4' }}
+            onClick={() => setMode('record')}
+          >
+            <Text className="text-[24px]">日常</Text>
+          </View>
+          <View
+            className="flex-1 h-[64px] rounded-[14px] border-[2px] border-solid border-[#262626] flex items-center justify-center"
+            style={{ backgroundColor: mode === 'expense' ? '#ffc6a1' : '#f4f4f4' }}
+            onClick={() => setMode('expense')}
+          >
+            <Text className="text-[24px]">花销</Text>
+          </View>
+          <View
+            className="flex-1 h-[64px] rounded-[14px] border-[2px] border-solid border-[#262626] flex items-center justify-center"
+            style={{ backgroundColor: mode === 'care' ? '#bdeeff' : '#f4f4f4' }}
+            onClick={() => setMode('care')}
+          >
+            <Text className="text-[24px]">护理</Text>
+          </View>
+        </View>
+
+        <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+          <Text className="text-[22px] text-[#666]">日期</Text>
+          <Input
+            className="h-[72px] text-[28px] mt-2"
+            value={date}
+            onInput={(event) => setDate(event.detail.value)}
+            placeholder="YYYY-MM-DD"
+          />
+        </View>
+
+        <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+          <Text className="text-[22px] text-[#666]">时间</Text>
+          <Input
+            className="h-[72px] text-[28px] mt-2"
+            value={time}
+            onInput={(event) => setTime(event.detail.value)}
+            placeholder="HH:mm"
+          />
+        </View>
+
+        {mode === 'record' ? (
+          <View className="mb-3 flex flex-wrap gap-2">
+            {RECORD_TEMPLATE.map((item) => (
+              <View
+                key={item}
+                className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626]"
+                style={{ backgroundColor: category === item ? '#ffd93b' : '#f4f4f4' }}
+                onClick={() => setCategory(item)}
+              >
+                <Text className="text-[22px]">{item}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {mode === 'expense' ? (
+          <View className="mb-3 flex flex-wrap gap-2">
+            {EXPENSE_TEMPLATE.map((item) => (
+              <View
+                key={item}
+                className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626]"
+                style={{ backgroundColor: category === item ? '#ffc6a1' : '#f4f4f4' }}
+                onClick={() => setCategory(item)}
+              >
+                <Text className="text-[22px]">{item}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {mode !== 'care' ? (
+          <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+            <Text className="text-[22px] text-[#666]">分类</Text>
+            <Input
+              className="h-[72px] text-[28px] mt-2"
+              value={category}
+              onInput={(event) => setCategory(event.detail.value)}
+              placeholder="如：喝水、猫粮、玩具"
+            />
+          </View>
+        ) : null}
+
+        {mode === 'record' ? (
+          <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+            <Text className="text-[22px] text-[#666]">记录值</Text>
+            <Input
+              className="h-[72px] text-[28px] mt-2"
+              value={value}
+              onInput={(event) => setValue(event.detail.value)}
+              placeholder="如：250ml / 1次"
+            />
+          </View>
+        ) : null}
+
+        {mode === 'expense' ? (
+          <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+            <Text className="text-[22px] text-[#666]">金额（元）</Text>
+            <Input
+              className="h-[72px] text-[28px] mt-2"
+              value={amount}
+              onInput={(event) => setAmount(event.detail.value)}
+              placeholder="如：89"
+              type="digit"
+            />
+          </View>
+        ) : null}
+
+        {mode === 'care' ? (
+          <>
+            <View className="mb-3 flex flex-wrap gap-2">
+              {CARE_TEMPLATE.map((item) => (
+                <View
+                  key={item.name}
+                  className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626]"
+                  style={{ backgroundColor: careType === item.name ? '#bdeeff' : '#f4f4f4' }}
+                  onClick={() => handleSelectCareTemplate(item.name)}
+                >
+                  <Text className="text-[22px]">{item.name}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+              <Text className="text-[22px] text-[#666]">护理类型</Text>
+              <Input
+                className="h-[72px] text-[28px] mt-2"
+                value={careType}
+                onInput={(event) => setCareType(event.detail.value)}
+                placeholder="如：驱虫、洗护、体检"
+              />
+            </View>
+
+            <View className="mb-3 flex flex-wrap gap-2">
+              {RESULT_TEMPLATE.map((item) => (
+                <View
+                  key={item}
+                  className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626]"
+                  style={{ backgroundColor: careResult === item ? '#d9f5e4' : '#f4f4f4' }}
+                  onClick={() => setCareResult(item)}
+                >
+                  <Text className="text-[22px]">{item}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+              <Text className="text-[22px] text-[#666]">结果</Text>
+              <Input
+                className="h-[72px] text-[28px] mt-2"
+                value={careResult}
+                onInput={(event) => setCareResult(event.detail.value)}
+                placeholder="如：已完成 / 异常观察"
+              />
+            </View>
+
+            <View className="mb-2 flex gap-2">
+              {[14, 30, 90].map((days) => (
+                <View
+                  key={days}
+                  className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626] bg-[#eef7ff]"
+                  onClick={() => setNextDate(addDays(date, days))}
+                >
+                  <Text className="text-[22px]">+{days}天</Text>
+                </View>
+              ))}
+            </View>
+
+            <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+              <Text className="text-[22px] text-[#666]">下次日期（可选）</Text>
+              <Input
+                className="h-[72px] text-[28px] mt-2"
+                value={nextDate}
+                onInput={(event) => setNextDate(event.detail.value)}
+                placeholder="YYYY-MM-DD，填写后自动生成提醒"
+              />
+            </View>
+          </>
+        ) : null}
+
+        <View className="mb-10 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+          <Text className="text-[22px] text-[#666]">备注</Text>
+          <Input
+            className="h-[72px] text-[28px] mt-2"
+            value={note}
+            onInput={(event) => setNote(event.detail.value)}
+            placeholder="可选"
+          />
+        </View>
+
+        <View
+          className="w-full h-[96px] border-[3px] border-black border-solid bg-[#FFD93B] rounded-[50px] flex items-center justify-center"
+          onClick={handleSave}
+        >
+          <Text className="text-[32px] font-bold">保存记录</Text>
+        </View>
+      </View>
     </BasicLayout>
   );
 });

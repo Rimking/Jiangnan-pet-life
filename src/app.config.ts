@@ -1,7 +1,6 @@
-export default defineAppConfig({
+﻿export default defineAppConfig({
   pages: [
     'pages/PetSchedule/index',
-
     'pages/PetProfile/index',
     'pages/PetOwner/index',
     'pages/PetKnowledge/index',
@@ -10,6 +9,8 @@ export default defineAppConfig({
     'pages/PetDetailPage/index',
     'pages/AddPetReminder/index',
     'pages/AddPetRecord/index',
+    'pages/PetExpenseStats/index',
+    'pages/PetCareStats/index',
   ],
 
   window: {
@@ -30,26 +31,18 @@ export default defineAppConfig({
       {
         pagePath: 'pages/PetProfile/index',
         text: '宠物档案',
-        // iconPath: 'cosmic-icon',
-        // selectedIconPath: 'cosmic-normal-icon'
       },
       {
         pagePath: 'pages/PetSchedule/index',
         text: '日程',
-        // iconPath: 'schedule-icon',
-        // selectedIconPath: 'schedule-normal-icon'
       },
       {
         pagePath: 'pages/PetKnowledge/index',
         text: '知识库',
-        // iconPath: 'add-plan',
-        // selectedIconPath: 'add-plan'
       },
       {
         pagePath: 'pages/PetOwner/index',
         text: '我的',
-        // iconPath: 'focus-icon',
-        // selectedIconPath: 'focus-normal-icon'
       },
     ],
   },

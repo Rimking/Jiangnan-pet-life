@@ -1,33 +1,26 @@
-import { View, Text } from '@tarojs/components';
+﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
+import { PET_UI_SHADOW } from '@/constants/petUi';
 
 const DailyTip = memo(function DailyTip() {
   return (
-    <View className="daily-tip mx-9 mb-4 p-4 bg-purple-100 rounded-xl shadow-sm">
+    <View
+      className="mx-[36px] mb-4 p-4 rounded-[16px] border-[3px] border-solid border-[#262626]"
+      style={{ backgroundColor: '#f6f6f6', boxShadow: PET_UI_SHADOW }}
+    >
       <View className="mb-3 flex items-center">
-        <Text className="text-[32px] font-bold mr-2">今日科普</Text>
-        <View className="flex-1 h-px bg-gray-200" />
+        <Text className="text-[36px] font-bold mr-2">今日科普</Text>
+        <View className="flex-1 h-[2px] bg-[#d5d5d5]" />
       </View>
-      <View className="flex gap-3 mb-3">
-        <View className="flex-1">
-          <Text className="text-[24px] leading-relaxed text-gray-800">
-            当猫咪出现尾巴竖起，毛炸起，瞳孔放大，紧紧盯着它的猎物-猫咪体内的一种叫做"捕食本能"的行为被激发了，这时候它需要一些时间来释放这种能量。试着用逗猫棒和它玩一会儿，或者给它一个 puzzle 玩具，让它的精力得到释放。
-          </Text>
-        </View>
-        
-      </View>
-      <View className="flex justify-between items-center pt-3 border-t border-gray-200">
-        <View className="flex gap-2">
-          <View className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-            <Text className="text-xs">❤️</Text>
-          </View>
-          <View className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-            <Text className="text-xs">💬</Text>
-          </View>
-          <View className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-            <Text className="text-xs">🔗</Text>
-          </View>
-        </View>
+
+      <Text className="text-[26px] leading-[40px] text-[#535353]">
+        当猫咪出现尾巴竖起、炸毛、瞳孔放大并紧盯目标时，通常是“狩猎本能”被激活。可以用逗猫棒互动5-10分钟，帮助它释放精力，避免因为能量过剩而焦躁。
+      </Text>
+
+      <View className="flex items-center pt-3 mt-3 border-t border-[#e2e2e2] gap-2">
+        <Text className="text-[24px]">❤️</Text>
+        <Text className="text-[24px]">💬</Text>
+        <Text className="text-[24px]">🔖</Text>
       </View>
     </View>
   );

@@ -1,4 +1,4 @@
-import BasicLayout from '@/layout/basicLayout';
+﻿import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
 import { memo, useState } from 'react';
 import UserInfoHeader from './components/UserInfoHeader';
@@ -33,34 +33,34 @@ const PetOwner = memo(function PetOwner() {
 
   const menuItems = [
     {
-      icon: '📅',
+      icon: '📮',
       title: '日程管理',
       subtitle: '管理宠物日程',
       hasBadge: true,
       badgeText: '3',
     },
     {
-      icon: '📊',
+      icon: '📳',
       title: '数据统计',
       subtitle: '查看宠物数据',
     },
     {
-      icon: '💊',
+      icon: '🪪',
       title: '用药记录',
       subtitle: '记录用药情况',
     },
     {
-      icon: '🏥',
+      icon: '🩺',
       title: '医疗记录',
       subtitle: '记录医疗信息',
     },
     {
-      icon: '🛁',
+      icon: '🛚',
       title: '洗护记录',
       subtitle: '记录洗护情况',
     },
     {
-      icon: '💩',
+      icon: '💬',
       title: '排便记录',
       subtitle: '记录排便情况',
     },

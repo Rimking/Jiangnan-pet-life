@@ -1,23 +1,56 @@
-import BasicLayout from '@/layout/basicLayout';
-import { View, Text, Input, Textarea } from '@tarojs/components';
-import { memo, useState } from 'react';
+﻿import BasicLayout from '@/layout/basicLayout';
+import { View, Text, Input, Picker } from '@tarojs/components';
+import Taro, { useRouter } from '@tarojs/taro';
+import { memo, useMemo, useState } from 'react';
+import { addReminder } from '@/utils/petData';
+import { ReminderType } from '@/types/pet';
+import { PET_UI } from '@/constants/petUi';
 
-// 新增提醒
+const typeOptions: Array<{ label: string; value: ReminderType }> = [
+  { label: '日常提醒', value: 'daily' },
+  { label: '护理提醒', value: 'care' },
+  { label: '健康提醒', value: 'health' },
+  { label: '行为提醒', value: 'behavior' },
+];
+
 const AddPetReminder = memo(function AddPetReminder() {
-  // 提醒内容
-  const [reminderContent, setReminderContent] = useState('');
-  // 提醒类型
-  const [reminderType, setReminderType] = useState('');
-  // 提醒时间
-  const [reminderTime, setReminderTime] = useState('');
-  // 提醒是否重复
-  const [reminderRepeat, setReminderRepeat] = useState('');
+  const { params } = useRouter();
+
+  const defaultDate = useMemo(() => {
+    return params.date || new Date().toISOString().slice(0, 10);
+  }, [params.date]);
+
+  const petId = params.petId || 'pet-fire';
+  const [title, setTitle] = useState('');
+  const [date, setDate] = useState(defaultDate);
+  const [time, setTime] = useState('08:00');
+  const [repeat, setRepeat] = useState('每天');
+  const [typeIndex, setTypeIndex] = useState(0);
+
+  const handleSave = () => {
+    if (!title.trim()) {
+      Taro.showToast({ title: '请填写提醒内容', icon: 'none' });
+      return;
+    }
+
+    addReminder({
+      petId,
+      title: title.trim(),
+      type: typeOptions[typeIndex].value,
+      date,
+      time,
+      repeat,
+    });
+
+    Taro.showToast({ title: '已保存', icon: 'success' });
+    setTimeout(() => Taro.navigateBack(), 300);
+  };
 
   return (
     <BasicLayout
       wrapClassName="w-full h-full"
       wrapStyle={{
-        backgroundColor: '#FFF',
+        backgroundImage: PET_UI.pageBackground,
         minHeight: '100vh',
       }}
       navOptions={{
@@ -25,51 +58,64 @@ const AddPetReminder = memo(function AddPetReminder() {
         needBack: true,
       }}
     >
-      <View className="p-8">
-        {/* 输入内容 */}
-        <View className="mb-8 border-[2px] border-black border-solid rounded-xl">
-          <Textarea
-            className="w-full px-4 py-2 h-[128px] text-[24px]"
-            placeholder="请输入提醒内容"
+      <View className="p-8 pb-[120px]">
+        <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+          <Text className="text-[22px] text-[#666]">提醒内容</Text>
+          <Input
+            className="h-[72px] text-[28px] mt-2"
+            placeholder="例如：给火火喂药"
+            value={title}
+            onInput={(event) => setTitle(event.detail.value)}
           />
         </View>
 
-        {/* 类型选择 */}
-        <View className="mb-6 border-[2px] border-black border-solid rounded-xl">
-          <View className="w-full h-[88px] rounded-xl flex items-center px-4 justify-between">
-            <Text className="text-[24px] text-gray-500">类型</Text>
-            <View className="flex items-center gap-2">
-              <Text className="text-[24px]">日常提醒</Text>
-              <Text className="text-[24px] text-gray-400">→</Text>
-            </View>
+        <Picker
+          mode="selector"
+          range={typeOptions.map((item) => item.label)}
+          value={typeIndex}
+          onChange={(event) => setTypeIndex(Number(event.detail.value))}
+        >
+          <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4 flex justify-between items-center">
+            <Text className="text-[24px] text-[#666]">类型</Text>
+            <Text className="text-[26px]">{typeOptions[typeIndex].label}</Text>
           </View>
+        </Picker>
+
+        <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+          <Text className="text-[22px] text-[#666]">日期</Text>
+          <Input
+            className="h-[72px] text-[28px] mt-2"
+            value={date}
+            onInput={(event) => setDate(event.detail.value)}
+            placeholder="YYYY-MM-DD"
+          />
         </View>
 
-        {/* 时间选择 */}
-        <View className="mb-6 border-[2px] border-black border-solid rounded-xl">
-          <View className="w-full h-[88px] rounded-xl flex items-center px-4 justify-between">
-            <Text className="text-[24px] text-gray-500">时间</Text>
-            <View className="flex items-center gap-2">
-              <Text className="text-[24px]">2024年8月6日 周二 14:23</Text>
-              <Text className="text-[24px] text-gray-400">→</Text>
-            </View>
-          </View>
+        <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+          <Text className="text-[22px] text-[#666]">时间</Text>
+          <Input
+            className="h-[72px] text-[28px] mt-2"
+            value={time}
+            onInput={(event) => setTime(event.detail.value)}
+            placeholder="HH:mm"
+          />
         </View>
 
-        {/* 提醒设置 */}
-        <View className="mb-12 border-[2px] border-black border-solid rounded-xl">
-          <View className="w-full h-[88px] rounded-xl flex items-center px-4 justify-between">
-            <Text className="text-[24px] text-gray-500">提醒</Text>
-            <View className="flex items-center gap-2">
-              <Text className="text-[24px]">重复</Text>
-              <Text className="text-[24px] text-gray-400">→</Text>
-            </View>
-          </View>
+        <View className="mb-10 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
+          <Text className="text-[22px] text-[#666]">重复</Text>
+          <Input
+            className="h-[72px] text-[28px] mt-2"
+            value={repeat}
+            onInput={(event) => setRepeat(event.detail.value)}
+            placeholder="每天 / 每周一"
+          />
         </View>
 
-        {/* 保存按钮 */}
-        <View className="w-full h-[96px] border-[2px] border-black border-solid bg-[#FFEB3B] rounded-[50px] flex items-center justify-center shadow-md">
-          <Text className="text-[32px] font-bold ">保存</Text>
+        <View
+          className="w-full h-[96px] border-[3px] border-black border-solid bg-[#FFD93B] rounded-[50px] flex items-center justify-center"
+          onClick={handleSave}
+        >
+          <Text className="text-[32px] font-bold">保存提醒</Text>
         </View>
       </View>
     </BasicLayout>

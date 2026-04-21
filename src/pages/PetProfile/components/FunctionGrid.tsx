@@ -1,60 +1,81 @@
-import { View, Text } from '@tarojs/components';
+﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
+import { PET_UI, PET_UI_SHADOW } from '@/constants/petUi';
 
-interface FunctionItem {
-  title: string;
-  subtitle: string;
-  icon: string;
+interface Props {
+  petName: string;
+  stats: {
+    reminders: number;
+    records: number;
+    care: number;
+    monthExpense: number;
+  };
+  onOpenSchedule: () => void;
+  onOpenCare: () => void;
+  onAddReminder: () => void;
+  onAddRecord: () => void;
 }
 
-const FunctionGrid = memo(function FunctionGrid() {
-  const functions: FunctionItem[] = [
-    {
-      title: '给火火打疫苗',
-      subtitle: '请提醒我',
-      icon: '💉',
-    },
-    {
-      title: '记录',
-      subtitle: '记录我的小宝贝',
-      icon: '📝',
-    },
-    {
-      title: '给火火喂小零食',
-      subtitle: '每天限吃的小零食',
-      icon: '🍪',
-    },
-    {
-      title: '提醒',
-      subtitle: '给火火记点',
-      icon: '🔔',
-    },
-  ];
+const cardStyle = {
+  borderColor: PET_UI.cardBorderColor,
+  backgroundColor: PET_UI.panelBackground,
+  boxShadow: PET_UI_SHADOW,
+};
 
+const FunctionGrid = memo(function FunctionGrid({
+  petName,
+  stats,
+  onOpenSchedule,
+  onOpenCare,
+  onAddReminder,
+  onAddRecord,
+}: Props) {
   return (
-    <View className="w-full h-[378px] px-[36px] py-4 gap-[32px] flex justify-between">
-      {/* 左侧单独的清单 */}
-      <View className="w-[328px] h-full bg-[#ffffff] border-[4px] border-black border-solid rounded-[16px]">
-        {['打疫苗'].map((i) => (
-          <View key={i} className="w-full h-[64px] flex items-center justify-center">
-            <Text className="text-[32px] text-[#FF6B6B]">{i}</Text>
+    <View className="w-full h-[360px] px-[36px] py-4 gap-[20px] flex justify-between">
+      <View className="w-[330px] h-full rounded-[16px] border-[4px] border-solid" style={cardStyle}>
+        <View className="w-full h-full flex flex-col justify-center items-center gap-3 px-3">
+          <View className="w-full h-[56px] rounded-[12px] bg-white border-[2px] border-solid border-[#262626] flex items-center justify-between px-4">
+            <Text className="text-[26px]">今日提醒</Text>
+            <Text className="text-[27px] text-[#ff6b6b]">{stats.reminders}</Text>
           </View>
-        ))}
-      </View>
-      <View className="w-[328px] h-full flex gap-6 flex-col justify-between">
-        <View className="w-[328px] h-[170px] bg-[#ffffff] border-[4px] border-black border-solid rounded-[16px]">
-          {['打疫苗'].map((i) => (
-            <View key={i} className="w-full h-[64px] flex items-center justify-center">
-              <Text className="text-[32px] text-[#FF6B6B]">{i}</Text>
-            </View>
-          ))}
+
+          <View
+            className="w-full h-[56px] rounded-[12px] bg-white border-[2px] border-solid border-[#262626] flex items-center justify-between px-4"
+            onClick={onOpenCare}
+          >
+            <Text className="text-[26px]">今日护理</Text>
+            <Text className="text-[27px] text-[#008ecf]">{stats.care}</Text>
+          </View>
+
+          <View className="w-full h-[56px] rounded-[12px] bg-white border-[2px] border-solid border-[#262626] flex items-center justify-between px-4">
+            <Text className="text-[26px]">本月花销</Text>
+            <Text className="text-[27px] text-[#ff6b6b]">¥{stats.monthExpense.toFixed(2)}</Text>
+          </View>
+
+          <View
+            className="w-full h-[56px] rounded-[12px] bg-[#ffd93b] border-[2px] border-solid border-[#262626] flex items-center justify-center"
+            onClick={onAddReminder}
+          >
+            <Text className="text-[25px] font-medium">给{petName}添加提醒</Text>
+          </View>
         </View>
-        <View className="w-[328px] h-[170px] bg-[#ffffff] border-[4px] border-black border-solid rounded-[16px]">
-          {['打疫苗'].map((i) => (
-            <View key={i} className="w-full h-[64px] flex items-center justify-center">
-              <Text className="text-[32px] text-[#FF6B6B]">{i}</Text>
-            </View>
-          ))}
+      </View>
+
+      <View className="w-[330px] h-full flex gap-4 flex-col justify-between">
+        <View
+          className="w-[330px] h-[170px] rounded-[16px] border-[4px] border-solid flex items-center justify-center"
+          style={cardStyle}
+          onClick={onAddRecord}
+        >
+          <Text className="text-[32px] text-[#ff6b6b]">新增记录</Text>
+        </View>
+
+        <View
+          className="w-[330px] h-[170px] rounded-[16px] border-[4px] border-solid flex items-center justify-center"
+          style={cardStyle}
+          onClick={onOpenSchedule}
+        >
+          <Text className="text-[32px] text-[#ff6b6b]">查看完整日程</Text>
         </View>
       </View>
     </View>
