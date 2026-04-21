@@ -1,75 +1,69 @@
-import BasicLayout from '@/layout/basicLayout';
-import { View, Text, Input, Textarea } from '@tarojs/components';
-import { memo, useState } from 'react';
+﻿import BasicLayout from '@/layout/basicLayout';
+import { View, Text, Input } from '@tarojs/components';
+import { memo, useMemo, useState } from 'react';
+import Taro from '@tarojs/taro';
+import { useAtom } from 'jotai';
+import { addScheduleAtom, currentPetAtom } from '@/store';
 
-// 新增提醒
 const AddPetReminder = memo(function AddPetReminder() {
-  // 提醒内容
-  const [reminderContent, setReminderContent] = useState('');
-  // 提醒类型
-  const [reminderType, setReminderType] = useState('');
-  // 提醒时间
-  const [reminderTime, setReminderTime] = useState('');
-  // 提醒是否重复
-  const [reminderRepeat, setReminderRepeat] = useState('');
+  const [currentPet] = useAtom(currentPetAtom);
+  const [, addSchedule] = useAtom(addScheduleAtom);
+
+  const [title, setTitle] = useState('喂食提醒');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [time, setTime] = useState('09:00');
+  const [icon, setIcon] = useState('⏰');
+
+  const disabled = useMemo(() => !currentPet || !title.trim(), [currentPet, title]);
+
+  const handleSave = () => {
+    if (!currentPet) {
+      Taro.showToast({ title: '请先添加宠物', icon: 'none' });
+      return;
+    }
+
+    addSchedule({
+      petId: currentPet.id,
+      title: title.trim(),
+      date,
+      time,
+      icon,
+    });
+
+    Taro.showToast({ title: '提醒已创建', icon: 'success' });
+    setTimeout(() => Taro.navigateBack(), 350);
+  };
 
   return (
-    <BasicLayout
-      wrapClassName="w-full h-full"
-      wrapStyle={{
-        backgroundColor: '#FFF',
-        minHeight: '100vh',
-      }}
-      navOptions={{
-        navTitle: '添加提醒',
-        needBack: true,
-      }}
-    >
-      <View className="p-8">
-        {/* 输入内容 */}
-        <View className="mb-8 border-[2px] border-black border-solid rounded-xl">
-          <Textarea
-            className="w-full px-4 py-2 h-[128px] text-[24px]"
-            placeholder="请输入提醒内容"
-          />
-        </View>
+    <BasicLayout navOptions={{ navTitle: '添加提醒', needBack: true }}>
+      <View className="p-8 pt-28">
+        <View className="bg-white rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+          <Text className="text-[30rpx] font-bold">提醒信息</Text>
+          <Text className="text-[24rpx] text-gray-500">当前宠物：{currentPet?.name ?? '未选择'}</Text>
 
-        {/* 类型选择 */}
-        <View className="mb-6 border-[2px] border-black border-solid rounded-xl">
-          <View className="w-full h-[88px] rounded-xl flex items-center px-4 justify-between">
-            <Text className="text-[24px] text-gray-500">类型</Text>
-            <View className="flex items-center gap-2">
-              <Text className="text-[24px]">日常提醒</Text>
-              <Text className="text-[24px] text-gray-400">→</Text>
-            </View>
+          <View>
+            <Text className="text-[24rpx] text-gray-500">标题</Text>
+            <Input className="mt-2 p-3 bg-gray-50 rounded-xl" value={title} onInput={(e) => setTitle(e.detail.value)} />
           </View>
-        </View>
 
-        {/* 时间选择 */}
-        <View className="mb-6 border-[2px] border-black border-solid rounded-xl">
-          <View className="w-full h-[88px] rounded-xl flex items-center px-4 justify-between">
-            <Text className="text-[24px] text-gray-500">时间</Text>
-            <View className="flex items-center gap-2">
-              <Text className="text-[24px]">2024年8月6日 周二 14:23</Text>
-              <Text className="text-[24px] text-gray-400">→</Text>
-            </View>
+          <View>
+            <Text className="text-[24rpx] text-gray-500">日期（YYYY-MM-DD）</Text>
+            <Input className="mt-2 p-3 bg-gray-50 rounded-xl" value={date} onInput={(e) => setDate(e.detail.value)} />
           </View>
-        </View>
 
-        {/* 提醒设置 */}
-        <View className="mb-12 border-[2px] border-black border-solid rounded-xl">
-          <View className="w-full h-[88px] rounded-xl flex items-center px-4 justify-between">
-            <Text className="text-[24px] text-gray-500">提醒</Text>
-            <View className="flex items-center gap-2">
-              <Text className="text-[24px]">重复</Text>
-              <Text className="text-[24px] text-gray-400">→</Text>
-            </View>
+          <View>
+            <Text className="text-[24rpx] text-gray-500">时间（HH:mm）</Text>
+            <Input className="mt-2 p-3 bg-gray-50 rounded-xl" value={time} onInput={(e) => setTime(e.detail.value)} />
           </View>
-        </View>
 
-        {/* 保存按钮 */}
-        <View className="w-full h-[96px] border-[2px] border-black border-solid bg-[#FFEB3B] rounded-[50px] flex items-center justify-center shadow-md">
-          <Text className="text-[32px] font-bold ">保存</Text>
+          <View>
+            <Text className="text-[24rpx] text-gray-500">图标</Text>
+            <Input className="mt-2 p-3 bg-gray-50 rounded-xl" value={icon} onInput={(e) => setIcon(e.detail.value)} />
+          </View>
+
+          <View className={`p-3 rounded-xl ${disabled ? 'bg-gray-200' : 'bg-blue-500'}`} onClick={handleSave}>
+            <Text className={`text-center ${disabled ? 'text-gray-500' : 'text-white'}`}>保存提醒</Text>
+          </View>
         </View>
       </View>
     </BasicLayout>

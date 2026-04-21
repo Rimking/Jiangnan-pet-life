@@ -1,68 +1,57 @@
-import BasicLayout from '@/layout/basicLayout';
-import { mockPets, mockBadges, mockUser } from '@/constants/mockData';
+﻿import BasicLayout from '@/layout/basicLayout';
 import Taro from '@tarojs/taro';
 import { View, Text, ScrollView } from '@tarojs/components';
-import { memo } from 'react';
-import { theme, gradients, shadows, borderRadius, typography } from '@/styles/theme';
+import { memo, useMemo } from 'react';
+import { useAtom } from 'jotai';
+import {
+  careRecordsAtom,
+  currentPetAtom,
+  dailyRecordsAtom,
+  expenseRecordsAtom,
+  petsAtom,
+  schedulesAtom,
+  userAtom,
+} from '@/store';
+import { mockBadges } from '@/constants/mockData';
+import { borderRadius, gradients, shadows, theme, typography } from '@/styles/theme';
 import { formatPetAge, getCompanionDays } from '@/utils/petUtils';
+import { getExpenseTotal, getTodayPendingCount } from '@/utils/dashboard';
 
 const PetOwner = memo(function PetOwner() {
-  const user = mockUser;
-  const unlockedBadges = mockBadges.filter((b) => b.isUnlocked);
+  const [user] = useAtom(userAtom);
+  const [pets] = useAtom(petsAtom);
+  const [currentPet] = useAtom(currentPetAtom);
+  const [schedules] = useAtom(schedulesAtom);
+  const [expenseRecords] = useAtom(expenseRecordsAtom);
+  const [careRecords] = useAtom(careRecordsAtom);
+  const [dailyRecords] = useAtom(dailyRecordsAtom);
 
-  // 功能入口
+  const currentPetId = currentPet?.id;
+
+  const unlockedBadges = useMemo(() => mockBadges.filter((b) => b.isUnlocked), []);
+  const todayPending = useMemo(() => getTodayPendingCount(schedules, currentPetId), [schedules, currentPetId]);
+  const expenseTotal = useMemo(() => getExpenseTotal(expenseRecords, currentPetId), [expenseRecords, currentPetId]);
+  const careCount = useMemo(
+    () => careRecords.filter((r) => !currentPetId || r.petId === currentPetId).length,
+    [careRecords, currentPetId],
+  );
+  const dailyCount = useMemo(
+    () => dailyRecords.filter((r) => !currentPetId || r.petId === currentPetId).length,
+    [dailyRecords, currentPetId],
+  );
+
   const menuItems = [
-    { icon: '💰', title: '花销记录', subtitle: '查看养宠花销', route: '/pages/ExpenseRecord/index', color: gradients.pink },
-    { icon: '📊', title: '数据统计', subtitle: '查看宠物数据', route: '/pages/DataStatistics/index', color: gradients.cyan },
-    { icon: '📷', title: '成长相册', subtitle: '记录美好时光', route: '/pages/PhotoAlbum/index', color: gradients.orange },
-    { icon: '📅', title: '日程管理', subtitle: '管理宠物日程', route: '/pages/PetSchedule/index', isTabBar: true, color: gradients.primary },
-    { icon: '🧮', title: '年龄换算', subtitle: '宠物年龄计算', route: '/pages/AgeCalculator/index', color: gradients.blueGreen },
-    { icon: '⏰', title: '成长时光', subtitle: '时光轴记录', route: '/pages/Timeline/index', color: gradients.purplePink },
+    { title: '花销记录', route: '/pages/ExpenseRecord/index', value: `¥${expenseTotal.toFixed(2)}` },
+    { title: '护理记录', route: '/pages/CareRecord/index', value: `${careCount} 条` },
+    { title: '日常记录', route: '/pages/AddPetRecord/index', value: `${dailyCount} 条` },
+    { title: '今日日程', route: '/pages/PetSchedule/index', value: `${todayPending} 条待办` },
+    { title: '数据统计', route: '/pages/DataStatistics/index', value: '查看详情' },
+    { title: '成长时光', route: '/pages/Timeline/index', value: '查看时间轴' },
   ];
-
-  const settingsItems = [
-    { icon: '🎨', title: '主题皮肤', route: '/pages/PetDetailPage/index' },
-    { icon: '🔔', title: '消息提醒', route: '/pages/PetDetailPage/index' },
-    { icon: '☁️', title: '云端存储', route: '/pages/PetDetailPage/index' },
-    { icon: '🗑️', title: '清除缓存', route: '', value: '12.5MB' },
-    { icon: '📱', title: '版本更新', route: '', value: 'V1.0.0' },
-    { icon: '🚪', title: '退出登录', route: 'logout', isDanger: true },
-  ];
-
-  const handleMenuClick = (route: string, isTabBar?: boolean) => {
-    if (isTabBar) {
-      Taro.switchTab({ url: route });
-    } else if (route === 'logout') {
-      Taro.showModal({
-        title: '退出登录',
-        content: '确定要退出登录吗？',
-        success: (res) => {
-          if (res.confirm) {
-            Taro.showToast({ title: '已退出登录', icon: 'none' });
-          }
-        },
-      });
-    } else if (route) {
-      Taro.navigateTo({ url: route });
-    }
-  };
 
   return (
-    <BasicLayout
-      navOptions={{
-        navTitle: '个人中心',
-        needBack: false,
-        useGradient: true,
-      }}
-    >
-      <ScrollView
-        style={{
-          marginTop: '96rpx',
-          paddingBottom: '160rpx',
-        }}
-        scrollY
-      >
-        {/* 用户信息卡片 */}
+    <BasicLayout navOptions={{ navTitle: '个人中心', needBack: false, useGradient: true }}>
+      <ScrollView style={{ marginTop: '96rpx', paddingBottom: '160rpx' }} scrollY>
         <View
           style={{
             margin: '32rpx',
@@ -72,223 +61,55 @@ const PetOwner = memo(function PetOwner() {
             boxShadow: shadows.strong,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: '24rpx' }}>
-            <View
-              style={{
-                width: '120rpx',
-                height: '120rpx',
-                borderRadius: '60rpx',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginRight: '24rpx',
-              }}
-            >
-              <Text style={{ fontSize: '64rpx', color: 'white' }}>{user.avatar}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: 'white', marginBottom: '8rpx' }}>{user.name}</Text>
-              <Text style={{ fontSize: typography.fontSize.sm, color: 'rgba(255, 255, 255, 0.9)' }}>养宠 {user.petYears} 年 · {mockPets.length} 只宠物</Text>
-            </View>
-          </View>
-          
-          {/* 统计数据 */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingTop: '24rpx', borderTopWidth: '1rpx', borderTopColor: 'rgba(255, 255, 255, 0.2)' }}>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: 'white' }}>{mockPets.length}</Text>
-              <Text style={{ fontSize: typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.9)', marginTop: '4rpx' }}>宠物</Text>
-            </View>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: 'white' }}>{unlockedBadges.length}</Text>
-              <Text style={{ fontSize: typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.9)', marginTop: '4rpx' }}>徽章</Text>
-            </View>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: 'white' }}>{getCompanionDays(mockPets[0]?.adoptionDate || new Date().toISOString())}</Text>
-              <Text style={{ fontSize: typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.9)', marginTop: '4rpx' }}>陪伴天数</Text>
-            </View>
+          <Text style={{ color: '#fff', fontSize: typography.fontSize.lg }}>{user.name}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: typography.fontSize.sm }}>
+            当前宠物：{currentPet?.name ?? '未选择'} · 已管理 {pets.length} 只
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: typography.fontSize.xs, marginTop: '8rpx' }}>
+            陪伴天数：{getCompanionDays(currentPet?.adoptionDate || new Date().toISOString())}
+          </Text>
+          <View
+            style={{ marginTop: '16rpx', padding: '10rpx 16rpx', borderRadius: borderRadius.full, background: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start' }}
+            onClick={() => Taro.navigateTo({ url: '/pages/PetList/index' })}
+          >
+            <Text style={{ color: '#fff', fontSize: typography.fontSize.xs }}>切换宠物</Text>
           </View>
         </View>
 
-        {/* 功能菜单 */}
-        <View
-          style={{
-            margin: '0 32rpx 32rpx',
-            padding: '32rpx',
-            background: '#FFFFFF',
-            borderRadius: borderRadius.large,
-            boxShadow: shadows.card,
-          }}
-        >
-          <Text style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: theme.text.primary, marginBottom: '24rpx' }}>功能中心</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: '24rpx' }}>
-            {menuItems.map((item, index) => (
-              <View
-                key={index}
-                style={{
-                  width: '300rpx',
-                  padding: '24rpx',
-                  background: gradients.cardBg,
-                  borderRadius: borderRadius.medium,
-                  boxShadow: shadows.soft,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }}
-                onClick={() => handleMenuClick(item.route, item.isTabBar)}
-              >
-                <View
-                  style={{
-                    width: '64rpx',
-                    height: '64rpx',
-                    borderRadius: borderRadius.medium,
-                    background: `${item.color}20`,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginRight: '16rpx',
-                  }}
-                >
-                  <Text style={{ fontSize: '32rpx' }}>{item.icon}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.medium, color: theme.text.primary, marginBottom: '4rpx' }}>{item.title}</Text>
-                  <Text style={{ fontSize: typography.fontSize.xs, color: theme.text.tertiary }}>{item.subtitle}</Text>
-                </View>
-                <Text style={{ fontSize: '24rpx', color: theme.text.tertiary }}>›</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* 宠物列表 */}
-        <View
-          style={{
-            margin: '0 32rpx 32rpx',
-            padding: '32rpx',
-            background: '#FFFFFF',
-            borderRadius: borderRadius.large,
-            boxShadow: shadows.card,
-          }}
-        >
-          <Text style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: theme.text.primary, marginBottom: '24rpx' }}>我的宠物</Text>
-          {mockPets.map((pet, index) => (
+        <View style={{ margin: '0 32rpx 24rpx', padding: '24rpx', background: '#fff', borderRadius: borderRadius.large, boxShadow: shadows.card }}>
+          <Text style={{ fontSize: typography.fontSize.lg, color: theme.text.primary, marginBottom: '16rpx' }}>功能中心</Text>
+          {menuItems.map((item) => (
             <View
-              key={pet.id}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: '20rpx',
-                borderBottomWidth: index < mockPets.length - 1 ? '1rpx' : '0',
-                borderBottomColor: '#F0F0F5',
-              }}
+              key={item.route}
+              style={{ paddingTop: '16rpx', paddingBottom: '16rpx', borderBottomWidth: '1rpx', borderBottomColor: '#F0F0F5', flexDirection: 'row', justifyContent: 'space-between' }}
+              onClick={() => Taro.navigateTo({ url: item.route })}
             >
-              <View
-                style={{
-                  width: '80rpx',
-                  height: '80rpx',
-                  borderRadius: '40rpx',
-                  background: `${theme.primary.main}20`,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginRight: '20rpx',
-                }}
-              >
-                <Text style={{ fontSize: '40rpx' }}>{pet.avatar}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.medium, color: theme.text.primary, marginBottom: '4rpx' }}>{pet.name}</Text>
-                <Text style={{ fontSize: typography.fontSize.sm, color: theme.text.tertiary }}>{formatPetAge(pet.birthday)} · {pet.breed}</Text>
-              </View>
-              <Text style={{ fontSize: '24rpx', color: theme.text.tertiary }}>›</Text>
+              <Text style={{ color: theme.text.primary }}>{item.title}</Text>
+              <Text style={{ color: theme.text.tertiary, fontSize: typography.fontSize.xs }}>{item.value}</Text>
             </View>
           ))}
         </View>
 
-        {/* 设置选项 */}
-        <View
-          style={{
-            margin: '0 32rpx 32rpx',
-            padding: '32rpx',
-            background: '#FFFFFF',
-            borderRadius: borderRadius.large,
-            boxShadow: shadows.card,
-          }}
-        >
-          <Text style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: theme.text.primary, marginBottom: '24rpx' }}>设置</Text>
-          {settingsItems.map((item, index) => (
-            <View
-              key={index}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingVertical: '20rpx',
-                borderBottomWidth: index < settingsItems.length - 1 ? '1rpx' : '0',
-                borderBottomColor: '#F0F0F5',
-              }}
-              onClick={() => handleMenuClick(item.route)}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: '32rpx', marginRight: '20rpx' }}>{item.icon}</Text>
-                <Text style={{ fontSize: typography.fontSize.md, color: item.isDanger ? theme.status.danger : theme.text.primary }}>{item.title}</Text>
+        <View style={{ margin: '0 32rpx 24rpx', padding: '24rpx', background: '#fff', borderRadius: borderRadius.large, boxShadow: shadows.card }}>
+          <Text style={{ fontSize: typography.fontSize.lg, color: theme.text.primary, marginBottom: '16rpx' }}>我的宠物</Text>
+          {pets.map((pet) => {
+            const active = pet.id === currentPetId;
+            return (
+              <View key={pet.id} style={{ paddingTop: '14rpx', paddingBottom: '14rpx' }}>
+                <Text>{pet.avatar} {pet.name} {active ? '· 当前' : ''}</Text>
+                <Text style={{ fontSize: typography.fontSize.xs, color: theme.text.tertiary }}>{formatPetAge(pet.birthday)} · {pet.breed}</Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                {item.value && (
-                  <Text style={{ fontSize: typography.fontSize.sm, color: theme.text.tertiary, marginRight: '12rpx' }}>{item.value}</Text>
-                )}
-                <Text style={{ fontSize: '24rpx', color: theme.text.tertiary }}>›</Text>
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
-        {/* 徽章展示 */}
-        <View
-          style={{
-            margin: '0 32rpx 32rpx',
-            padding: '32rpx',
-            background: gradients.cardBg,
-            borderRadius: borderRadius.large,
-            boxShadow: shadows.card,
-            borderWidth: '2rpx',
-            borderColor: '#F0F0F5',
-          }}
-        >
-          <Text style={{ fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: theme.text.primary, marginBottom: '24rpx' }}>我的徽章</Text>
-          <ScrollView scrollX style={{ flexDirection: 'row', gap: '20rpx', paddingBottom: '16rpx' }}>
-            {unlockedBadges.map((badge, index) => (
-              <View
-                key={badge.id}
-                style={{
-                  alignItems: 'center',
-                }}
-              >
-                <View
-                  style={{
-                    width: '80rpx',
-                    height: '80rpx',
-                    borderRadius: '40rpx',
-                    background: gradients.cardBg,
-                    boxShadow: shadows.soft,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: '8rpx',
-                  }}
-                >
-                  <Text style={{ fontSize: '40rpx' }}>{badge.icon}</Text>
-                </View>
-                <Text style={{ fontSize: typography.fontSize.xs, color: theme.text.secondary, textAlign: 'center', width: '100rpx' }}>{badge.name}</Text>
-              </View>
+        <View style={{ margin: '0 32rpx 24rpx', padding: '24rpx', background: '#fff', borderRadius: borderRadius.large, boxShadow: shadows.card }}>
+          <Text style={{ fontSize: typography.fontSize.lg, color: theme.text.primary, marginBottom: '16rpx' }}>我的徽章</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: '12rpx' }}>
+            {unlockedBadges.map((badge) => (
+              <Text key={badge.id}>{badge.icon} {badge.name}</Text>
             ))}
-          </ScrollView>
-        </View>
-
-        {/* 底部版本信息 */}
-        <View style={{ alignItems: 'center', marginBottom: '32rpx' }}>
-          <Text style={{ fontSize: typography.fontSize.xs, color: theme.text.tertiary }}>Cy-Pet v1.0.0</Text>
-          <Text style={{ fontSize: typography.fontSize.xs, color: theme.text.tertiary, marginTop: '4rpx' }}>© 2024 Cy-Pet Team</Text>
+          </View>
         </View>
       </ScrollView>
     </BasicLayout>
