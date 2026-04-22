@@ -1,5 +1,6 @@
-import { View, Text } from '@tarojs/components';
-import { memo } from 'react';
+﻿import { View, Text } from '@tarojs/components';
+import { memo, useState } from 'react';
+import { showDemoPendingToast } from '@/utils/demoToast';
 
 interface MenuItemProps {
   icon: string;
@@ -8,6 +9,7 @@ interface MenuItemProps {
   hasArrow?: boolean;
   hasBadge?: boolean;
   badgeText?: string;
+  onClick?: () => void;
 }
 
 const MenuItem = memo(function MenuItem({
@@ -17,27 +19,49 @@ const MenuItem = memo(function MenuItem({
   hasArrow = true,
   hasBadge = false,
   badgeText,
+  onClick,
 }: MenuItemProps) {
+  const [pressed, setPressed] = useState(false);
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+      return;
+    }
+    showDemoPendingToast(title);
+  };
+
   return (
-    <View className="menu-item bg-white rounded-xl p-4 mb-3 shadow-sm flex items-center justify-between">
+    <View
+      className="bg-white rounded-[24rpx] p-[24rpx] mb-[16rpx] border-[2rpx] border-[#262626] flex items-center justify-between"
+      style={{
+        boxShadow: pressed ? '0 4rpx 0 rgba(0,0,0,0.2)' : '0 10rpx 0 rgba(0,0,0,0.18)',
+        transform: pressed ? 'translateY(6rpx)' : 'translateY(0)',
+        transition: 'all .15s ease',
+      }}
+      onClick={handleClick}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      onTouchCancel={() => setPressed(false)}
+    >
       <View className="flex items-center flex-1">
-        <View className="w-11 h-11 rounded-xl bg-yellow-50 flex items-center justify-center mr-3.5 shadow-sm">
-          <Text className="text-3xl">{icon}</Text>
+        <View className="w-[72rpx] h-[72rpx] rounded-[20rpx] bg-[#FFF6CE] border-[2rpx] border-[#262626] flex items-center justify-center mr-[20rpx]">
+          <Text className="text-[34rpx] leading-none">{icon}</Text>
         </View>
         <View className="flex-1">
-          <Text className="text-base font-semibold mb-1 block text-gray-800">{title}</Text>
-          {subtitle && <Text className="text-sm text-gray-400">{subtitle}</Text>}
+          <Text className="text-[30rpx] font-semibold mb-[6rpx] block text-[#1F1F1F]">{title}</Text>
+          {subtitle && <Text className="text-[24rpx] text-[#7A7A7A]">{subtitle}</Text>}
         </View>
       </View>
-      <View className="flex items-center gap-2.5">
+      <View className="flex items-center gap-[12rpx]">
         {hasBadge && (
-          <View className="px-2.5 py-1.5 bg-red-500 rounded-lg shadow-sm">
-            <Text className="text-xs text-white font-semibold">{badgeText}</Text>
+          <View className="px-[12rpx] py-[6rpx] bg-[#FF5A5F] rounded-[12rpx] border-[2rpx] border-[#262626]">
+            <Text className="text-[20rpx] text-white font-semibold">{badgeText}</Text>
           </View>
         )}
         {hasArrow && (
-          <View className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center">
-            <Text className="text-base text-gray-400">→</Text>
+          <View className="w-[46rpx] h-[46rpx] rounded-full bg-[#F1F1F1] border-[2rpx] border-[#262626] flex items-center justify-center">
+            <Text className="text-[24rpx] text-[#7A7A7A]">›</Text>
           </View>
         )}
       </View>

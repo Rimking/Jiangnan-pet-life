@@ -2,8 +2,8 @@
 import { View, Text, Input } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { memo, useMemo, useState } from 'react';
-import { addCareLog, addExpense, addRecord } from '@/utils/petData';
 import { PET_UI } from '@/constants/petUi';
+import { showDemoSuccessToast } from '@/utils/demoToast';
 
 type RecordMode = 'record' | 'expense' | 'care';
 
@@ -42,7 +42,6 @@ const AddPetRecord = memo(function AddPetRecord() {
   }, [params.date]);
 
   const initialMode = (params.mode as RecordMode) || 'record';
-  const petId = params.petId || 'pet-fire';
 
   const [mode, setMode] = useState<RecordMode>(initialMode);
 
@@ -69,19 +68,16 @@ const AddPetRecord = memo(function AddPetRecord() {
   };
 
   const handleSave = () => {
+    if (!date.trim() || !time.trim()) {
+      Taro.showToast({ title: '请填写日期和时间', icon: 'none' });
+      return;
+    }
+
     if (mode === 'record') {
       if (!category.trim()) {
         Taro.showToast({ title: '请填写记录分类', icon: 'none' });
         return;
       }
-      addRecord({
-        petId,
-        category: category.trim(),
-        value: value.trim(),
-        note: note.trim(),
-        date,
-        time,
-      });
     }
 
     if (mode === 'expense') {
@@ -90,14 +86,6 @@ const AddPetRecord = memo(function AddPetRecord() {
         Taro.showToast({ title: '请填写正确花销', icon: 'none' });
         return;
       }
-      addExpense({
-        petId,
-        category: category.trim(),
-        amount: amountNumber,
-        note: note.trim(),
-        date,
-        time,
-      });
     }
 
     if (mode === 'care') {
@@ -105,18 +93,9 @@ const AddPetRecord = memo(function AddPetRecord() {
         Taro.showToast({ title: '请填写护理类型', icon: 'none' });
         return;
       }
-      addCareLog({
-        petId,
-        careType: careType.trim(),
-        result: careResult.trim() || '已完成',
-        note: note.trim(),
-        date,
-        time,
-        nextDate: nextDate.trim() || undefined,
-      });
     }
 
-    Taro.showToast({ title: '记录已保存', icon: 'success' });
+    showDemoSuccessToast('记录已保存');
     setTimeout(() => Taro.navigateBack(), 300);
   };
 
@@ -132,45 +111,45 @@ const AddPetRecord = memo(function AddPetRecord() {
         needBack: true,
       }}
     >
-      <View className="p-8 pb-[120px]">
+      <View className="p-8 pb-[120rpx]">
         <View className="flex gap-2 mb-5">
           <View
-            className="flex-1 h-[64px] rounded-[14px] border-[2px] border-solid border-[#262626] flex items-center justify-center"
+            className="flex-1 h-[64rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
             style={{ backgroundColor: mode === 'record' ? '#ffd93b' : '#f4f4f4' }}
             onClick={() => setMode('record')}
           >
-            <Text className="text-[24px]">日常</Text>
+            <Text className="text-[24rpx]">日常</Text>
           </View>
           <View
-            className="flex-1 h-[64px] rounded-[14px] border-[2px] border-solid border-[#262626] flex items-center justify-center"
+            className="flex-1 h-[64rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
             style={{ backgroundColor: mode === 'expense' ? '#ffc6a1' : '#f4f4f4' }}
             onClick={() => setMode('expense')}
           >
-            <Text className="text-[24px]">花销</Text>
+            <Text className="text-[24rpx]">花销</Text>
           </View>
           <View
-            className="flex-1 h-[64px] rounded-[14px] border-[2px] border-solid border-[#262626] flex items-center justify-center"
+            className="flex-1 h-[64rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
             style={{ backgroundColor: mode === 'care' ? '#bdeeff' : '#f4f4f4' }}
             onClick={() => setMode('care')}
           >
-            <Text className="text-[24px]">护理</Text>
+            <Text className="text-[24rpx]">护理</Text>
           </View>
         </View>
 
-        <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
-          <Text className="text-[22px] text-[#666]">日期</Text>
+        <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
+          <Text className="text-[22rpx] text-[#666]">日期</Text>
           <Input
-            className="h-[72px] text-[28px] mt-2"
+            className="h-[72rpx] text-[28rpx] mt-2"
             value={date}
             onInput={(event) => setDate(event.detail.value)}
             placeholder="YYYY-MM-DD"
           />
         </View>
 
-        <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
-          <Text className="text-[22px] text-[#666]">时间</Text>
+        <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
+          <Text className="text-[22rpx] text-[#666]">时间</Text>
           <Input
-            className="h-[72px] text-[28px] mt-2"
+            className="h-[72rpx] text-[28rpx] mt-2"
             value={time}
             onInput={(event) => setTime(event.detail.value)}
             placeholder="HH:mm"
@@ -182,11 +161,11 @@ const AddPetRecord = memo(function AddPetRecord() {
             {RECORD_TEMPLATE.map((item) => (
               <View
                 key={item}
-                className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626]"
+                className="px-3 py-1 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
                 style={{ backgroundColor: category === item ? '#ffd93b' : '#f4f4f4' }}
                 onClick={() => setCategory(item)}
               >
-                <Text className="text-[22px]">{item}</Text>
+                <Text className="text-[22rpx]">{item}</Text>
               </View>
             ))}
           </View>
@@ -197,21 +176,21 @@ const AddPetRecord = memo(function AddPetRecord() {
             {EXPENSE_TEMPLATE.map((item) => (
               <View
                 key={item}
-                className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626]"
+                className="px-3 py-1 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
                 style={{ backgroundColor: category === item ? '#ffc6a1' : '#f4f4f4' }}
                 onClick={() => setCategory(item)}
               >
-                <Text className="text-[22px]">{item}</Text>
+                <Text className="text-[22rpx]">{item}</Text>
               </View>
             ))}
           </View>
         ) : null}
 
         {mode !== 'care' ? (
-          <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
-            <Text className="text-[22px] text-[#666]">分类</Text>
+          <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
+            <Text className="text-[22rpx] text-[#666]">分类</Text>
             <Input
-              className="h-[72px] text-[28px] mt-2"
+              className="h-[72rpx] text-[28rpx] mt-2"
               value={category}
               onInput={(event) => setCategory(event.detail.value)}
               placeholder="如：喝水、猫粮、玩具"
@@ -220,10 +199,10 @@ const AddPetRecord = memo(function AddPetRecord() {
         ) : null}
 
         {mode === 'record' ? (
-          <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
-            <Text className="text-[22px] text-[#666]">记录值</Text>
+          <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
+            <Text className="text-[22rpx] text-[#666]">记录值</Text>
             <Input
-              className="h-[72px] text-[28px] mt-2"
+              className="h-[72rpx] text-[28rpx] mt-2"
               value={value}
               onInput={(event) => setValue(event.detail.value)}
               placeholder="如：250ml / 1次"
@@ -232,10 +211,10 @@ const AddPetRecord = memo(function AddPetRecord() {
         ) : null}
 
         {mode === 'expense' ? (
-          <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
-            <Text className="text-[22px] text-[#666]">金额（元）</Text>
+          <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
+            <Text className="text-[22rpx] text-[#666]">金额（元）</Text>
             <Input
-              className="h-[72px] text-[28px] mt-2"
+              className="h-[72rpx] text-[28rpx] mt-2"
               value={amount}
               onInput={(event) => setAmount(event.detail.value)}
               placeholder="如：89"
@@ -250,19 +229,19 @@ const AddPetRecord = memo(function AddPetRecord() {
               {CARE_TEMPLATE.map((item) => (
                 <View
                   key={item.name}
-                  className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626]"
+                  className="px-3 py-1 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
                   style={{ backgroundColor: careType === item.name ? '#bdeeff' : '#f4f4f4' }}
                   onClick={() => handleSelectCareTemplate(item.name)}
                 >
-                  <Text className="text-[22px]">{item.name}</Text>
+                  <Text className="text-[22rpx]">{item.name}</Text>
                 </View>
               ))}
             </View>
 
-            <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
-              <Text className="text-[22px] text-[#666]">护理类型</Text>
+            <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
+              <Text className="text-[22rpx] text-[#666]">护理类型</Text>
               <Input
-                className="h-[72px] text-[28px] mt-2"
+                className="h-[72rpx] text-[28rpx] mt-2"
                 value={careType}
                 onInput={(event) => setCareType(event.detail.value)}
                 placeholder="如：驱虫、洗护、体检"
@@ -273,19 +252,19 @@ const AddPetRecord = memo(function AddPetRecord() {
               {RESULT_TEMPLATE.map((item) => (
                 <View
                   key={item}
-                  className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626]"
+                  className="px-3 py-1 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
                   style={{ backgroundColor: careResult === item ? '#d9f5e4' : '#f4f4f4' }}
                   onClick={() => setCareResult(item)}
                 >
-                  <Text className="text-[22px]">{item}</Text>
+                  <Text className="text-[22rpx]">{item}</Text>
                 </View>
               ))}
             </View>
 
-            <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
-              <Text className="text-[22px] text-[#666]">结果</Text>
+            <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
+              <Text className="text-[22rpx] text-[#666]">结果</Text>
               <Input
-                className="h-[72px] text-[28px] mt-2"
+                className="h-[72rpx] text-[28rpx] mt-2"
                 value={careResult}
                 onInput={(event) => setCareResult(event.detail.value)}
                 placeholder="如：已完成 / 异常观察"
@@ -296,18 +275,18 @@ const AddPetRecord = memo(function AddPetRecord() {
               {[14, 30, 90].map((days) => (
                 <View
                   key={days}
-                  className="px-3 py-1 rounded-[16px] border-[2px] border-solid border-[#262626] bg-[#eef7ff]"
+                  className="px-3 py-1 rounded-[16rpx] border-[2rpx] border-solid border-[#262626] bg-[#eef7ff]"
                   onClick={() => setNextDate(addDays(date, days))}
                 >
-                  <Text className="text-[22px]">+{days}天</Text>
+                  <Text className="text-[22rpx]">+{days}天</Text>
                 </View>
               ))}
             </View>
 
-            <View className="mb-5 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
-              <Text className="text-[22px] text-[#666]">下次日期（可选）</Text>
+            <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
+              <Text className="text-[22rpx] text-[#666]">下次日期（可选）</Text>
               <Input
-                className="h-[72px] text-[28px] mt-2"
+                className="h-[72rpx] text-[28rpx] mt-2"
                 value={nextDate}
                 onInput={(event) => setNextDate(event.detail.value)}
                 placeholder="YYYY-MM-DD，填写后自动生成提醒"
@@ -316,10 +295,10 @@ const AddPetRecord = memo(function AddPetRecord() {
           </>
         ) : null}
 
-        <View className="mb-10 border-[3px] border-black border-solid rounded-[16px] bg-[#f4f4f4] p-4">
-          <Text className="text-[22px] text-[#666]">备注</Text>
+        <View className="mb-10 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
+          <Text className="text-[22rpx] text-[#666]">备注</Text>
           <Input
-            className="h-[72px] text-[28px] mt-2"
+            className="h-[72rpx] text-[28rpx] mt-2"
             value={note}
             onInput={(event) => setNote(event.detail.value)}
             placeholder="可选"
@@ -327,10 +306,10 @@ const AddPetRecord = memo(function AddPetRecord() {
         </View>
 
         <View
-          className="w-full h-[96px] border-[3px] border-black border-solid bg-[#FFD93B] rounded-[50px] flex items-center justify-center"
+          className="w-full h-[96rpx] border-[3rpx] border-black border-solid bg-[#FFD93B] rounded-[50rpx] flex items-center justify-center"
           onClick={handleSave}
         >
-          <Text className="text-[32px] font-bold">保存记录</Text>
+          <Text className="text-[32rpx] font-bold">保存记录</Text>
         </View>
       </View>
     </BasicLayout>
@@ -338,3 +317,7 @@ const AddPetRecord = memo(function AddPetRecord() {
 });
 
 export default AddPetRecord;
+
+
+
+

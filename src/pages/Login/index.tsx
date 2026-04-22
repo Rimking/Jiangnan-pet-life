@@ -1,36 +1,38 @@
-import BasicLayout from '@/layout/basicLayout';
+﻿import BasicLayout from '@/layout/basicLayout';
 import { Image, Text, View } from '@tarojs/components';
 import { memo } from 'react';
+import Taro from '@tarojs/taro';
 import LogoSvg from '@/assets/logoIcon/login-icon.svg';
+import { showDemoSuccessToast } from '@/utils/demoToast';
 
-// 登录页
-const Login = memo(function PetProfile() {
+const Login = memo(function Login() {
   return (
     <BasicLayout
-      wrapClassName="w-[100vw]  flex flex-col justify-center items-center "
-      wrapStyle={{
-        backgroundImage: 'linear-gradient( to bottom ,#FFE68D 10%, #FFFCE0 100%)',
-        height: '100vh',
-      }}
-      navOptions={{
-        navTitle: '',
-        needBack: false,
-      }}
+      wrapClassName="w-[100vw] h-[100vh] flex flex-col justify-center items-center px-6"
+      wrapStyle={{ background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)' }}
+      navOptions={{ navTitle: '', needBack: false }}
+    >
+      <View className="w-[320rpx] h-[320rpx] rounded-[24rpx] mb-6 bg-white border-[3rpx] border-[#262626] flex items-center justify-center">
+        <Image src={LogoSvg} className="w-[200rpx] h-[200rpx]" />
+      </View>
+
+      <Text className="text-[34rpx] font-semibold text-[#333] mb-2">欢迎来到宠物世界</Text>
+      <Text className="text-[24rpx] text-[#6a6a6a] mb-8">先登录，再开始你的养宠记录</Text>
+
+      <View
+        className="w-[360rpx] h-[84rpx] bg-[#F88D4C] rounded-[42rpx] border-[3rpx] border-[#262626] flex items-center justify-center"
+        onClick={() => {
+          showDemoSuccessToast('登录成功');
+          setTimeout(() => Taro.switchTab({ url: '/pages/PetProfile/index' }), 350);
+        }}
       >
-          {/* 登录页的内容 */}
-          <View className="w-[320rpx] h-[320rpx] bg-red-300 rounded-[20rpx] mb-5 flex items-center justify-center">
-            <Image src={LogoSvg} className="w-[200rpx] h-[200rpx]" />
-          </View>
-          {/* 欢迎来到宠物世界 */}
-          <View className="w-full h-[80rpx]  flex items-center justify-center">
-            <Text className="text-[28rpx]">欢迎来到宠物世界</Text>
-          </View>
-          {/* 微信登录 */}
-          <View className="w-[320rpx] h-[80rpx] bg-[#F88D4C] rounded-[40rpx] flex items-center justify-center">
-            <Text className="text-[28rpx] text-[#FFF]">微信登录</Text>
-          </View>
+        <Text className="text-[28rpx] text-[#FFF] font-semibold">微信登录</Text>
+      </View>
     </BasicLayout>
   );
 });
 
 export default Login;
+
+
+

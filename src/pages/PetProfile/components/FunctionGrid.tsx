@@ -1,6 +1,6 @@
 ﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
-import { PET_UI, PET_UI_SHADOW } from '@/constants/petUi';
+import { PET_UI, PET_UI_SHADOW, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 
 interface Props {
   petName: string;
@@ -17,9 +17,15 @@ interface Props {
 }
 
 const cardStyle = {
-  borderColor: PET_UI.cardBorderColor,
+  border: PET_UI_BORDER.strong,
+  borderRadius: PET_UI_RADIUS.md,
   backgroundColor: PET_UI.panelBackground,
   boxShadow: PET_UI_SHADOW,
+};
+
+const metricRowStyle = {
+  border: PET_UI_BORDER.regular,
+  borderRadius: PET_UI_RADIUS.sm,
 };
 
 const FunctionGrid = memo(function FunctionGrid({
@@ -31,51 +37,47 @@ const FunctionGrid = memo(function FunctionGrid({
   onAddRecord,
 }: Props) {
   return (
-    <View className="w-full h-[360px] px-[36px] py-4 gap-[20px] flex justify-between">
-      <View className="w-[330px] h-full rounded-[16px] border-[4px] border-solid" style={cardStyle}>
-        <View className="w-full h-full flex flex-col justify-center items-center gap-3 px-3">
-          <View className="w-full h-[56px] rounded-[12px] bg-white border-[2px] border-solid border-[#262626] flex items-center justify-between px-4">
-            <Text className="text-[26px]">今日提醒</Text>
-            <Text className="text-[27px] text-[#ff6b6b]">{stats.reminders}</Text>
+    <View className="w-full h-[340rpx] px-[28rpx] py-[12rpx] gap-[14rpx] flex justify-between">
+      <View className="w-[324rpx] h-full border-solid" style={cardStyle}>
+        <View className="w-full h-full flex flex-col justify-center items-center gap-[10rpx] px-[10rpx]">
+          <View className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]" style={metricRowStyle}>
+            <Text style={{ fontSize: PET_UI_TEXT.body }}>今日提醒</Text>
+            <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.body }}>{stats.reminders}</Text>
           </View>
 
           <View
-            className="w-full h-[56px] rounded-[12px] bg-white border-[2px] border-solid border-[#262626] flex items-center justify-between px-4"
+            className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]"
+            style={metricRowStyle}
             onClick={onOpenCare}
           >
-            <Text className="text-[26px]">今日护理</Text>
-            <Text className="text-[27px] text-[#008ecf]">{stats.care}</Text>
+            <Text style={{ fontSize: PET_UI_TEXT.body }}>今日护理</Text>
+            <Text className="text-[#008ecf]" style={{ fontSize: PET_UI_TEXT.body }}>{stats.care}</Text>
           </View>
 
-          <View className="w-full h-[56px] rounded-[12px] bg-white border-[2px] border-solid border-[#262626] flex items-center justify-between px-4">
-            <Text className="text-[26px]">本月花销</Text>
-            <Text className="text-[27px] text-[#ff6b6b]">¥{stats.monthExpense.toFixed(2)}</Text>
+          <View className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]" style={metricRowStyle}>
+            <Text style={{ fontSize: PET_UI_TEXT.body }}>本月花销</Text>
+            <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.body }}>
+              ¥{stats.monthExpense.toFixed(2)}
+            </Text>
           </View>
 
           <View
-            className="w-full h-[56px] rounded-[12px] bg-[#ffd93b] border-[2px] border-solid border-[#262626] flex items-center justify-center"
+            className="w-full h-[54rpx] bg-[#ffd93b] border-solid flex items-center justify-center"
+            style={metricRowStyle}
             onClick={onAddReminder}
           >
-            <Text className="text-[25px] font-medium">给{petName}添加提醒</Text>
+            <Text style={{ fontSize: PET_UI_TEXT.body }}>给{petName}添加提醒</Text>
           </View>
         </View>
       </View>
 
-      <View className="w-[330px] h-full flex gap-4 flex-col justify-between">
-        <View
-          className="w-[330px] h-[170px] rounded-[16px] border-[4px] border-solid flex items-center justify-center"
-          style={cardStyle}
-          onClick={onAddRecord}
-        >
-          <Text className="text-[32px] text-[#ff6b6b]">新增记录</Text>
+      <View className="w-[324rpx] h-full flex gap-[14rpx] flex-col justify-between">
+        <View className="w-[324rpx] h-[162rpx] border-solid flex items-center justify-center" style={cardStyle} onClick={onAddRecord}>
+          <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.heading }}>新增记录</Text>
         </View>
 
-        <View
-          className="w-[330px] h-[170px] rounded-[16px] border-[4px] border-solid flex items-center justify-center"
-          style={cardStyle}
-          onClick={onOpenSchedule}
-        >
-          <Text className="text-[32px] text-[#ff6b6b]">查看完整日程</Text>
+        <View className="w-[324rpx] h-[162rpx] border-solid flex items-center justify-center" style={cardStyle} onClick={onOpenSchedule}>
+          <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.heading }}>查看完整日程</Text>
         </View>
       </View>
     </View>

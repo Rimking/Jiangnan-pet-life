@@ -22,6 +22,16 @@ const routeConfigList = [
     isTabBar: true,
   },
   {
+    path: '/pages/PetArticleDetail/index',
+    title: '文章详情',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/PetQa/index',
+    title: 'AI问答',
+    isTabBar: false,
+  },
+  {
     path: '/pages/PetOwner/index',
     title: '铲屎官',
     isTabBar: true,

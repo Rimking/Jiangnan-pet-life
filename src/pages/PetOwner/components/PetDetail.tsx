@@ -1,102 +1,81 @@
-import { View, Text } from '@tarojs/components';
+﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
+import { PetProfileModel } from '@/types/pet';
 
-const PetDetail = memo(function PetDetail() {
+interface PetDetailProps {
+  pet: PetProfileModel;
+  isActive: boolean;
+  stats: {
+    reminderCount: number;
+    recordCount: number;
+    expenseCount: number;
+    careCount: number;
+  };
+  onBack: () => void;
+  onSetActive: () => void;
+}
+
+const PetDetail = memo(function PetDetail({ pet, isActive, stats, onBack, onSetActive }: PetDetailProps) {
+  const genderLabel = pet.gender === 'male' ? '公' : '母';
+
   return (
-    <View className="pet-detail flex-1" style={{ backgroundColor: '#FFFCE0' }}>
-      <View
-        className="p-[32rpx] border-b border-gray-300 flex items-center bg-white"
-        style={{ borderBottomWidth: '2rpx', boxShadow: '0 4rpx 12rpx rgba(0,0,0,0.05)' }}
-      >
-        <View className="w-[72rpx] h-[72rpx] rounded-full bg-gray-300 flex items-center justify-center mr-[32rpx]">
-          <Text className="text-[32rpx] text-gray-600">←</Text>
+    <View className="flex-1 p-[24rpx] pb-[40rpx]">
+      <View className="bg-white rounded-[24rpx] border-[3rpx] border-[#262626] p-[20rpx] flex items-center justify-between" style={{ boxShadow: '0 10rpx 0 rgba(0,0,0,0.18)' }}>
+        <View
+          className="w-[68rpx] h-[68rpx] rounded-full bg-[#F4F4F4] border-[2rpx] border-[#262626] flex items-center justify-center"
+          onClick={onBack}
+        >
+          <Text className="text-[30rpx]">‹</Text>
         </View>
-        <Text className="text-[36rpx] font-bold flex-1 text-gray-800">宠物详情</Text>
-        <View className="w-[72rpx] h-[72rpx] rounded-full bg-yellow-300 flex items-center justify-center">
-          <Text className="text-[32rpx]">✏️</Text>
+        <Text className="text-[32rpx] font-bold text-[#1f1f1f]">宠物详情</Text>
+        <View
+          className="px-[14rpx] py-[8rpx] rounded-[14rpx] border-[2rpx] border-[#262626]"
+          style={{ backgroundColor: isActive ? '#FFEEE8' : '#F4F4F4' }}
+          onClick={onSetActive}
+        >
+          <Text className="text-[22rpx] text-[#3f3f3f]">{isActive ? '当前宠物' : '设为当前'}</Text>
         </View>
       </View>
 
-      <View className="p-[40rpx]">
-        <View
-          className="bg-white rounded-[40rpx] p-[48rpx] mb-[40rpx] flex flex-col items-center"
-          style={{ boxShadow: '0 8rpx 24rpx rgba(0,0,0,0.08)' }}
-        >
-          <View
-            className="w-[240rpx] h-[240rpx] rounded-full flex items-center justify-center mb-[40rpx]"
-            style={{
-              backgroundColor: '#FFF9E6',
-              boxShadow: '0 8rpx 24rpx rgba(255, 249, 230, 0.4)',
-            }}
-          >
-            <Text className="text-[112rpx]">🐱</Text>
+      <View className="mt-[20rpx] bg-white rounded-[24rpx] border-[3rpx] border-[#262626] p-[24rpx]" style={{ boxShadow: '0 10rpx 0 rgba(0,0,0,0.18)' }}>
+        <View className="flex items-center">
+          <View className="w-[120rpx] h-[120rpx] rounded-full bg-[#FFF6CE] border-[3rpx] border-[#262626] flex items-center justify-center mr-[18rpx]">
+            <Text className="text-[66rpx]">{pet.avatarEmoji}</Text>
           </View>
-          <View className="flex items-center mb-[24rpx]">
-            <Text className="text-[56rpx] font-bold mr-[24rpx] text-gray-800">火火</Text>
-            <Text className="text-[40rpx]" style={{ color: '#FF6B6B' }}>
-              ♂
-            </Text>
-          </View>
-          <Text className="text-[30rpx] text-gray-600 mb-[40rpx]">6个月 | 5kg</Text>
-          <View className="flex gap-[20rpx] flex-wrap justify-center">
-            {['运动', '可爱', '粘人'].map((tag, index) => (
-              <View
-                key={index}
-                className="py-[16rpx] px-[32rpx] bg-yellow-300 rounded-[32rpx]"
-                style={{ boxShadow: '0 4rpx 8rpx rgba(255, 224, 130, 0.2)' }}
-              >
-                <Text className="text-[26rpx] text-gray-600 font-medium">{tag}</Text>
-              </View>
-            ))}
+          <View className="flex-1">
+            <Text className="text-[34rpx] font-bold text-[#1f1f1f]">{pet.name}</Text>
+            <Text className="text-[24rpx] text-[#6b6b6b] mt-[6rpx]">{pet.species} · {pet.weightKg}kg · {genderLabel}</Text>
+            <Text className="text-[24rpx] text-[#6b6b6b] mt-[4rpx]">生日：{pet.birthday}</Text>
           </View>
         </View>
 
-        <View
-          className="bg-white rounded-[32rpx] p-[40rpx] mb-[40rpx]"
-          style={{ boxShadow: '0 4rpx 16rpx rgba(0,0,0,0.06)' }}
-        >
-          <Text className="text-[34rpx] font-bold mb-[40rpx] block text-gray-800">
-            基本信息
-          </Text>
-          <View className="flex justify-between mb-[32rpx]">
-            <View className="flex-1">
-              <Text className="text-[26rpx] text-gray-500 mb-[12rpx] block">品种</Text>
-              <Text className="text-[30rpx] font-semibold text-gray-800">英短</Text>
+        <View className="mt-[20rpx] flex flex-wrap gap-[10rpx]">
+          {pet.tags.map((tag) => (
+            <View key={tag} className="px-[12rpx] py-[8rpx] rounded-[12rpx] bg-[#F7F7F7] border-[2rpx] border-[#262626]">
+              <Text className="text-[22rpx] text-[#505050]">{tag}</Text>
             </View>
-            <View className="flex-1">
-              <Text className="text-[26rpx] text-gray-500 mb-[12rpx] block">生日</Text>
-              <Text className="text-[30rpx] font-semibold text-gray-800">2024-02-15</Text>
-            </View>
-          </View>
-          <View className="flex justify-between">
-            <View className="flex-1">
-              <Text className="text-[26rpx] text-gray-500 mb-[12rpx] block">体重</Text>
-              <Text className="text-[30rpx] font-semibold text-gray-800">5kg</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-[26rpx] text-gray-500 mb-[12rpx] block">性别</Text>
-              <Text className="text-[30rpx] font-semibold" style={{ color: '#FF6B6B' }}>
-                公
-              </Text>
-            </View>
-          </View>
+          ))}
         </View>
+      </View>
 
-        <View className="flex gap-[28rpx] mb-[40rpx]">
-          <View
-            className="flex-1 h-[104rpx] rounded-[52rpx] bg-yellow-400 flex items-center justify-center"
-            style={{ boxShadow: '0 8rpx 24rpx rgba(255, 215, 0, 0.4)' }}
-          >
-            <Text className="text-[34rpx] font-bold text-white">编辑</Text>
+      <View className="mt-[20rpx] bg-white rounded-[24rpx] border-[3rpx] border-[#262626] p-[24rpx]" style={{ boxShadow: '0 10rpx 0 rgba(0,0,0,0.18)' }}>
+        <Text className="text-[28rpx] font-semibold text-[#1f1f1f] mb-[18rpx] block">近期数据</Text>
+        <View className="grid grid-cols-2 gap-[12rpx]">
+          <View className="rounded-[16rpx] bg-[#FFF6CE] p-[16rpx] border-[2rpx] border-[#262626]">
+            <Text className="text-[22rpx] text-[#666]">提醒</Text>
+            <Text className="text-[34rpx] font-bold text-[#1f1f1f]">{stats.reminderCount}</Text>
           </View>
-          <View className="flex-1 h-[104rpx] rounded-[52rpx] bg-white border-[4rpx] border-gray-300 flex items-center justify-center">
-            <Text className="text-[34rpx] font-bold text-gray-600">删除</Text>
+          <View className="rounded-[16rpx] bg-[#EAF8FF] p-[16rpx] border-[2rpx] border-[#262626]">
+            <Text className="text-[22rpx] text-[#666]">记录</Text>
+            <Text className="text-[34rpx] font-bold text-[#1f1f1f]">{stats.recordCount}</Text>
           </View>
-        </View>
-
-        <View className="flex justify-center mb-[40rpx]">
-          <View className="w-[200rpx] h-[200rpx] rounded-full bg-gray-300 flex items-center justify-center opacity-40">
-            <Text className="text-[96rpx]">🐱</Text>
+          <View className="rounded-[16rpx] bg-[#FFEFEF] p-[16rpx] border-[2rpx] border-[#262626]">
+            <Text className="text-[22rpx] text-[#666]">花销</Text>
+            <Text className="text-[34rpx] font-bold text-[#1f1f1f]">{stats.expenseCount}</Text>
+          </View>
+          <View className="rounded-[16rpx] bg-[#F0F3FF] p-[16rpx] border-[2rpx] border-[#262626]">
+            <Text className="text-[22rpx] text-[#666]">护理</Text>
+            <Text className="text-[34rpx] font-bold text-[#1f1f1f]">{stats.careCount}</Text>
           </View>
         </View>
       </View>

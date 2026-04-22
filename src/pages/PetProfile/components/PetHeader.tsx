@@ -1,12 +1,17 @@
 ﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
+import { PET_UI_TEXT } from '@/constants/petUi';
 
 const PetHeader = memo(function PetHeader() {
   return (
-    <View className="px-[36px] py-4 flex justify-between items-start">
+    <View className="px-[28rpx] py-[12rpx] flex justify-between items-start">
       <View>
-        <Text className="text-[40px] font-bold mb-1 block">Hi rimKing</Text>
-        <Text className="text-[28px] text-[#6b6b6b]">Good Morning!</Text>
+        <Text className="font-bold mb-1 block" style={{ fontSize: PET_UI_TEXT.title }}>
+          Hi rimKing
+        </Text>
+        <Text className="text-[#6b6b6b]" style={{ fontSize: PET_UI_TEXT.body }}>
+          Good Morning!
+        </Text>
       </View>
     </View>
   );

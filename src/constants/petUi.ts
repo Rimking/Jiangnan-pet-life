@@ -11,3 +11,22 @@
 };
 
 export const PET_UI_SHADOW = '0 6px 12px rgba(0, 0, 0, 0.08)';
+
+export const PET_UI_RADIUS = {
+  sm: '14px',
+  md: '18px',
+  lg: '22px',
+  pill: '999px',
+};
+
+export const PET_UI_TEXT = {
+  title: '34rpx',
+  heading: '30rpx',
+  body: '26rpx',
+  caption: '22rpx',
+};
+
+export const PET_UI_BORDER = {
+  regular: `2px solid ${PET_UI.cardBorderColor}`,
+  strong: `3px solid ${PET_UI.cardBorderColor}`,
+};

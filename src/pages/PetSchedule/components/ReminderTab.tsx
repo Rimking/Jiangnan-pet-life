@@ -1,6 +1,7 @@
 ﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
 import { PetReminderModel } from '@/types/pet';
+import { PET_UI, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 
 interface Props {
   reminders: PetReminderModel[];
@@ -16,6 +17,12 @@ const reminderTypeMap = {
 };
 const defaultTypeMeta = { label: '其他提醒', color: '#CFCFCF' };
 
+const cardStyle = {
+  border: PET_UI_BORDER.strong,
+  borderRadius: PET_UI_RADIUS.md,
+  backgroundColor: PET_UI.panelBackground,
+};
+
 const ReminderTab = memo(function ReminderTab({ reminders, onAdd, onToggle }: Props) {
   return (
     <View className="w-full mb-30">
@@ -23,45 +30,44 @@ const ReminderTab = memo(function ReminderTab({ reminders, onAdd, onToggle }: Pr
         {Object.values(reminderTypeMap).map((type) => (
           <View key={type.label} className="flex items-center w-[24%]">
             <View
-              className="w-[12px] h-[18px] rounded-full border-[2px] border-solid border-[#262626] mr-1"
-              style={{ backgroundColor: type.color }}
+              className="w-[12rpx] h-[18rpx] mr-1"
+              style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.pill, backgroundColor: type.color }}
             />
-            <Text className="text-[20px] text-[#666]">{type.label}</Text>
+            <Text className="text-[#666]" style={{ fontSize: PET_UI_TEXT.caption }}>{type.label}</Text>
           </View>
         ))}
       </View>
 
       {!reminders.length ? (
-        <View
-          className="bg-[#f4f4f4] border-[3px] border-solid border-[#262626] rounded-[16px] p-8 mt-2 flex flex-col items-center"
-          onClick={onAdd}
-        >
-          <Text className="text-[64px] mb-2">🐾</Text>
-          <Text className="text-[24px] text-[#777] mb-3">当天还没有提醒</Text>
-          <Text className="text-[26px] text-[#ff8f3d]">+ 添加提醒</Text>
+        <View className="p-8 mt-2 flex flex-col items-center" style={cardStyle} onClick={onAdd}>
+          <Text className="text-[64rpx] mb-2">🐾</Text>
+          <Text className="text-[#777] mb-3" style={{ fontSize: PET_UI_TEXT.body }}>当天还没有提醒</Text>
+          <Text className="text-[#ff8f3d]" style={{ fontSize: PET_UI_TEXT.body }}>+ 添加提醒</Text>
         </View>
       ) : null}
 
       {reminders.map((item) => {
-        const typeMeta =
-          reminderTypeMap[item.type as keyof typeof reminderTypeMap] ?? defaultTypeMeta;
+        const typeMeta = reminderTypeMap[item.type as keyof typeof reminderTypeMap] ?? defaultTypeMeta;
         return (
-          <View
-            key={item.id}
-            className="bg-[#f4f4f4] relative border-[3px] border-solid border-[#262626] rounded-[16px] p-4 mb-4 flex items-center justify-between"
-          >
+          <View key={item.id} className="relative p-4 mb-4 flex items-center justify-between" style={cardStyle}>
             <View
-              className="absolute top-0 left-0 w-[10px] h-full rounded-l-[13px] border-r-[2px] border-r-[#262626]"
-              style={{ backgroundColor: typeMeta.color }}
+              className="absolute top-0 left-0 w-[10rpx] h-full"
+              style={{
+                borderRight: PET_UI_BORDER.regular,
+                borderTopLeftRadius: PET_UI_RADIUS.sm,
+                borderBottomLeftRadius: PET_UI_RADIUS.sm,
+                backgroundColor: typeMeta.color,
+              }}
             />
             <View className="flex-1 ml-2">
-              <Text className="text-[24px] font-medium mb-1 block">{item.title}</Text>
-              <Text className="text-[20px] text-[#7a7a7a]">{item.time} · {item.repeat}</Text>
+              <Text className="font-medium mb-1 block" style={{ fontSize: PET_UI_TEXT.body }}>{item.title}</Text>
+              <Text className="text-[#7a7a7a]" style={{ fontSize: PET_UI_TEXT.caption }}>{item.time} · {item.repeat}</Text>
             </View>
             <View
-              className="w-[30px] h-[30px] border-[2px] border-solid rounded-full"
+              className="w-[30rpx] h-[30rpx]"
               style={{
-                borderColor: item.enabled ? '#33b36b' : '#8a8a8a',
+                borderRadius: PET_UI_RADIUS.pill,
+                border: `2px solid ${item.enabled ? '#33b36b' : '#8a8a8a'}`,
                 backgroundColor: item.enabled ? '#33b36b' : 'transparent',
               }}
               onClick={() => onToggle(item.id)}
@@ -71,13 +77,15 @@ const ReminderTab = memo(function ReminderTab({ reminders, onAdd, onToggle }: Pr
       })}
 
       <View
-        className="h-[92px] rounded-[16px] border-[3px] border-dashed border-[#262626] flex items-center justify-center"
+        className="h-[92rpx] border-dashed flex items-center justify-center"
+        style={{ border: `3px dashed ${PET_UI.cardBorderColor}`, borderRadius: PET_UI_RADIUS.md }}
         onClick={onAdd}
       >
-        <Text className="text-[26px] text-[#ff8f3d]">+ 新增提醒</Text>
+        <Text className="text-[#ff8f3d]" style={{ fontSize: PET_UI_TEXT.body }}>+ 新增提醒</Text>
       </View>
     </View>
   );
 });
 
 export default ReminderTab;
+

@@ -2,6 +2,7 @@
 import clsx from 'clsx';
 import { useState, useEffect, useCallback } from 'react';
 import LeftIcon from '@/assets/leftIcon.svg';
+import { PET_UI, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 
 interface CalendarItem {
   day: number;
@@ -117,13 +118,16 @@ const CalendarCmp = ({ selectedDate, onSelectDate }: Props) => {
   }, [currentMonth, currentYear]);
 
   return (
-    <View className="px-[20px] py-[20px] bg-[#f4f4f4] border-[4px] border-black border-solid rounded-[20px]">
-      <View className="flex justify-between items-center mb-[10px]">
+    <View
+      className="px-[20rpx] py-[20rpx]"
+      style={{ border: `4px solid ${PET_UI.cardBorderColor}`, borderRadius: PET_UI_RADIUS.lg, backgroundColor: PET_UI.panelBackground }}
+    >
+      <View className="flex justify-between items-center mb-[10rpx]">
         <View className="w-[40rpx] h-[40rpx] flex items-center justify-center" onClick={handlePrevMonth}>
           <Image src={LeftIcon} className="w-[40rpx] h-[40rpx]" />
         </View>
 
-        <View className="text-[32rpx] font-bold">{currentYear}年{currentMonth}月</View>
+        <Text className="font-bold" style={{ fontSize: '32rpx' }}>{currentYear}年{currentMonth}月</Text>
 
         <View
           className="w-[40rpx] h-[40rpx] flex items-center justify-center"
@@ -136,7 +140,7 @@ const CalendarCmp = ({ selectedDate, onSelectDate }: Props) => {
 
       <View className="flex mb-1">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((week) => (
-          <View key={week} className="flex-1 text-center py-[10rpx] text-[22rpx] text-[#868686]">
+          <View key={week} className="flex-1 text-center py-[10rpx] text-[#868686]" style={{ fontSize: PET_UI_TEXT.caption }}>
             {week}
           </View>
         ))}
@@ -148,19 +152,17 @@ const CalendarCmp = ({ selectedDate, onSelectDate }: Props) => {
           return (
             <View
               key={`${key}-${index}`}
-              className={clsx('flex items-center justify-center w-[90px] h-[74px]', {
+              className={clsx('flex items-center justify-center w-[90rpx] h-[74rpx]', {
                 'text-[#a9a9a9]': item.type === 'prev' || item.type === 'next',
               })}
               onClick={() => onSelectDate(key)}
             >
               <View
-                className={clsx(
-                  'w-[52px] h-[52px] flex items-center justify-center text-[24rpx] rounded-[12px]',
-                  {
-                    'bg-black text-white': item.isToday,
-                    'bg-[#ffcf96] text-[#222]': selectedDate === key && !item.isToday,
-                  }
-                )}
+                className={clsx('w-[52rpx] h-[52rpx] flex items-center justify-center', {
+                  'bg-black text-white': item.isToday,
+                  'bg-[#ffcf96] text-[#222]': selectedDate === key && !item.isToday,
+                })}
+                style={{ borderRadius: PET_UI_RADIUS.sm, fontSize: '24rpx' }}
               >
                 {item.day}
               </View>

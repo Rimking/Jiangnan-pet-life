@@ -1,15 +1,14 @@
-﻿import BasicLayout from '@/layout/basicLayout';
-import { View, Text } from '@tarojs/components';
+﻿import { View, Text } from '@tarojs/components';
 import { clsx } from 'clsx';
-import { PET_UI } from '@/constants/petUi';
+import { PET_UI, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 import { usePetAppData } from '@/hooks/usePetAppData';
 import { ScheduleRecordItem } from '@/types/pet';
 import { formatLocalDateKey } from '@/utils/formatDate';
 import { memo, useMemo, useState } from 'react';
 import Taro from '@tarojs/taro';
+import BasicLayout from '@/layout/basicLayout';
 import RecordTab from './components/RecordTab';
 import ReminderTab from './components/ReminderTab';
-
 import Calendar from './components/calendar';
 
 const enum TabType {
@@ -60,10 +59,13 @@ const PetSchedule = memo(function PetSchedule() {
         createdAt: item.createdAt,
       }));
 
-    return [...baseRecords, ...expenseRecords, ...careRecords].sort(
-      (a, b) => b.createdAt - a.createdAt
-    );
+    return [...baseRecords, ...expenseRecords, ...careRecords].sort((a, b) => b.createdAt - a.createdAt);
   }, [activePet.id, careLogs, expenses, records, selectedDate]);
+
+  const tabStyle = {
+    border: PET_UI_BORDER.strong,
+    borderRadius: PET_UI_RADIUS.pill,
+  };
 
   return (
     <BasicLayout
@@ -77,29 +79,25 @@ const PetSchedule = memo(function PetSchedule() {
         needBack: false,
       }}
     >
-      <View className="px-8 pb-[180px] mt-4">
+      <View className="px-8 pb-[180rpx] mt-4">
         <View className="mb-2 px-1">
-          <Text className="text-[22px] text-[#5f5f5f]">当前宠物：{activePet.name}</Text>
+          <Text className="text-[#5f5f5f]" style={{ fontSize: PET_UI_TEXT.caption }}>当前宠物：{activePet.name}</Text>
         </View>
 
-        <View className="flex w-full h-[56px] justify-between items-center gap-[18px] mb-[16px]">
+        <View className="flex w-full h-[56rpx] justify-between items-center gap-[18rpx] mb-[16rpx]">
           <View
-            className={clsx(
-              'flex-1 h-full text-[28px] border-[3px] border-solid border-[#262626] rounded-[40px] flex items-center justify-center',
-              activeTab === TabType.Record ? 'bg-[#ffffff]' : 'bg-[#f7f7f7]'
-            )}
+            className={clsx('flex-1 h-full flex items-center justify-center', activeTab === TabType.Record ? 'bg-[#ffffff]' : 'bg-[#f7f7f7]')}
+            style={tabStyle}
             onClick={() => setActiveTab(TabType.Record)}
           >
-            <Text>记录</Text>
+            <Text style={{ fontSize: PET_UI_TEXT.body }}>记录</Text>
           </View>
           <View
-            className={clsx(
-              'flex-1 h-full text-[28px] border-[3px] border-solid border-[#262626] rounded-[40px] flex items-center justify-center',
-              activeTab === TabType.Reminder ? 'bg-[#ffd93b]' : 'bg-[#f7f7f7]'
-            )}
+            className={clsx('flex-1 h-full flex items-center justify-center', activeTab === TabType.Reminder ? 'bg-[#ffd93b]' : 'bg-[#f7f7f7]')}
+            style={tabStyle}
             onClick={() => setActiveTab(TabType.Reminder)}
           >
-            <Text>提醒</Text>
+            <Text style={{ fontSize: PET_UI_TEXT.body }}>提醒</Text>
           </View>
         </View>
 
@@ -143,3 +141,4 @@ const PetSchedule = memo(function PetSchedule() {
 });
 
 export default PetSchedule;
+

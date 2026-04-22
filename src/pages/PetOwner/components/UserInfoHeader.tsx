@@ -1,60 +1,56 @@
-import { View, Text } from '@tarojs/components';
+﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
 
-const UserInfoHeader = memo(function UserInfoHeader() {
-  const testlist = [
-    {
-      name: 'RimKing',
-      days: '20',
-    },
-    {
-      name: 'RimKing2',
-      days: '10',
-    },
-  ];
+interface UserInfoHeaderProps {
+  ownerName: string;
+  signature: string;
+  totalPets: number;
+  activePetName: string;
+  reminderCount: number;
+  onEditProfile?: () => void;
+}
 
-  const ItemRender = (item, index) => {
-    return (
-      <View
-        className="absolute w-full h-[80px] bg-white border-[2px] border-black border-solid rounded-[50px] text-center leading-[80px]"
-        style={{
-          transform: `rotate(${index / 2 === 0 ? 0 : 4}deg)`,
-        }}
-        key={item.name}
-      >
-        和{item.name}在一起{item.days}天了
-      </View>
-    );
-  };
-
+const UserInfoHeader = memo(function UserInfoHeader({
+  ownerName,
+  signature,
+  totalPets,
+  activePetName,
+  reminderCount,
+  onEditProfile,
+}: UserInfoHeaderProps) {
   return (
-    <>
-      <View
-        className=" py-[40rpx] px-[32rpx]  bg-white border-4 border-black border-solid rounded-[32rpx]"
-        style={{ boxShadow: '0 4rpx 16rpx rgba(0,0,0,0.08)' }}
-      >
-        <View className="flex items-center ">
-          <View
-            className="w-[144rpx] h-[144rpx] rounded-full  border-2 border-black border-solid bg-yellow-300 flex items-center justify-center mr-[32rpx]"
-            style={{ boxShadow: '0 4rpx 12rpx rgba(255, 224, 130, 0.3)' }}
-          ></View>
-          <View className="flex-1 h-full  flex flex-col">
-            {/* 名字 */}
-            <View className="text-[40rpx] h-[60px] font-bold mb-[12rpx] block text-gray-800">
-              RimKing ♂
-            </View>
+    <View
+      className="py-[30rpx] px-[28rpx] bg-white border-[3rpx] border-[#262626] rounded-[28rpx]"
+      style={{ boxShadow: '0 12rpx 0 rgba(0,0,0,0.18)' }}
+      onClick={onEditProfile}
+    >
+      <View className="flex items-center">
+        <View className="w-[112rpx] h-[112rpx] rounded-full border-[3rpx] border-[#262626] bg-[#FFE68D] flex items-center justify-center mr-[20rpx]">
+          <Text className="text-[56rpx]">😺</Text>
+        </View>
 
-            {/* 基础信息 */}
-            <View className="h-[60px] ">个性签名</View>
-          </View>
+        <View className="flex-1">
+          <Text className="text-[34rpx] font-bold text-[#1f1f1f] block">{ownerName}</Text>
+          <Text className="text-[24rpx] text-[#6b6b6b] mt-[8rpx] block">{signature}</Text>
+        </View>
+
+        <View className="px-[18rpx] py-[10rpx] rounded-[16rpx] bg-[#FFF6CE] border-[2rpx] border-[#262626]">
+          <Text className="text-[22rpx] text-[#4a4a4a]">编辑</Text>
         </View>
       </View>
 
-      {/* 和某某在一起多少天了，这里会查出来所有的pet，进行轮播 */}
-      <View className="w-full h-[100px] flex items-center justify-center relative mt-[15px]">
-        {testlist.map((item, index) => ItemRender(item, index))}
+      <View className="mt-[22rpx] flex flex-wrap gap-[12rpx]">
+        <View className="px-[14rpx] py-[10rpx] rounded-[14rpx] bg-[#F7F7F7] border-[2rpx] border-[#262626]">
+          <Text className="text-[22rpx] text-[#525252]">宠物 {totalPets} 只</Text>
+        </View>
+        <View className="px-[14rpx] py-[10rpx] rounded-[14rpx] bg-[#F7F7F7] border-[2rpx] border-[#262626]">
+          <Text className="text-[22rpx] text-[#525252]">当前：{activePetName}</Text>
+        </View>
+        <View className="px-[14rpx] py-[10rpx] rounded-[14rpx] bg-[#FFEEE8] border-[2rpx] border-[#262626]">
+          <Text className="text-[22rpx] text-[#9a4335]">待提醒 {reminderCount} 条</Text>
+        </View>
       </View>
-    </>
+    </View>
   );
 });
 

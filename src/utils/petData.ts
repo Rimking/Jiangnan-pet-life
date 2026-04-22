@@ -1,5 +1,4 @@
-﻿import Taro from '@tarojs/taro';
-import {
+﻿import {
   PetAppState,
   PetCareLogModel,
   PetExpenseModel,
@@ -8,8 +7,6 @@ import {
   PetReminderModel,
   ReminderType,
 } from '@/types/pet';
-
-const PET_APP_STORAGE_KEY = 'PET_APP_STORAGE_V1';
 
 const DEFAULT_PET = {
   id: 'pet-fire',
@@ -89,9 +86,10 @@ const DEFAULT_STATE: PetAppState = {
   ],
 };
 
-const cloneDefaultState = (): PetAppState => JSON.parse(JSON.stringify(DEFAULT_STATE));
-
 const REMINDER_TYPES: ReminderType[] = ['daily', 'care', 'health', 'behavior'];
+
+const cloneState = (state: PetAppState): PetAppState => JSON.parse(JSON.stringify(state));
+const cloneDefaultState = (): PetAppState => cloneState(DEFAULT_STATE);
 
 const normalizeReminderType = (type: unknown): ReminderType => {
   if (typeof type === 'string' && REMINDER_TYPES.includes(type as ReminderType)) {
@@ -139,59 +137,56 @@ const normalizeReminder = (reminder: any, index: number, fallbackPetId: string):
   };
 };
 
-export const getPetAppState = (): PetAppState => {
-  const cached = Taro.getStorageSync(PET_APP_STORAGE_KEY) as PetAppState | undefined;
-  if (!cached || !Array.isArray(cached.pets)) {
-    const seeded = cloneDefaultState();
-    Taro.setStorageSync(PET_APP_STORAGE_KEY, seeded);
-    return seeded;
+const normalizeState = (input: PetAppState): PetAppState => {
+  const state = cloneState(input);
+
+  if (!Array.isArray(state.pets) || state.pets.length === 0) {
+    state.pets = cloneDefaultState().pets;
+  } else {
+    state.pets = state.pets.map((item, index) => normalizePet(item, index));
   }
 
-  if (!Array.isArray(cached.pets) || cached.pets.length === 0) {
-    cached.pets = cloneDefaultState().pets;
+  if (!Array.isArray(state.reminders)) {
+    state.reminders = [];
   } else {
-    cached.pets = cached.pets.map((item, index) => normalizePet(item, index));
-  }
-
-  if (!Array.isArray(cached.reminders)) {
-    cached.reminders = [];
-  } else {
-    cached.reminders = cached.reminders.map((item, index) =>
-      normalizeReminder(item, index, cached.activePetId || cached.pets[0].id)
+    state.reminders = state.reminders.map((item, index) =>
+      normalizeReminder(item, index, state.activePetId || state.pets[0].id)
     );
   }
 
-  if (!Array.isArray(cached.records)) {
-    cached.records = [];
+  if (!Array.isArray(state.records)) {
+    state.records = [];
   }
 
-  if (!Array.isArray(cached.expenses)) {
-    cached.expenses = [];
+  if (!Array.isArray(state.expenses)) {
+    state.expenses = [];
   }
 
-  if (!Array.isArray(cached.careLogs)) {
-    cached.careLogs = [];
+  if (!Array.isArray(state.careLogs)) {
+    state.careLogs = [];
   }
 
-  const hasActivePet = cached.pets.some((item) => item.id === cached.activePetId);
+  const hasActivePet = state.pets.some((item) => item.id === state.activePetId);
   if (!hasActivePet) {
-    cached.activePetId = cached.pets[0].id;
+    state.activePetId = state.pets[0].id;
   }
 
-  savePetAppState(cached);
-
-  return cached;
+  return state;
 };
 
+let runtimeState: PetAppState = normalizeState(cloneDefaultState());
+
+export const getPetAppState = (): PetAppState => cloneState(runtimeState);
+
 export const savePetAppState = (state: PetAppState) => {
-  Taro.setStorageSync(PET_APP_STORAGE_KEY, state);
+  runtimeState = normalizeState(state);
 };
 
 export const setActivePet = (petId: string) => {
   const state = getPetAppState();
   state.activePetId = petId;
   savePetAppState(state);
-  return state;
+  return getPetAppState();
 };
 
 export const addReminder = (payload: {
@@ -225,7 +220,7 @@ export const toggleReminderEnabled = (id: string) => {
     item.id === id ? { ...item, enabled: !item.enabled } : item
   );
   savePetAppState(state);
-  return state;
+  return getPetAppState();
 };
 
 export const addRecord = (payload: {

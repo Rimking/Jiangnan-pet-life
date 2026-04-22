@@ -1,13 +1,16 @@
-import { View, Text } from '@tarojs/components';
-import { memo } from 'react';
+﻿import { View, Text } from '@tarojs/components';
+import { memo, useState } from 'react';
 
 interface PetCardProps {
   name: string;
   type: string;
   age: string;
   weight: string;
-  gender: string;
+  gender: 'male' | 'female';
   avatar: string;
+  isActive?: boolean;
+  onOpenDetail?: () => void;
+  onSetActive?: () => void;
 }
 
 const PetCard = memo(function PetCard({
@@ -17,46 +20,60 @@ const PetCard = memo(function PetCard({
   weight,
   gender,
   avatar,
+  isActive = false,
+  onOpenDetail,
+  onSetActive,
 }: PetCardProps) {
+  const [pressed, setPressed] = useState(false);
+  const genderLabel = gender === 'male' ? '♂' : '♀';
+
   return (
     <View
-      className="pet-card bg-white rounded-[32rpx] p-[32rpx] mb-[24rpx]"
-      style={{ boxShadow: '0 4rpx 16rpx rgba(0,0,0,0.08)' }}
+      className="bg-white rounded-[24rpx] p-[24rpx] mb-[18rpx] border-[3rpx]"
+      style={{
+        borderColor: isActive ? '#FF8F3D' : '#262626',
+        boxShadow: pressed ? '0 4rpx 0 rgba(0,0,0,0.2)' : '0 10rpx 0 rgba(0,0,0,0.18)',
+        transform: pressed ? 'translateY(6rpx)' : 'translateY(0)',
+        transition: 'all .15s ease',
+      }}
+      onClick={onOpenDetail}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      onTouchCancel={() => setPressed(false)}
     >
       <View className="flex items-center">
+        <View className="w-[96rpx] h-[96rpx] rounded-full flex items-center justify-center mr-[20rpx] border-[2rpx] border-[#262626] bg-[#FFF6CE]">
+          <Text className="text-[52rpx]">{avatar}</Text>
+        </View>
+
+        <View className="flex-1">
+          <View className="flex items-center mb-[10rpx]">
+            <Text className="text-[30rpx] font-bold mr-[10rpx] text-[#1f1f1f]">{name}</Text>
+            <Text className="text-[28rpx]" style={{ color: gender === 'male' ? '#5B7FFF' : '#FF699B' }}>
+              {genderLabel}
+            </Text>
+            {isActive ? (
+              <View className="ml-[12rpx] px-[10rpx] py-[4rpx] rounded-[12rpx] bg-[#FFEEE8] border border-[#FF8F3D]">
+                <Text className="text-[18rpx] text-[#d16c1c]">当前</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View className="flex flex-wrap gap-[10rpx]">
+            <Text className="text-[22rpx] text-[#5e5e5e] bg-[#f5f5f5] py-[6rpx] px-[12rpx] rounded-[12rpx]">{type}</Text>
+            <Text className="text-[22rpx] text-[#5e5e5e] bg-[#f5f5f5] py-[6rpx] px-[12rpx] rounded-[12rpx]">{age}</Text>
+            <Text className="text-[22rpx] text-[#5e5e5e] bg-[#f5f5f5] py-[6rpx] px-[12rpx] rounded-[12rpx]">{weight}</Text>
+          </View>
+        </View>
+
         <View
-          className="w-[128rpx] h-[128rpx] rounded-full flex items-center justify-center mr-[32rpx]"
-          style={{
-            backgroundColor: '#FFF9E6',
-            boxShadow: '0 4rpx 12rpx rgba(255, 249, 230, 0.5)',
+          className="ml-[12rpx] w-[68rpx] h-[68rpx] rounded-full bg-[#FFE082] border-[2rpx] border-[#262626] flex items-center justify-center"
+          onClick={(event) => {
+            event.stopPropagation();
+            onSetActive?.();
           }}
         >
-          <Text className="text-[64rpx]">{avatar}</Text>
-        </View>
-        <View className="flex-1">
-          <View className="flex items-center mb-[16rpx]">
-            <Text className="text-[36rpx] font-bold mr-[16rpx] text-gray-800">{name}</Text>
-            <Text
-              className="text-[32rpx]"
-              style={{ color: gender === '♂' ? '#FF6B6B' : '#FF69B4' }}
-            >
-              {gender}
-            </Text>
-          </View>
-          <View className="flex gap-[16rpx]">
-            <Text className="text-[26rpx] text-gray-600 bg-gray-100 py-[8rpx] px-[16rpx] rounded-[16rpx]">
-              {type}
-            </Text>
-            <Text className="text-[26rpx] text-gray-600 bg-gray-100 py-[8rpx] px-[16rpx] rounded-[16rpx]">
-              {age}
-            </Text>
-            <Text className="text-[26rpx] text-gray-600 bg-gray-100 py-[8rpx] px-[16rpx] rounded-[16rpx]">
-              {weight}
-            </Text>
-          </View>
-        </View>
-        <View className="w-[64rpx] h-[64rpx] rounded-full bg-yellow-300 flex items-center justify-center">
-          <Text className="text-[28rpx]">→</Text>
+          <Text className="text-[22rpx] text-[#4a4a4a]">切换</Text>
         </View>
       </View>
     </View>

@@ -72,56 +72,56 @@ const PetCareStats = memo(function PetCareStats() {
         needBack: true,
       }}
     >
-      <View className="px-8 pt-4 pb-[120px]">
+      <View className="px-8 pt-4 pb-[120rpx]">
         <View
-          className="mb-4 p-4 rounded-[16px] border-[3px] border-solid border-[#262626] bg-[#f4f4f4]"
+          className="mb-4 p-4 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-[#f4f4f4]"
           style={{ boxShadow: PET_UI_SHADOW }}
         >
-          <Text className="text-[30px] font-bold block">{pet.name}的护理档案</Text>
-          <Text className="text-[24px] text-[#666] mt-1 block">本月护理次数：{monthCount}</Text>
-          <Text className="text-[24px] text-[#666]">累计护理记录：{careList.length}</Text>
+          <Text className="text-[30rpx] font-bold block">{pet.name}的护理档案</Text>
+          <Text className="text-[24rpx] text-[#666] mt-1 block">本月护理次数：{monthCount}</Text>
+          <Text className="text-[24rpx] text-[#666]">累计护理记录：{careList.length}</Text>
         </View>
 
         <View className="flex flex-wrap gap-2 mb-4">
           {careTypes.map((type) => (
             <View
               key={type}
-              className="px-3 py-2 rounded-[16px] border-[2px] border-solid border-[#262626]"
+              className="px-3 py-2 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
               style={{ backgroundColor: activeType === type ? '#bdeeff' : '#f4f4f4' }}
               onClick={() => setActiveType(type)}
             >
-              <Text className="text-[22px]">{type}</Text>
+              <Text className="text-[22rpx]">{type}</Text>
             </View>
           ))}
         </View>
 
         <View
-          className="p-4 rounded-[16px] border-[3px] border-solid border-[#262626] bg-[#f4f4f4]"
+          className="p-4 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-[#f4f4f4]"
           style={{ boxShadow: PET_UI_SHADOW }}
         >
-          <Text className="text-[30px] font-bold mb-3 block">护理时间轴</Text>
+          <Text className="text-[30rpx] font-bold mb-3 block">护理时间轴</Text>
           {filteredCareList.length ? (
             filteredCareList.map((item) => {
               const status = getReminderStatus(item.careType, item.nextDate);
               return (
                 <View key={item.id} className="flex gap-3 mb-3">
-                  <View className="w-[16px] flex flex-col items-center pt-2">
-                    <View className="w-[12px] h-[12px] rounded-full bg-[#ff8f3d] border-[1px] border-solid border-[#262626]" />
-                    <View className="w-[2px] flex-1 bg-[#b7b7b7] mt-1" />
+                  <View className="w-[16rpx] flex flex-col items-center pt-2">
+                    <View className="w-[12rpx] h-[12rpx] rounded-full bg-[#ff8f3d] border-[1rpx] border-solid border-[#262626]" />
+                    <View className="w-[2rpx] flex-1 bg-[#b7b7b7] mt-1" />
                   </View>
 
-                  <View className="flex-1 p-3 rounded-[12px] border-[2px] border-solid border-[#262626] bg-white">
+                  <View className="flex-1 p-3 rounded-[12rpx] border-[2rpx] border-solid border-[#262626] bg-white">
                     <View className="flex items-center justify-between mb-1">
-                      <Text className="text-[25px] font-medium">{item.careType}</Text>
-                      <Text className="text-[21px] text-[#666]">{item.date} {item.time}</Text>
+                      <Text className="text-[25rpx] font-medium">{item.careType}</Text>
+                      <Text className="text-[21rpx] text-[#666]">{item.date} {item.time}</Text>
                     </View>
-                    <Text className="text-[22px] text-[#4f4f4f] mb-1">结果：{item.result}</Text>
-                    {item.note ? <Text className="text-[21px] text-[#7a7a7a] mb-1">备注：{item.note}</Text> : null}
+                    <Text className="text-[22rpx] text-[#4f4f4f] mb-1">结果：{item.result}</Text>
+                    {item.note ? <Text className="text-[21rpx] text-[#7a7a7a] mb-1">备注：{item.note}</Text> : null}
                     <View className="flex items-center justify-between">
-                      <Text className="text-[21px] text-[#7a7a7a]">
+                      <Text className="text-[21rpx] text-[#7a7a7a]">
                         下次：{item.nextDate || '未设置'}
                       </Text>
-                      <Text className="text-[21px]" style={{ color: status.color }}>
+                      <Text className="text-[21rpx]" style={{ color: status.color }}>
                         {status.label}
                       </Text>
                     </View>
@@ -130,7 +130,7 @@ const PetCareStats = memo(function PetCareStats() {
               );
             })
           ) : (
-            <Text className="text-[24px] text-[#8a8a8a]">暂无护理记录</Text>
+            <Text className="text-[24rpx] text-[#8a8a8a]">暂无护理记录</Text>
           )}
         </View>
       </View>
@@ -139,3 +139,4 @@ const PetCareStats = memo(function PetCareStats() {
 });
 
 export default PetCareStats;
+

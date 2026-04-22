@@ -1,6 +1,6 @@
 ﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
-import { PET_UI_SHADOW } from '@/constants/petUi';
+import { PET_UI_SHADOW, PET_UI, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 
 interface CategoryItem {
   name: string;
@@ -24,51 +24,62 @@ const ExpenseInsight = memo(function ExpenseInsight({
 
   return (
     <View
-      className="mx-[36px] mb-4 p-4 rounded-[16px] border-[3px] border-solid border-[#262626] bg-[#f4f4f4]"
-      style={{ boxShadow: PET_UI_SHADOW }}
+      className="mx-[28rpx] mb-[14rpx] p-[14rpx] bg-[#f4f4f4] border-solid"
+      style={{
+        border: PET_UI_BORDER.strong,
+        borderRadius: PET_UI_RADIUS.md,
+        boxShadow: PET_UI_SHADOW,
+      }}
     >
-      <View className="flex items-center justify-between mb-3">
-        <Text className="text-[34px] font-bold">花销洞察</Text>
+      <View className="flex items-center justify-between mb-[10rpx]">
+        <Text className="font-bold" style={{ fontSize: PET_UI_TEXT.title }}>花销洞察</Text>
         <View className="items-end" onClick={onOpenDetail}>
-          <Text className="text-[26px] text-[#ff6b6b]">本月 ¥{monthTotal.toFixed(2)}</Text>
-          <Text className="text-[20px] text-[#7a7a7a]">查看明细</Text>
+          <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.body }}>本月 ¥{monthTotal.toFixed(2)}</Text>
+          <Text className="text-[#7a7a7a]" style={{ fontSize: PET_UI_TEXT.caption }}>查看明细</Text>
         </View>
       </View>
 
-      <View className="mb-3">
+      <View className="mb-[10rpx]">
         {categoryTop.length ? (
           categoryTop.map((item) => {
             const widthPct = monthTotal > 0 ? Math.max((item.amount / monthTotal) * 100, 8) : 8;
             return (
-              <View key={item.name} className="mb-2">
-                <View className="flex items-center justify-between mb-1">
-                  <Text className="text-[25px] text-[#4f4f4f]">{item.name}</Text>
-                  <Text className="text-[25px] text-[#7a7a7a]">¥{item.amount.toFixed(2)}</Text>
+              <View key={item.name} className="mb-[8rpx]">
+                <View className="flex items-center justify-between mb-[4rpx]">
+                  <Text className="text-[#4f4f4f]" style={{ fontSize: PET_UI_TEXT.body }}>{item.name}</Text>
+                  <Text className="text-[#7a7a7a]" style={{ fontSize: PET_UI_TEXT.body }}>¥{item.amount.toFixed(2)}</Text>
                 </View>
-                <View className="h-[12px] rounded-full bg-white border-[1px] border-solid border-[#262626] overflow-hidden">
+                <View
+                  className="h-[12rpx] bg-white overflow-hidden"
+                  style={{ border: `1px solid ${PET_UI.cardBorderColor}`, borderRadius: PET_UI_RADIUS.pill }}
+                >
                   <View
-                    className="h-full rounded-full bg-[#ffb177]"
-                    style={{ width: `${Math.min(widthPct, 100)}%` }}
+                    className="h-full bg-[#ffb177]"
+                    style={{ width: `${Math.min(widthPct, 100)}%`, borderRadius: PET_UI_RADIUS.pill }}
                   />
                 </View>
               </View>
             );
           })
         ) : (
-          <Text className="text-[24px] text-[#8a8a8a]">本月还没有花销数据</Text>
+          <Text className="text-[#8a8a8a]" style={{ fontSize: PET_UI_TEXT.body }}>本月还没有花销数据</Text>
         )}
       </View>
 
       <View>
-        <Text className="text-[24px] text-[#666] mb-2 block">近7天趋势</Text>
-        <View className="flex items-end justify-between h-[72px] px-1">
+        <Text className="text-[#666] mb-[8rpx] block" style={{ fontSize: PET_UI_TEXT.body }}>近7天趋势</Text>
+        <View className="flex items-end justify-between h-[72rpx] px-[4rpx]">
           {weekSeries.map((value, index) => {
             const height = Math.max((value / maxWeek) * 100, value > 0 ? 18 : 6);
             return (
               <View key={`${index}-${value}`} className="w-[12%] flex flex-col items-center">
                 <View
-                  className="w-full rounded-[6px] bg-[#ffc58a] border-[1px] border-solid border-[#262626]"
-                  style={{ height: `${Math.min(height, 100)}%` }}
+                  className="w-full bg-[#ffc58a]"
+                  style={{
+                    border: `1px solid ${PET_UI.cardBorderColor}`,
+                    borderRadius: '',
+                    height: `${Math.min(height, 100)}%`,
+                  }}
                 />
               </View>
             );
@@ -80,3 +91,4 @@ const ExpenseInsight = memo(function ExpenseInsight({
 });
 
 export default ExpenseInsight;
+

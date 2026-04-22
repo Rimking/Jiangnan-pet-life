@@ -1,6 +1,6 @@
 ﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
-import { PET_UI, PET_UI_SHADOW } from '@/constants/petUi';
+import { PET_UI, PET_UI_SHADOW, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 import { PetProfileModel } from '@/types/pet';
 
 interface Props {
@@ -10,43 +10,66 @@ interface Props {
 
 const PetInfoCard = memo(function PetInfoCard({ pet, onOpenDetail }: Props) {
   return (
-    <View className="w-full px-[36px]">
+    <View className="w-full px-[28rpx]">
       <View
-        className="px-[20px] py-[24px] rounded-[20px] border-[4px] border-solid"
+        className="px-[20rpx] py-[22rpx] border-solid"
         style={{
-          borderColor: PET_UI.cardBorderColor,
+          border: PET_UI_BORDER.strong,
+          borderRadius: PET_UI_RADIUS.lg,
           backgroundColor: PET_UI.panelBackground,
           boxShadow: PET_UI_SHADOW,
         }}
       >
-        <View className="w-[100px] h-[18px] rounded-[10px] mb-[18px] m-auto border-[2px] border-solid border-[#262626] bg-[#f46a6a]" />
+        <View
+          className="w-[92rpx] h-[16rpx] mb-[14rpx] m-auto border-solid bg-[#f46a6a]"
+          style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.pill }}
+        />
 
         <View className="flex items-center">
           <View
-            className="w-[210px] h-[210px] mr-8 rounded-[14px] border-[4px] border-solid border-[#262626] flex items-center justify-center bg-white"
-            style={{ transform: 'rotate(-8deg)' }}
+            className="w-[176rpx] h-[176rpx] mr-[20rpx] border-solid flex items-center justify-center bg-white"
+            style={{
+              border: PET_UI_BORDER.strong,
+              borderRadius: PET_UI_RADIUS.sm,
+              transform: 'rotate(-8deg)',
+            }}
           >
-            <Text className="text-[32px]">{pet.avatarEmoji}</Text>
+            <Text style={{ fontSize: PET_UI_TEXT.heading }}>{pet.avatarEmoji}</Text>
           </View>
 
           <View className="flex-1 relative">
             <View
-              className="absolute -top-[20px] right-0 min-w-[100px] px-3 h-[48px] flex items-center justify-center bg-black rounded-[20px]"
+              className="absolute -top-[14rpx] right-0 min-w-[94rpx] px-[14rpx] h-[42rpx] flex items-center justify-center bg-black"
+              style={{ borderRadius: PET_UI_RADIUS.pill }}
               onClick={onOpenDetail}
             >
-              <Text className="text-white text-[24px]">详情</Text>
+              <Text className="text-white" style={{ fontSize: PET_UI_TEXT.body }}>
+                详情
+              </Text>
             </View>
 
             <View className="flex items-center mb-2">
-              <Text className="text-[46px] font-bold mr-[8px]">{pet.name}</Text>
-              <Text className="text-[36px] text-[#f46a6a]">{pet.gender === 'male' ? '♂' : '♀'}</Text>
+              <Text className="font-bold mr-[8rpx]" style={{ fontSize: '42rpx' }}>
+                {pet.name}
+              </Text>
+              <Text className="text-[#f46a6a]" style={{ fontSize: '32rpx' }}>
+                {pet.gender === 'male' ? '♂' : '♀'}
+              </Text>
             </View>
-            <Text className="text-[32px] text-[#666] mb-3 block">{pet.birthday} | {pet.weightKg}kg</Text>
+            <Text className="text-[#666] mb-[10rpx] block" style={{ fontSize: PET_UI_TEXT.heading }}>
+              {pet.birthday} | {pet.weightKg}kg
+            </Text>
 
-            <View className="flex flex-wrap gap-[8px]">
+            <View className="flex flex-wrap gap-[8rpx]">
               {pet.tags.map((tag) => (
-                <View key={tag} className="px-[14px] py-[6px] rounded-[18px] bg-[#ffe082]">
-                  <Text className="text-[24px] text-[#6b6b6b]">{tag}</Text>
+                <View
+                  key={tag}
+                  className="px-[12rpx] py-[4rpx] bg-[#ffe082]"
+                  style={{ borderRadius: PET_UI_RADIUS.pill }}
+                >
+                  <Text className="text-[#6b6b6b]" style={{ fontSize: PET_UI_TEXT.body }}>
+                    {tag}
+                  </Text>
                 </View>
               ))}
             </View>

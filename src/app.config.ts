@@ -4,6 +4,8 @@
     'pages/PetProfile/index',
     'pages/PetOwner/index',
     'pages/PetKnowledge/index',
+    'pages/PetArticleDetail/index',
+    'pages/PetQa/index',
     'pages/SendPetSchedule/index',
     'pages/Login/index',
     'pages/PetDetailPage/index',
