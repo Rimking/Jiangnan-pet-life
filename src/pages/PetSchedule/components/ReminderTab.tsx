@@ -14,6 +14,7 @@ const reminderTypeMap = {
   health: { label: '健康提醒', color: '#FFC2B0' },
   behavior: { label: '行为提醒', color: '#D2B0FF' },
 };
+const defaultTypeMeta = { label: '其他提醒', color: '#CFCFCF' };
 
 const ReminderTab = memo(function ReminderTab({ reminders, onAdd, onToggle }: Props) {
   return (
@@ -42,7 +43,8 @@ const ReminderTab = memo(function ReminderTab({ reminders, onAdd, onToggle }: Pr
       ) : null}
 
       {reminders.map((item) => {
-        const typeMeta = reminderTypeMap[item.type] || reminderTypeMap.daily;
+        const typeMeta =
+          reminderTypeMap[item.type as keyof typeof reminderTypeMap] ?? defaultTypeMeta;
         return (
           <View
             key={item.id}

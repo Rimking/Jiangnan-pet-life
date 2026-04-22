@@ -1,26 +1,26 @@
 ﻿import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
+import { clsx } from 'clsx';
+import { PET_UI } from '@/constants/petUi';
+import { usePetAppData } from '@/hooks/usePetAppData';
+import { ScheduleRecordItem } from '@/types/pet';
+import { formatLocalDateKey } from '@/utils/formatDate';
 import { memo, useMemo, useState } from 'react';
 import Taro from '@tarojs/taro';
 import RecordTab from './components/RecordTab';
 import ReminderTab from './components/ReminderTab';
-import clsx from 'clsx';
+
 import Calendar from './components/calendar';
-import { PET_UI } from '@/constants/petUi';
-import { usePetAppData } from '@/hooks/usePetAppData';
-import { ScheduleRecordItem } from '@/types/pet';
 
 const enum TabType {
   Record = 'record',
   Reminder = 'reminder',
 }
 
-const formatDateKey = (date: Date) => date.toISOString().slice(0, 10);
-
 const PetSchedule = memo(function PetSchedule() {
   const [activeTab, setActiveTab] = useState(TabType.Reminder);
   const { activePet, reminders, records, expenses, careLogs, switchReminder } = usePetAppData();
-  const [selectedDate, setSelectedDate] = useState(() => formatDateKey(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() => formatLocalDateKey(new Date()));
 
   const petReminders = useMemo(() => {
     return reminders.filter((item) => item.petId === activePet.id && item.date === selectedDate);

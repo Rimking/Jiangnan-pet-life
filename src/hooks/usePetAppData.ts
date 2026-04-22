@@ -15,17 +15,6 @@ const sortByCreatedAt = <T extends { createdAt: number }>(list: T[]) => {
   return [...list].sort((a, b) => b.createdAt - a.createdAt);
 };
 
-const FALLBACK_PET = {
-  id: 'pet-fallback',
-  name: '宠物',
-  gender: 'male' as const,
-  birthday: '2025-01-01',
-  weightKg: 0,
-  species: '未知品种',
-  tags: [],
-  avatarEmoji: '🐾',
-};
-
 export const usePetAppData = () => {
   const [state, setState] = useState<PetAppState>(() => getPetAppState());
 
@@ -38,10 +27,7 @@ export const usePetAppData = () => {
   });
 
   const activePet = useMemo(() => {
-    if (!Array.isArray(state.pets) || state.pets.length === 0) {
-      return FALLBACK_PET;
-    }
-    return state.pets.find((item) => item.id === state.activePetId) ?? state.pets[0] ?? FALLBACK_PET;
+    return state.pets.find((item) => item.id === state.activePetId) ?? state.pets[0];
   }, [state.activePetId, state.pets]);
 
   const changeActivePet = useCallback((petId: string) => {
@@ -89,10 +75,10 @@ export const usePetAppData = () => {
   return {
     state,
     activePet,
-    reminders: sortByCreatedAt(Array.isArray(state.reminders) ? state.reminders : []),
-    records: sortByCreatedAt(Array.isArray(state.records) ? state.records : []),
-    expenses: sortByCreatedAt(Array.isArray(state.expenses) ? state.expenses : []),
-    careLogs: sortByCreatedAt(Array.isArray(state.careLogs) ? state.careLogs : []),
+    reminders: sortByCreatedAt(state.reminders),
+    records: sortByCreatedAt(state.records),
+    expenses: sortByCreatedAt(state.expenses),
+    careLogs: sortByCreatedAt(state.careLogs),
     refresh,
     changeActivePet,
     createReminder,

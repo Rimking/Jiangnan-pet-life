@@ -1,12 +1,13 @@
-import TestUtils from '@tarojs/test-utils-react'
+import { formatLocalDateKey } from '../src/utils/formatDate';
 
-describe('Testing', () => {
+describe('formatLocalDateKey', () => {
+  test('formats local date with zero padding', () => {
+    const date = new Date(2026, 3, 2, 8, 30, 0);
+    expect(formatLocalDateKey(date)).toBe('2026-04-02');
+  });
 
-  test('Test', async () => {
-    const testUtils = new TestUtils()
-    await testUtils.createApp()
-    await testUtils.PageLifecycle.onShow('pages/index/index')
-    expect(testUtils.html()).toMatchSnapshot()
-  })
-
-})
+  test('does not use UTC day when local time is midnight', () => {
+    const date = new Date(2026, 3, 22, 0, 15, 0);
+    expect(formatLocalDateKey(date)).toBe('2026-04-22');
+  });
+});

@@ -3,6 +3,7 @@ import {
   PetAppState,
   PetCareLogModel,
   PetExpenseModel,
+  PetProfileModel,
   PetRecordModel,
   PetReminderModel,
   ReminderType,
@@ -90,109 +91,51 @@ const DEFAULT_STATE: PetAppState = {
 
 const cloneDefaultState = (): PetAppState => JSON.parse(JSON.stringify(DEFAULT_STATE));
 
-const normalizePet = (pet: any, index: number) => {
+const REMINDER_TYPES: ReminderType[] = ['daily', 'care', 'health', 'behavior'];
+
+const normalizeReminderType = (type: unknown): ReminderType => {
+  if (typeof type === 'string' && REMINDER_TYPES.includes(type as ReminderType)) {
+    return type as ReminderType;
+  }
+  return 'daily';
+};
+
+const normalizePet = (pet: any, index: number): PetProfileModel => {
   const fallbackId = `pet-${index + 1}`;
   return {
     id: typeof pet?.id === 'string' && pet.id ? pet.id : fallbackId,
     name: typeof pet?.name === 'string' && pet.name ? pet.name : `宠物${index + 1}`,
-    gender: pet?.gender === 'female' ? 'female' : 'male',
-    birthday: typeof pet?.birthday === 'string' && pet.birthday ? pet.birthday : '2025-01-01',
+    gender: pet?.gender === 'female' ? ('female' as const) : ('male' as const),
+    birthday:
+      typeof pet?.birthday === 'string' && pet.birthday ? pet.birthday : '2025-01-01',
     weightKg: Number.isFinite(Number(pet?.weightKg)) ? Number(pet.weightKg) : 0,
     species: typeof pet?.species === 'string' && pet.species ? pet.species : '未知品种',
-    tags: Array.isArray(pet?.tags) ? pet.tags.filter(Boolean) : [],
-    avatarEmoji: typeof pet?.avatarEmoji === 'string' && pet.avatarEmoji ? pet.avatarEmoji : '🐾',
+    tags: Array.isArray(pet?.tags)
+      ? pet.tags.filter((tag: unknown): tag is string => typeof tag === 'string' && !!tag)
+      : [],
+    avatarEmoji:
+      typeof pet?.avatarEmoji === 'string' && pet.avatarEmoji ? pet.avatarEmoji : '🐾',
   };
 };
 
-const normalizeReminder = (item: any, index: number, petId: string): PetReminderModel => {
-  const safeType =
-    item?.type === 'daily' || item?.type === 'care' || item?.type === 'health' || item?.type === 'behavior'
-      ? item.type
-      : 'daily';
-
-  const safeDate =
-    typeof item?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.date)
-      ? item.date
-      : '2026-01-01';
-
-  const safeTime =
-    typeof item?.time === 'string' && /^\d{2}:\d{2}$/.test(item.time)
-      ? item.time
-      : '09:00';
-
+const normalizeReminder = (reminder: any, index: number, fallbackPetId: string): PetReminderModel => {
+  const createdAt = Number.isFinite(Number(reminder?.createdAt))
+    ? Number(reminder.createdAt)
+    : Date.now() + index;
   return {
-    id: typeof item?.id === 'string' && item.id ? item.id : `rem-safe-${index + 1}`,
-    petId: typeof item?.petId === 'string' && item.petId ? item.petId : petId,
-    title: typeof item?.title === 'string' && item.title ? item.title : '未命名提醒',
-    type: safeType,
-    date: safeDate,
-    time: safeTime,
-    repeat: typeof item?.repeat === 'string' && item.repeat ? item.repeat : '单次',
-    enabled: typeof item?.enabled === 'boolean' ? item.enabled : true,
-    createdAt: Number.isFinite(Number(item?.createdAt)) ? Number(item.createdAt) : Date.now(),
-  };
-};
-
-const normalizeRecord = (item: any, index: number, petId: string): PetRecordModel => {
-  return {
-    id: typeof item?.id === 'string' && item.id ? item.id : `rec-safe-${index + 1}`,
-    petId: typeof item?.petId === 'string' && item.petId ? item.petId : petId,
-    category: typeof item?.category === 'string' && item.category ? item.category : '日常',
-    value: typeof item?.value === 'string' ? item.value : '',
-    note: typeof item?.note === 'string' ? item.note : '',
-    date:
-      typeof item?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.date)
-        ? item.date
-        : '2026-01-01',
-    time:
-      typeof item?.time === 'string' && /^\d{2}:\d{2}$/.test(item.time)
-        ? item.time
-        : '09:00',
-    createdAt: Number.isFinite(Number(item?.createdAt)) ? Number(item.createdAt) : Date.now(),
-  };
-};
-
-const normalizeExpense = (item: any, index: number, petId: string): PetExpenseModel => {
-  return {
-    id: typeof item?.id === 'string' && item.id ? item.id : `exp-safe-${index + 1}`,
-    petId: typeof item?.petId === 'string' && item.petId ? item.petId : petId,
-    category: typeof item?.category === 'string' && item.category ? item.category : '其他',
-    amount: Number.isFinite(Number(item?.amount)) ? Number(item.amount) : 0,
-    note: typeof item?.note === 'string' ? item.note : '',
-    date:
-      typeof item?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.date)
-        ? item.date
-        : '2026-01-01',
-    time:
-      typeof item?.time === 'string' && /^\d{2}:\d{2}$/.test(item.time)
-        ? item.time
-        : '09:00',
-    createdAt: Number.isFinite(Number(item?.createdAt)) ? Number(item.createdAt) : Date.now(),
-  };
-};
-
-const normalizeCareLog = (item: any, index: number, petId: string): PetCareLogModel => {
-  const safeNextDate =
-    typeof item?.nextDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.nextDate)
-      ? item.nextDate
-      : undefined;
-
-  return {
-    id: typeof item?.id === 'string' && item.id ? item.id : `care-safe-${index + 1}`,
-    petId: typeof item?.petId === 'string' && item.petId ? item.petId : petId,
-    careType: typeof item?.careType === 'string' && item.careType ? item.careType : '护理',
-    result: typeof item?.result === 'string' && item.result ? item.result : '已完成',
-    note: typeof item?.note === 'string' ? item.note : '',
-    date:
-      typeof item?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.date)
-        ? item.date
-        : '2026-01-01',
-    time:
-      typeof item?.time === 'string' && /^\d{2}:\d{2}$/.test(item.time)
-        ? item.time
-        : '09:00',
-    nextDate: safeNextDate,
-    createdAt: Number.isFinite(Number(item?.createdAt)) ? Number(item.createdAt) : Date.now(),
+    id:
+      typeof reminder?.id === 'string' && reminder.id
+        ? reminder.id
+        : `rem-${createdAt}-${index}`,
+    petId:
+      typeof reminder?.petId === 'string' && reminder.petId ? reminder.petId : fallbackPetId,
+    title: typeof reminder?.title === 'string' && reminder.title ? reminder.title : '提醒事项',
+    type: normalizeReminderType(reminder?.type),
+    date: typeof reminder?.date === 'string' && reminder.date ? reminder.date : '2025-01-01',
+    time: typeof reminder?.time === 'string' && reminder.time ? reminder.time : '08:00',
+    repeat: typeof reminder?.repeat === 'string' && reminder.repeat ? reminder.repeat : '单次',
+    enabled: Boolean(reminder?.enabled),
+    createdAt,
   };
 };
 
@@ -213,37 +156,21 @@ export const getPetAppState = (): PetAppState => {
   if (!Array.isArray(cached.reminders)) {
     cached.reminders = [];
   } else {
-    const fallbackPetId = cached.pets[0].id;
     cached.reminders = cached.reminders.map((item, index) =>
-      normalizeReminder(item, index, fallbackPetId)
+      normalizeReminder(item, index, cached.activePetId || cached.pets[0].id)
     );
   }
 
   if (!Array.isArray(cached.records)) {
     cached.records = [];
-  } else {
-    const fallbackPetId = cached.pets[0].id;
-    cached.records = cached.records.map((item, index) =>
-      normalizeRecord(item, index, fallbackPetId)
-    );
   }
 
   if (!Array.isArray(cached.expenses)) {
     cached.expenses = [];
-  } else {
-    const fallbackPetId = cached.pets[0].id;
-    cached.expenses = cached.expenses.map((item, index) =>
-      normalizeExpense(item, index, fallbackPetId)
-    );
   }
 
   if (!Array.isArray(cached.careLogs)) {
     cached.careLogs = [];
-  } else {
-    const fallbackPetId = cached.pets[0].id;
-    cached.careLogs = cached.careLogs.map((item, index) =>
-      normalizeCareLog(item, index, fallbackPetId)
-    );
   }
 
   const hasActivePet = cached.pets.some((item) => item.id === cached.activePetId);

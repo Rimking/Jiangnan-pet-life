@@ -24,7 +24,7 @@
     "build:jd": "taro build --type jd",
     "build:quickapp": "taro build --type quickapp",
     "build:harmony-hybrid": "taro build --type harmony-hybrid",
-    "dev:weapp": "cross-env API_ENV=development  cross-env API_ENV=test taro build --type weapp --watch ",
+    "dev:weapp": "cross-env API_ENV=development taro build --type weapp --watch ",
     "dev:weapp-test": "cross-env API_ENV=test  cross-env API_ENV=test taro build --type weapp --watch",
     "dev:weapp-pre": "cross-env API_ENV=pre cross-env API_ENV=pre taro build --type weapp --watch",
     "dev:weapp-pro": "cross-env API_ENV=production    cross-env API_ENV=production taro build --type weapp --watch",

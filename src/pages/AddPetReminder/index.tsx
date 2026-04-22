@@ -5,6 +5,7 @@ import { memo, useMemo, useState } from 'react';
 import { addReminder } from '@/utils/petData';
 import { ReminderType } from '@/types/pet';
 import { PET_UI } from '@/constants/petUi';
+import { formatLocalDateKey } from '@/utils/formatDate';
 
 const typeOptions: Array<{ label: string; value: ReminderType }> = [
   { label: '日常提醒', value: 'daily' },
@@ -17,7 +18,7 @@ const AddPetReminder = memo(function AddPetReminder() {
   const { params } = useRouter();
 
   const defaultDate = useMemo(() => {
-    return params.date || new Date().toISOString().slice(0, 10);
+    return params.date || formatLocalDateKey(new Date());
   }, [params.date]);
 
   const petId = params.petId || 'pet-fire';
