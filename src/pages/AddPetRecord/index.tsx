@@ -3,7 +3,7 @@ import { View, Text, Input } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { memo, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
-import { showDemoSuccessToast } from '@/utils/demoToast';
+import { createCareRecordData, createExpenseData, createRecordData, toIsoDateTime } from '@/api/data';
 
 type RecordMode = 'record' | 'expense' | 'care';
 
@@ -36,6 +36,7 @@ const addDays = (baseDate: string, days: number) => {
 
 const AddPetRecord = memo(function AddPetRecord() {
   const { params } = useRouter();
+  const petId = params.petId || '';
 
   const defaultDate = useMemo(() => {
     return params.date || toDateInput(new Date());
@@ -67,17 +68,10 @@ const AddPetRecord = memo(function AddPetRecord() {
     setNextDate(addDays(date, target.nextAfterDays));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!date.trim() || !time.trim()) {
       Taro.showToast({ title: '请填写日期和时间', icon: 'none' });
       return;
-    }
-
-    if (mode === 'record') {
-      if (!category.trim()) {
-        Taro.showToast({ title: '请填写记录分类', icon: 'none' });
-        return;
-      }
     }
 
     if (mode === 'expense') {
@@ -95,8 +89,54 @@ const AddPetRecord = memo(function AddPetRecord() {
       }
     }
 
-    showDemoSuccessToast('记录已保存');
-    setTimeout(() => Taro.navigateBack(), 300);
+    if (!petId) {
+      Taro.showToast({ title: '缺少宠物信息', icon: 'none' });
+      return;
+    }
+
+    try {
+      if (mode === 'record') {
+        if (!category.trim()) {
+          Taro.showToast({ title: '请填写记录分类', icon: 'none' });
+          return;
+        }
+
+        await createRecordData({
+          petId,
+          category,
+          value,
+          recordedAt: toIsoDateTime(date, time),
+          notes: note,
+        });
+      }
+
+      if (mode === 'expense') {
+        await createExpenseData({
+          petId,
+          category,
+          amount: Number(amount),
+          spentAt: toIsoDateTime(date, time),
+          notes: note,
+        });
+      }
+
+      if (mode === 'care') {
+        await createCareRecordData({
+          petId,
+          category: careType,
+          occurredAt: toIsoDateTime(date, time),
+          result: careResult,
+          nextReminderAt: nextDate ? toIsoDateTime(nextDate, '09:00') : undefined,
+          notes: note,
+        });
+      }
+
+      Taro.showToast({ title: '记录已保存', icon: 'success' });
+      setTimeout(() => Taro.navigateBack(), 300);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '保存失败';
+      Taro.showToast({ title: message, icon: 'none' });
+    }
   };
 
   return (
@@ -317,7 +357,5 @@ const AddPetRecord = memo(function AddPetRecord() {
 });
 
 export default AddPetRecord;
-
-
 
 

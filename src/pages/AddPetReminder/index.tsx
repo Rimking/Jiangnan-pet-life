@@ -5,7 +5,7 @@ import { memo, useMemo, useState } from 'react';
 import { ReminderType } from '@/types/pet';
 import { PET_UI } from '@/constants/petUi';
 import { formatLocalDateKey } from '@/utils/formatDate';
-import { showDemoSuccessToast } from '@/utils/demoToast';
+import { createScheduleData, toIsoDateTime } from '@/api/data';
 
 const typeOptions: Array<{ label: string; value: ReminderType }> = [
   { label: '日常提醒', value: 'daily' },
@@ -16,6 +16,7 @@ const typeOptions: Array<{ label: string; value: ReminderType }> = [
 
 const AddPetReminder = memo(function AddPetReminder() {
   const { params } = useRouter();
+  const petId = params.petId || '';
 
   const defaultDate = useMemo(() => {
     return params.date || formatLocalDateKey(new Date());
@@ -27,7 +28,7 @@ const AddPetReminder = memo(function AddPetReminder() {
   const [repeat, setRepeat] = useState('每天');
   const [typeIndex, setTypeIndex] = useState(0);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) {
       Taro.showToast({ title: '请填写提醒内容', icon: 'none' });
       return;
@@ -38,8 +39,26 @@ const AddPetReminder = memo(function AddPetReminder() {
       return;
     }
 
-    showDemoSuccessToast('提醒已保存');
-    setTimeout(() => Taro.navigateBack(), 300);
+    if (!petId) {
+      Taro.showToast({ title: '缺少宠物信息', icon: 'none' });
+      return;
+    }
+
+    try {
+      await createScheduleData({
+        petId,
+        title,
+        category: typeOptions[typeIndex].value,
+        type: typeOptions[typeIndex].label,
+        repeatRule: repeat,
+        remindAt: toIsoDateTime(date, time),
+      });
+      Taro.showToast({ title: '提醒已保存', icon: 'success' });
+      setTimeout(() => Taro.navigateBack(), 300);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '保存失败';
+      Taro.showToast({ title: message, icon: 'none' });
+    }
   };
 
   return (
@@ -119,7 +138,6 @@ const AddPetReminder = memo(function AddPetReminder() {
 });
 
 export default AddPetReminder;
-
 
 
 

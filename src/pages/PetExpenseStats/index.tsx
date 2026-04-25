@@ -1,9 +1,12 @@
-﻿import BasicLayout from '@/layout/basicLayout';
+import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
-import { memo, useMemo, useState } from 'react';
-import { usePetAppData } from '@/hooks/usePetAppData';
+import { useRouter } from '@tarojs/taro';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { PET_UI, PET_UI_SHADOW } from '@/constants/petUi';
+import { getExpenseListData, mapExpenseToExpenseModel } from '@/api/data';
+import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { PetExpenseModel } from '@/types/pet';
+import { useDidShow } from '@tarojs/taro';
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
 
@@ -18,19 +21,39 @@ const buildMonthOptions = () => {
 
 const PetExpenseStats = memo(function PetExpenseStats() {
   const { params } = useRouter();
-  const { state, expenses, activePet } = usePetAppData();
+  const { pets, activePet } = usePetApiPets();
+  const [expenses, setExpenses] = useState<PetExpenseModel[]>([]);
 
-  const petId = params.petId || activePet.id;
-  const pet = state.pets.find((item) => item.id === petId) || activePet;
+  const petId = params.petId || activePet?.id || '';
+  const pet = pets.find((item) => item.id === petId) || activePet;
+
+  const refreshExpenses = useCallback(() => {
+    if (!petId) {
+      setExpenses([]);
+      return Promise.resolve();
+    }
+
+    return getExpenseListData({ petId })
+      .then((list) => setExpenses(list.map(mapExpenseToExpenseModel)))
+      .catch(() => setExpenses([]));
+  }, [petId]);
+
+  useEffect(() => {
+    refreshExpenses();
+  }, [refreshExpenses]);
+
+  useDidShow(() => {
+    refreshExpenses();
+  });
 
   const monthOptions = useMemo(() => buildMonthOptions(), []);
   const [activeMonth, setActiveMonth] = useState(monthOptions[0].key);
 
   const monthlyExpenses = useMemo(() => {
     return expenses
-      .filter((item) => item.petId === pet.id && item.date.startsWith(activeMonth))
+      .filter((item) => item.petId === petId && item.date.startsWith(activeMonth))
       .sort((a, b) => b.createdAt - a.createdAt);
-  }, [activeMonth, expenses, pet.id]);
+  }, [activeMonth, expenses, petId]);
 
   const summary = useMemo(() => {
     const total = monthlyExpenses.reduce((sum, item) => sum + item.amount, 0);
@@ -64,7 +87,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
     >
       <View className="px-8 pt-4 pb-[120rpx]">
         <View className="mb-3">
-          <Text className="text-[26rpx] text-[#555]">宠物：{pet.name}</Text>
+          <Text className="text-[26rpx] text-[#555]">宠物：{pet?.name || '暂无'}</Text>
         </View>
 
         <View className="flex flex-wrap gap-2 mb-4">
@@ -126,7 +149,9 @@ const PetExpenseStats = memo(function PetExpenseStats() {
               >
                 <View className="flex-1">
                   <Text className="text-[24rpx] block">{item.category}</Text>
-                  <Text className="text-[20rpx] text-[#7a7a7a]">{item.date} {item.time}</Text>
+                  <Text className="text-[20rpx] text-[#7a7a7a]">
+                    {item.date} {item.time}
+                  </Text>
                 </View>
                 <View className="items-end">
                   <Text className="text-[24rpx] text-[#ff6b6b]">¥{item.amount.toFixed(2)}</Text>
@@ -144,4 +169,3 @@ const PetExpenseStats = memo(function PetExpenseStats() {
 });
 
 export default PetExpenseStats;
-

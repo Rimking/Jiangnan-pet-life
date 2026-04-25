@@ -1,13 +1,21 @@
-﻿import BasicLayout from '@/layout/basicLayout';
+import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
 import { memo, useMemo, useState } from 'react';
-import Taro from '@tarojs/taro';
-import { usePetAppData } from '@/hooks/usePetAppData';
+import Taro, { useDidShow } from '@tarojs/taro';
 import { formatLocalDateKey } from '@/utils/formatDate';
-import { showDemoPendingToast } from '@/utils/demoToast';
-import PetCard from './components/PetCard';
 import MenuItem from './components/MenuItem';
-import PetDetail from './components/PetDetail';
+import { usePetApiPets } from '@/hooks/usePetApiPets';
+import {
+  getCareRecordListData,
+  getExpenseListData,
+  getRecordListData,
+  getScheduleListData,
+  mapCareRecordToCareLogModel,
+  mapExpenseToExpenseModel,
+  mapRecordToRecordModel,
+  mapScheduleToReminderModel,
+} from '@/api/data';
+import { PetCareLogModel, PetExpenseModel, PetRecordModel, PetReminderModel } from '@/types/pet';
 
 const getAgeLabel = (birthday: string) => {
   const birth = new Date(birthday);
@@ -34,22 +42,51 @@ const getAgeLabel = (birthday: string) => {
 };
 
 const PetOwner = memo(function PetOwner() {
-  const { state, activePet, reminders, records, expenses, careLogs, changeActivePet } = usePetAppData();
-  const [detailPetId, setDetailPetId] = useState<string | null>(null);
+  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets();
+  const [reminders, setReminders] = useState<PetReminderModel[]>([]);
+  const [expenses, setExpenses] = useState<PetExpenseModel[]>([]);
+  const [careLogs, setCareLogs] = useState<PetCareLogModel[]>([]);
+  const [records, setRecords] = useState<PetRecordModel[]>([]);
 
-  const selectedPet = useMemo(() => {
-    if (!detailPetId) {
-      return null;
-    }
-    return state.pets.find((pet) => pet.id === detailPetId) ?? null;
-  }, [detailPetId, state.pets]);
+  useDidShow(() => {
+    Promise.all([
+      getScheduleListData({}),
+      getExpenseListData({}),
+      getCareRecordListData({}),
+      getRecordListData({}),
+    ])
+      .then(([scheduleList, expenseList, careList, recordList]) => {
+        setReminders(scheduleList.map(mapScheduleToReminderModel));
+        setExpenses(expenseList.map(mapExpenseToExpenseModel));
+        setCareLogs(careList.map(mapCareRecordToCareLogModel));
+        setRecords(recordList.map(mapRecordToRecordModel));
+      })
+      .catch(() => {
+        setReminders([]);
+        setExpenses([]);
+        setCareLogs([]);
+        setRecords([]);
+      });
+  });
 
-  const reminderCount = reminders.filter((item) => item.petId === activePet.id && item.enabled).length;
+  const reminderCount = reminders.filter((item) => item.petId === activePetId && item.enabled).length;
   const today = formatLocalDateKey(new Date());
-  const learningHours = records.filter((item) => item.petId === activePet.id).length * 4;
   const achievementCount =
-    expenses.filter((item) => item.petId === activePet.id).length +
-    careLogs.filter((item) => item.petId === activePet.id).length;
+    records.filter((item) => item.petId === activePetId).length +
+    expenses.filter((item) => item.petId === activePetId).length +
+    careLogs.filter((item) => item.petId === activePetId).length;
+  const activeDays = useMemo(() => {
+    if (!activePet?.birthday) {
+      return 0;
+    }
+    const birth = new Date(activePet.birthday);
+    if (Number.isNaN(birth.getTime())) {
+      return 0;
+    }
+    const now = new Date();
+    const diff = now.getTime() - birth.getTime();
+    return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  }, [activePet?.birthday]);
 
   const quickMenus = [
     {
@@ -93,17 +130,14 @@ const PetOwner = memo(function PetOwner() {
       subtitle: '追踪药品和疗程',
       onClick: () =>
         Taro.navigateTo({
-          url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${today}&mode=care`,
+          url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${today}&mode=care`,
         }),
     },
     {
       icon: '🩺',
       title: '医疗记录',
       subtitle: '门诊和检查留档',
-      onClick: () =>
-        Taro.navigateTo({
-          url: `/pages/PetCareStats/index?petId=${activePet.id}`,
-        }),
+      onClick: () => Taro.navigateTo({ url: `/pages/PetCareStats/index?petId=${activePetId}` }),
     },
     {
       icon: '🧴',
@@ -111,16 +145,16 @@ const PetOwner = memo(function PetOwner() {
       subtitle: '美容与护理时间线',
       onClick: () =>
         Taro.navigateTo({
-          url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${today}&mode=care`,
+          url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${today}&mode=care`,
         }),
     },
     {
       icon: '💬',
-      title: '排便记录',
+      title: '日常记录',
       subtitle: '日常健康观察',
       onClick: () =>
         Taro.navigateTo({
-          url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${today}&mode=record`,
+          url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${today}&mode=record`,
         }),
     },
     {
@@ -131,41 +165,11 @@ const PetOwner = memo(function PetOwner() {
     },
   ];
 
-  if (selectedPet) {
-    const petId = selectedPet.id;
-    return (
-      <BasicLayout
-        wrapClassName="w-full h-full"
-        wrapStyle={{
-          backgroundColor: '#E8EDF4',
-          minHeight: '100vh',
-        }}
-        navOptions={{ navTitle: '', needBack: false }}
-      >
-        <PetDetail
-          pet={selectedPet}
-          isActive={activePet.id === petId}
-          stats={{
-            reminderCount: reminders.filter((item) => item.petId === petId).length,
-            recordCount: records.filter((item) => item.petId === petId).length,
-            expenseCount: expenses.filter((item) => item.petId === petId).length,
-            careCount: careLogs.filter((item) => item.petId === petId).length,
-          }}
-          onBack={() => setDetailPetId(null)}
-          onSetActive={() => {
-            changeActivePet(petId);
-            Taro.showToast({ title: '已切换当前宠物', icon: 'none' });
-          }}
-        />
-      </BasicLayout>
-    );
-  }
-
   return (
     <BasicLayout
       wrapClassName="w-full h-full"
       wrapStyle={{
-        backgroundColor: '#E8EDF4',
+        background: 'linear-gradient(180deg, #FFF0A8 0%, #FFF8DC 42%, #F7F3E2 100%)',
         minHeight: '100vh',
       }}
       navOptions={{ navTitle: '', needBack: false }}
@@ -186,24 +190,33 @@ const PetOwner = memo(function PetOwner() {
           </View>
         </View>
 
-        <View className="flex items-center">
-          <View className="w-[102rpx] h-[102rpx] rounded-full bg-[#D6CFB5] border-[2rpx] border-[#808A99] flex items-center justify-center mr-[16rpx]">
-            <Text className="text-[56rpx]">{activePet.avatarEmoji}</Text>
+        <View className="flex items-center mb-[18rpx]">
+          <View className="w-[112rpx] h-[112rpx] rounded-full bg-[#fff7d7] border-[4rpx] border-[#262626] flex items-center justify-center mr-[16rpx] shadow-[0_8rpx_0_rgba(0,0,0,0.14)]">
+            <Text className="text-[56rpx]">{activePet?.avatarEmoji || '🐾'}</Text>
           </View>
           <View className="flex-1">
-            <Text className="text-[40rpx] font-semibold text-[#2C3442]">{activePet.name}</Text>
-            <Text className="text-[22rpx] text-[#7B8594] mt-[8rpx]">当前有 {state.pets.length} 只宠物档案</Text>
+            <Text className="text-[40rpx] font-semibold text-[#2C3442]">{activePet?.name || '暂无宠物'}</Text>
+            <Text className="text-[22rpx] text-[#7B8594] mt-[8rpx]">当前有 {pets.length} 只宠物档案</Text>
           </View>
         </View>
 
-        <View className="flex mt-[26rpx] mb-[22rpx]">
-          <View className="mr-[24rpx]">
-            <Text className="text-[22rpx] text-[#8C95A2]">学习时长</Text>
-            <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">{learningHours}</Text>
+        <View className="bg-white rounded-[28rpx] border-[3rpx] border-[#262626] px-[22rpx] py-[18rpx] mb-[18rpx] shadow-[0_10rpx_0_rgba(0,0,0,0.14)]">
+          <View className="flex justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-[22rpx] text-[#8C95A2]">待处理提醒</Text>
+              <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">{reminderCount}</Text>
+            </View>
+            <View className="w-[2rpx] h-[72rpx] bg-[#262626] opacity-20" />
+            <View className="flex-1 pl-[24rpx]">
+              <Text className="text-[22rpx] text-[#8C95A2]">我的成就</Text>
+              <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">{achievementCount}</Text>
+            </View>
           </View>
-          <View>
-            <Text className="text-[22rpx] text-[#8C95A2]">我的成就</Text>
-            <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">{achievementCount}</Text>
+          <View className="mt-[18rpx] rounded-[999rpx] bg-[#FFF7D5] border-[3rpx] border-[#262626] px-[18rpx] py-[12rpx] flex items-center">
+            <Text className="text-[30rpx] mr-[12rpx]">🐾</Text>
+            <Text className="text-[24rpx] text-[#2D3441] font-semibold">
+              与{activePet?.name || '它'}一起已经 {activeDays} 天了
+            </Text>
           </View>
         </View>
 
@@ -256,34 +269,78 @@ const PetOwner = memo(function PetOwner() {
           </View>
         </View>
 
-        <View className="mb-[18rpx]">
-          <View className="flex justify-between items-center mb-[12rpx] px-[4rpx]">
-            <Text className="text-[32rpx] font-bold text-[#2D3441]">我的宠物</Text>
+        <View className="mb-[20rpx] rounded-[30rpx] bg-white border-[3rpx] border-[#262626] px-[20rpx] py-[22rpx] shadow-[0_10rpx_0_rgba(0,0,0,0.14)]">
+          <View className="flex items-center justify-between mb-[18rpx]">
+            <Text className="text-[34rpx] font-bold text-[#2D3441] relative">
+              我的宠物
+            </Text>
             <View
-              className="h-[56rpx] px-[18rpx] rounded-[16rpx] bg-[#FFD93B] border-[2rpx] border-[#262626] flex items-center justify-center"
-              onClick={() => showDemoPendingToast('新增宠物')}
+              className="w-[42rpx] h-[42rpx] rounded-full border-[2rpx] border-[#262626] flex items-center justify-center bg-[#FFF7D5]"
+              onClick={() => Taro.navigateTo({ url: '/pages/EditPetProfile/index?mode=create' })}
             >
-              <Text className="text-[22rpx] font-semibold text-[#3b3b3b]">+ 新增</Text>
+              <Text className="text-[28rpx]">+</Text>
             </View>
           </View>
 
-          {state.pets.map((pet) => (
-            <PetCard
-              key={pet.id}
-              name={pet.name}
-              type={pet.species}
-              age={getAgeLabel(pet.birthday)}
-              weight={`${pet.weightKg}kg`}
-              gender={pet.gender}
-              avatar={pet.avatarEmoji}
-              isActive={pet.id === activePet.id}
-              onSetActive={() => {
-                changeActivePet(pet.id);
-                Taro.showToast({ title: `已切换为 ${pet.name}`, icon: 'none' });
-              }}
-              onOpenDetail={() => setDetailPetId(pet.id)}
-            />
-          ))}
+          <View className="flex flex-wrap justify-between gap-y-[16rpx]">
+            {pets.map((pet) => {
+              const isActive = pet.id === activePet?.id;
+              return (
+                <View
+                  key={pet.id}
+                  className="w-[48.3%] rounded-[18rpx] border-[3rpx] border-[#262626] bg-[#FFFDF4] p-[12rpx]"
+                  style={{
+                    boxShadow: isActive ? '0 8rpx 0 rgba(255, 191, 54, 0.28)' : '0 8rpx 0 rgba(0,0,0,0.1)',
+                  }}
+                  onClick={() => Taro.navigateTo({ url: `/pages/PetDetailPage/index?petId=${pet.id}` })}
+                >
+                  <View className="flex items-center mb-[10rpx]">
+                    <View className="w-[72rpx] h-[72rpx] rounded-[16rpx] bg-[#FFF0B3] border-[2rpx] border-[#262626] flex items-center justify-center mr-[12rpx]">
+                      <Text className="text-[40rpx]">{pet.avatarEmoji}</Text>
+                    </View>
+                    <View className="flex-1 min-w-0">
+                      <View className="flex items-center">
+                        <Text className="text-[28rpx] font-semibold text-[#1f1f1f] truncate">
+                          {pet.name}
+                        </Text>
+                        <Text
+                          className="text-[26rpx] ml-[8rpx]"
+                          style={{ color: pet.gender === 'male' ? '#5B7FFF' : '#FF7EA8' }}
+                        >
+                          {pet.gender === 'male' ? '♂' : '♀'}
+                        </Text>
+                      </View>
+                      <Text className="text-[21rpx] text-[#5f5f5f] mt-[4rpx]">
+                        {getAgeLabel(pet.birthday)} | {pet.weightKg || 0}kg
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="flex items-center justify-between">
+                    <Text className="text-[20rpx] text-[#6b6b6b]">{pet.species}</Text>
+                    <View
+                      className="px-[12rpx] h-[40rpx] rounded-[999rpx] border-[2rpx] border-[#262626] flex items-center justify-center"
+                      style={{ backgroundColor: isActive ? '#FFD95A' : '#F4F4F4' }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setActivePetId(pet.id);
+                        Taro.showToast({ title: `已切换为 ${pet.name}`, icon: 'none' });
+                      }}
+                    >
+                      <Text className="text-[20rpx]">{isActive ? '当前' : '切换'}</Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+
+            <View
+              className="w-full h-[92rpx] rounded-[18rpx] border-[3rpx] border-dashed border-[#262626] flex items-center justify-center bg-[#FFFDF4]"
+              onClick={() => Taro.navigateTo({ url: '/pages/EditPetProfile/index?mode=create' })}
+            >
+              <Text className="text-[28rpx] text-[#404040]">⊕ 添加宠物</Text>
+            </View>
+          </View>
         </View>
 
         <View className="mt-[8rpx]">
@@ -306,4 +363,3 @@ const PetOwner = memo(function PetOwner() {
 });
 
 export default PetOwner;
-

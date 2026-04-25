@@ -1,22 +1,53 @@
-﻿import BasicLayout from '@/layout/basicLayout';
+import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
-import { memo, useMemo, useState } from 'react';
-import { useRouter } from '@tarojs/taro';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useDidShow } from '@tarojs/taro';
 import { PET_UI, PET_UI_SHADOW } from '@/constants/petUi';
-import { usePetAppData } from '@/hooks/usePetAppData';
+import { getCareRecordListData, getScheduleListData, mapCareRecordToCareLogModel, mapScheduleToReminderModel } from '@/api/data';
+import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { PetCareLogModel, PetReminderModel } from '@/types/pet';
+import { formatLocalDateKey } from '@/utils/formatDate';
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
 
 const PetCareStats = memo(function PetCareStats() {
   const { params } = useRouter();
-  const { state, careLogs, reminders, activePet } = usePetAppData();
+  const { pets, activePet } = usePetApiPets();
+  const [careLogs, setCareLogs] = useState<PetCareLogModel[]>([]);
+  const [reminders, setReminders] = useState<PetReminderModel[]>([]);
 
-  const petId = params.petId || activePet.id;
-  const pet = state.pets.find((item) => item.id === petId) || activePet;
+  const petId = params.petId || activePet?.id || '';
+  const pet = pets.find((item) => item.id === petId) || activePet;
+
+  const refreshCareData = useCallback(() => {
+    if (!petId) {
+      setCareLogs([]);
+      setReminders([]);
+      return Promise.resolve();
+    }
+
+    return Promise.all([getCareRecordListData({ petId }), getScheduleListData({ petId })])
+      .then(([careList, scheduleList]) => {
+        setCareLogs(careList.map(mapCareRecordToCareLogModel));
+        setReminders(scheduleList.map(mapScheduleToReminderModel));
+      })
+      .catch(() => {
+        setCareLogs([]);
+        setReminders([]);
+      });
+  }, [petId]);
+
+  useEffect(() => {
+    refreshCareData();
+  }, [refreshCareData]);
+
+  useDidShow(() => {
+    refreshCareData();
+  });
 
   const careList = useMemo(() => {
-    return careLogs.filter((item) => item.petId === pet.id).sort((a, b) => b.createdAt - a.createdAt);
-  }, [careLogs, pet.id]);
+    return careLogs.filter((item) => item.petId === petId).sort((a, b) => b.createdAt - a.createdAt);
+  }, [careLogs, petId]);
 
   const careTypes = useMemo(() => {
     const set = new Set(careList.map((item) => item.careType));
@@ -39,7 +70,7 @@ const PetCareStats = memo(function PetCareStats() {
 
     const related = reminders.find(
       (item) =>
-        item.petId === pet.id &&
+        item.petId === petId &&
         item.type === 'care' &&
         item.date === nextDate &&
         item.title.includes(careType)
@@ -53,7 +84,7 @@ const PetCareStats = memo(function PetCareStats() {
       return { label: '提醒已关闭', color: '#f59e0b' };
     }
 
-    if (nextDate < new Date().toISOString().slice(0, 10)) {
+    if (nextDate < formatLocalDateKey(new Date())) {
       return { label: '提醒已过期', color: '#ef4444' };
     }
 
@@ -77,7 +108,7 @@ const PetCareStats = memo(function PetCareStats() {
           className="mb-4 p-4 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-[#f4f4f4]"
           style={{ boxShadow: PET_UI_SHADOW }}
         >
-          <Text className="text-[30rpx] font-bold block">{pet.name}的护理档案</Text>
+          <Text className="text-[30rpx] font-bold block">{pet?.name || '暂无'}的护理档案</Text>
           <Text className="text-[24rpx] text-[#666] mt-1 block">本月护理次数：{monthCount}</Text>
           <Text className="text-[24rpx] text-[#666]">累计护理记录：{careList.length}</Text>
         </View>
@@ -113,14 +144,14 @@ const PetCareStats = memo(function PetCareStats() {
                   <View className="flex-1 p-3 rounded-[12rpx] border-[2rpx] border-solid border-[#262626] bg-white">
                     <View className="flex items-center justify-between mb-1">
                       <Text className="text-[25rpx] font-medium">{item.careType}</Text>
-                      <Text className="text-[21rpx] text-[#666]">{item.date} {item.time}</Text>
+                      <Text className="text-[21rpx] text-[#666]">
+                        {item.date} {item.time}
+                      </Text>
                     </View>
                     <Text className="text-[22rpx] text-[#4f4f4f] mb-1">结果：{item.result}</Text>
                     {item.note ? <Text className="text-[21rpx] text-[#7a7a7a] mb-1">备注：{item.note}</Text> : null}
                     <View className="flex items-center justify-between">
-                      <Text className="text-[21rpx] text-[#7a7a7a]">
-                        下次：{item.nextDate || '未设置'}
-                      </Text>
+                      <Text className="text-[21rpx] text-[#7a7a7a]">下次：{item.nextDate || '未设置'}</Text>
                       <Text className="text-[21rpx]" style={{ color: status.color }}>
                         {status.label}
                       </Text>
@@ -139,4 +170,3 @@ const PetCareStats = memo(function PetCareStats() {
 });
 
 export default PetCareStats;
-
