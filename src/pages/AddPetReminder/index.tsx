@@ -6,6 +6,7 @@ import { ReminderType } from '@/types/pet';
 import { PET_UI } from '@/constants/petUi';
 import { formatLocalDateKey } from '@/utils/formatDate';
 import { createScheduleData, toIsoDateTime } from '@/api/data';
+import { ensureLoggedIn } from '@/utils/authState';
 
 const typeOptions: Array<{ label: string; value: ReminderType }> = [
   { label: '日常提醒', value: 'daily' },
@@ -29,6 +30,10 @@ const AddPetReminder = memo(function AddPetReminder() {
   const [typeIndex, setTypeIndex] = useState(0);
 
   const handleSave = async () => {
+    if (!ensureLoggedIn(`/pages/AddPetReminder/index?petId=${petId}&date=${date}`)) {
+      return;
+    }
+
     if (!title.trim()) {
       Taro.showToast({ title: '请填写提醒内容', icon: 'none' });
       return;
@@ -138,6 +143,5 @@ const AddPetReminder = memo(function AddPetReminder() {
 });
 
 export default AddPetReminder;
-
 
 

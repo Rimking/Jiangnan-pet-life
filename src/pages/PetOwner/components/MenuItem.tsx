@@ -1,6 +1,5 @@
 ﻿import { View, Text } from '@tarojs/components';
 import { memo, useState } from 'react';
-import { showDemoPendingToast } from '@/utils/demoToast';
 
 interface MenuItemProps {
   icon: string;
@@ -26,9 +25,7 @@ const MenuItem = memo(function MenuItem({
   const handleClick = () => {
     if (onClick) {
       onClick();
-      return;
     }
-    showDemoPendingToast(title);
   };
 
   return (

@@ -3,54 +3,77 @@ import { View, Text } from '@tarojs/components';
 import { memo, useCallback, useEffect, useState } from 'react';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import {
-  PetItem,
-  getCareRecordListData,
   deletePetData,
-  getPetDetailData,
-  getRecordListData,
-  getScheduleListData,
+  getPetOverviewData,
   mapPetToProfileModel,
 } from '@/api/data';
+import { PetItem, PetOverviewData } from '@/api/data';
 import { PetProfileModel } from '@/types/pet';
+import { ensureLoggedIn } from '@/utils/authState';
+
+type PetProfileExtras = {
+  personality?: string;
+  vaccineNotes?: string;
+  medicalNotes?: string;
+};
 
 const PetDetailPage = memo(function PetDetailPage() {
   const { params } = useRouter();
   const petId = params.petId || '';
   const [pet, setPet] = useState<PetProfileModel | null>(null);
   const [rawPet, setRawPet] = useState<PetItem | null>(null);
+  const [overview, setOverview] = useState<PetOverviewData | null>(null);
   const [reminderCount, setReminderCount] = useState(0);
   const [careCount, setCareCount] = useState(0);
   const [recordCount, setRecordCount] = useState(0);
+  const [foodCount, setFoodCount] = useState(0);
+  const [lowInventoryCount, setLowInventoryCount] = useState(0);
+  const [medicineCount, setMedicineCount] = useState(0);
+  const [dueMedicineCount, setDueMedicineCount] = useState(0);
+  const [milestoneCount, setMilestoneCount] = useState(0);
 
   const refreshPetDetail = useCallback(() => {
     if (!petId) {
       setPet(null);
       setRawPet(null);
+      setOverview(null);
       setReminderCount(0);
       setCareCount(0);
       setRecordCount(0);
+      setFoodCount(0);
+      setLowInventoryCount(0);
+      setMedicineCount(0);
+      setDueMedicineCount(0);
+      setMilestoneCount(0);
       return Promise.resolve();
     }
 
-    return Promise.all([
-      getPetDetailData(petId),
-      getScheduleListData({ petId }),
-      getCareRecordListData({ petId }),
-      getRecordListData({ petId }),
-    ])
-      .then(([petDetail, scheduleList, careList, recordList]) => {
-        setPet(mapPetToProfileModel(petDetail));
-        setRawPet(petDetail);
-        setReminderCount(scheduleList.length);
-        setCareCount(careList.length);
-        setRecordCount(recordList.length);
+    return getPetOverviewData(petId)
+      .then((data) => {
+        setOverview(data);
+        setPet(mapPetToProfileModel(data.pet));
+        setRawPet(data.pet);
+        setReminderCount(data.stats.schedules);
+        setCareCount(data.stats.careRecords);
+        setRecordCount(data.stats.records);
+        setFoodCount(data.stats.foods);
+        setLowInventoryCount(data.stats.lowInventoryFoods);
+        setMedicineCount(data.stats.medicines);
+        setDueMedicineCount(data.stats.dueMedicines);
+        setMilestoneCount(data.stats.milestones);
       })
       .catch(() => {
         setPet(null);
         setRawPet(null);
+        setOverview(null);
         setReminderCount(0);
         setCareCount(0);
         setRecordCount(0);
+        setFoodCount(0);
+        setLowInventoryCount(0);
+        setMedicineCount(0);
+        setDueMedicineCount(0);
+        setMilestoneCount(0);
       });
   }, [petId]);
 
@@ -63,6 +86,10 @@ const PetDetailPage = memo(function PetDetailPage() {
   });
 
   const handleDelete = async () => {
+    if (!ensureLoggedIn(`/pages/PetDetailPage/index?petId=${petId}`)) {
+      return;
+    }
+
     if (!petId) {
       Taro.showToast({ title: '缺少宠物信息', icon: 'none' });
       return;
@@ -114,9 +141,18 @@ const PetDetailPage = memo(function PetDetailPage() {
   const vaccineText = careCount
     ? `已记录 ${careCount} 条护理/疫苗相关记录`
     : '暂未记录疫苗信息';
-  const personalityText = rawPet?.notes || '暂未填写性格描述，可以在编辑页补充。';
+  const extras = ((rawPet?.profileExtras || {}) as PetProfileExtras);
+  const personalityText =
+    extras.personality || rawPet?.notes || '暂未填写性格描述，可以在编辑页补充。';
+  const vaccineDetailText = extras.vaccineNotes || vaccineText;
+  const allergyText = rawPet?.allergies?.length
+    ? rawPet.allergies.join('、')
+    : '暂未填写过敏信息';
+  const medicalNotesText = extras.medicalNotes || '暂未填写医疗补充信息';
   const sterilizedText = rawPet?.sterilized ? '已绝育' : '未绝育';
   const galleryBlocks = Array.from({ length: 4 });
+  const totalExpenseLabel = overview ? `累计花销 ¥${Number(overview.stats.totalExpense || 0).toFixed(2)}` : '';
+  const latestMilestone = overview?.recent.latestMilestones?.[0];
 
   return (
     <BasicLayout
@@ -163,12 +199,22 @@ const PetDetailPage = memo(function PetDetailPage() {
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
               <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">接种疫苗：</Text>
-              <Text className="text-[24rpx] leading-[1.7] text-[#444]">{vaccineText}</Text>
+              <Text className="text-[24rpx] leading-[1.7] text-[#444]">{vaccineDetailText}</Text>
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
               <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">性格：</Text>
               <Text className="text-[24rpx] leading-[1.7] text-[#444]">{personalityText}</Text>
+            </View>
+
+            <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">过敏信息：</Text>
+              <Text className="text-[24rpx] leading-[1.7] text-[#444]">{allergyText}</Text>
+            </View>
+
+            <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">医疗补充：</Text>
+              <Text className="text-[24rpx] leading-[1.7] text-[#444]">{medicalNotesText}</Text>
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
@@ -211,6 +257,44 @@ const PetDetailPage = memo(function PetDetailPage() {
                   <Text className="text-[34rpx] font-bold text-[#222]">{careCount}</Text>
                 </View>
               </View>
+              <View className="grid grid-cols-2 gap-[12rpx] mt-[12rpx]">
+                <View className="rounded-[18rpx] bg-[#FFF8E6] p-[14rpx] shadow-[inset_0_0_0_2rpx_rgba(255,255,255,0.72)]">
+                  <Text className="text-[20rpx] text-[#8C6C2D]">食物档案</Text>
+                  <Text className="text-[32rpx] font-bold text-[#222]">{foodCount}</Text>
+                  <Text className="text-[20rpx] text-[#7A6A3D] mt-[4rpx]">
+                    低库存提醒 {lowInventoryCount} 条
+                  </Text>
+                </View>
+                <View className="rounded-[18rpx] bg-[#F6F0FF] p-[14rpx] shadow-[inset_0_0_0_2rpx_rgba(255,255,255,0.72)]">
+                  <Text className="text-[20rpx] text-[#6C5C90]">用药档案</Text>
+                  <Text className="text-[32rpx] font-bold text-[#222]">{medicineCount}</Text>
+                  <Text className="text-[20rpx] text-[#6C5C90] mt-[4rpx]">
+                    临近结束 {dueMedicineCount} 条
+                  </Text>
+                </View>
+                <View className="rounded-[18rpx] bg-[#FFF0F6] p-[14rpx] shadow-[inset_0_0_0_2rpx_rgba(255,255,255,0.72)] col-span-2">
+                  <View className="flex items-center justify-between">
+                    <View>
+                      <Text className="text-[20rpx] text-[#8A5374]">成长里程碑</Text>
+                      <Text className="text-[32rpx] font-bold text-[#222]">{milestoneCount}</Text>
+                    </View>
+                    <View
+                      className="px-[18rpx] py-[10rpx] rounded-[999rpx] bg-white/80"
+                      onClick={() => Taro.navigateTo({ url: '/pages/PetMilestones/index' })}
+                    >
+                      <Text className="text-[20rpx] text-[#8A5374]">去查看</Text>
+                    </View>
+                  </View>
+                  <Text className="text-[20rpx] text-[#7B6070] mt-[8rpx] block">
+                    {latestMilestone
+                      ? `最近节点：${latestMilestone.title} · ${latestMilestone.occurredAt.slice(0, 10)}`
+                      : '还没有成长节点，可以先记录第一次到家、第一次出门或疫苗完成。'}
+                  </Text>
+                </View>
+              </View>
+              {totalExpenseLabel ? (
+                <Text className="text-[21rpx] text-[#7A6A3D] mt-[12rpx] block">{totalExpenseLabel}</Text>
+              ) : null}
             </View>
           </View>
         </View>
@@ -218,7 +302,12 @@ const PetDetailPage = memo(function PetDetailPage() {
         <View className="flex gap-3 mt-[20rpx]">
           <View
             className="flex-1 h-[86rpx] rounded-[43rpx] bg-[#FFD93B] flex items-center justify-center shadow-[0_12rpx_24rpx_rgba(234,188,47,0.28)]"
-            onClick={() => Taro.navigateTo({ url: `/pages/EditPetProfile/index?mode=edit&petId=${petId}` })}
+            onClick={() => {
+              if (!ensureLoggedIn(`/pages/PetDetailPage/index?petId=${petId}`)) {
+                return;
+              }
+              Taro.navigateTo({ url: `/pages/EditPetProfile/index?mode=edit&petId=${petId}` });
+            }}
           >
             <Text className="text-[28rpx] font-semibold">编辑</Text>
           </View>

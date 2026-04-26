@@ -9,6 +9,13 @@ import {
   getPetDetailData,
   updatePetData,
 } from '@/api/data';
+import { ensureLoggedIn } from '@/utils/authState';
+
+type PetProfileExtras = {
+  personality?: string;
+  vaccineNotes?: string;
+  medicalNotes?: string;
+};
 
 const typeOptions = [
   { label: '猫咪', value: 'cat' },
@@ -63,6 +70,10 @@ const EditPetProfile = memo(function EditPetProfile() {
   const [loading, setLoading] = useState(mode === 'edit');
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<CreatePetParams>(defaultForm);
+  const [allergyText, setAllergyText] = useState('');
+  const [personality, setPersonality] = useState('');
+  const [vaccineNotes, setVaccineNotes] = useState('');
+  const [medicalNotes, setMedicalNotes] = useState('');
 
   const pageTitle = useMemo(() => (mode === 'edit' ? '编辑宠物' : '新增宠物'), [mode]);
 
@@ -74,6 +85,7 @@ const EditPetProfile = memo(function EditPetProfile() {
     setLoading(true);
     getPetDetailData(petId)
       .then((pet) => {
+        const extras = (pet.profileExtras || {}) as PetProfileExtras;
         setForm({
           name: pet.name || '',
           type: pet.type || 'cat',
@@ -85,6 +97,10 @@ const EditPetProfile = memo(function EditPetProfile() {
           sterilized: Boolean(pet.sterilized),
           notes: pet.notes || '',
         });
+        setAllergyText((pet.allergies || []).join('、'));
+        setPersonality(extras.personality || '');
+        setVaccineNotes(extras.vaccineNotes || '');
+        setMedicalNotes(extras.medicalNotes || '');
       })
       .catch((error) => {
         const message = error instanceof Error ? error.message : '宠物信息加载失败';
@@ -103,6 +119,10 @@ const EditPetProfile = memo(function EditPetProfile() {
   };
 
   const handleSubmit = async () => {
+    if (!ensureLoggedIn(`/pages/EditPetProfile/index?mode=${mode}${petId ? `&petId=${petId}` : ''}`)) {
+      return;
+    }
+
     if (!form.name.trim()) {
       Taro.showToast({ title: '请填写宠物名字', icon: 'none' });
       return;
@@ -126,6 +146,15 @@ const EditPetProfile = memo(function EditPetProfile() {
       color: form.color?.trim() || undefined,
       notes: form.notes?.trim() || undefined,
       weight: form.weight && form.weight > 0 ? Number(form.weight) : undefined,
+      allergies: allergyText
+        .split(/[、,，\n]/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+      profileExtras: {
+        personality: personality.trim() || undefined,
+        vaccineNotes: vaccineNotes.trim() || undefined,
+        medicalNotes: medicalNotes.trim() || undefined,
+      },
     };
 
     setSaving(true);
@@ -280,6 +309,50 @@ const EditPetProfile = memo(function EditPetProfile() {
         </View>
 
         <View className="mb-10">
+          <Text className="text-[24rpx] text-[#666] mb-2 block">过敏信息</Text>
+          <View className="border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4 mb-5">
+            <Textarea
+              value={allergyText}
+              maxlength={120}
+              autoHeight
+              placeholder="例如：鸡肉、牛肉、乳制品"
+              onInput={(event) => setAllergyText(event.detail.value)}
+            />
+          </View>
+
+          <Text className="text-[24rpx] text-[#666] mb-2 block">性格描述</Text>
+          <View className="border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4 mb-5">
+            <Textarea
+              value={personality}
+              maxlength={200}
+              autoHeight
+              placeholder="例如：粘人、胆小、爱撒娇"
+              onInput={(event) => setPersonality(event.detail.value)}
+            />
+          </View>
+
+          <Text className="text-[24rpx] text-[#666] mb-2 block">疫苗备注</Text>
+          <View className="border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4 mb-5">
+            <Textarea
+              value={vaccineNotes}
+              maxlength={200}
+              autoHeight
+              placeholder="例如：已接种猫三联 / 狂犬疫苗"
+              onInput={(event) => setVaccineNotes(event.detail.value)}
+            />
+          </View>
+
+          <Text className="text-[24rpx] text-[#666] mb-2 block">医疗补充</Text>
+          <View className="border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4 mb-5">
+            <Textarea
+              value={medicalNotes}
+              maxlength={200}
+              autoHeight
+              placeholder="例如：曾经肠胃敏感，需要定期观察"
+              onInput={(event) => setMedicalNotes(event.detail.value)}
+            />
+          </View>
+
           <Text className="text-[24rpx] text-[#666] mb-2 block">备注</Text>
           <View className="border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
             <Textarea

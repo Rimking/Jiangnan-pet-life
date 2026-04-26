@@ -1,26 +1,51 @@
-﻿import BasicLayout from '@/layout/basicLayout';
+import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
+import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import { memo, useMemo, useState } from 'react';
-import { KNOWLEDGE_ARTICLES, findArticleIndex, findKnowledgeArticle } from '../PetKnowledge/data';
-import { isArticleFavorited, toggleArticleFavorite } from '@/utils/knowledgeState';
+import {
+  createKnowledgeFavoriteData,
+  deleteKnowledgeFavoriteData,
+  getKnowledgeArticleDetailData,
+  getKnowledgeArticlesData,
+  getKnowledgeOverviewData,
+  KnowledgeArticleItem,
+} from '@/api/data';
+import { ensureLoggedIn } from '@/utils/authState';
 
 const PetArticleDetail = memo(function PetArticleDetail() {
   const { params } = useRouter();
-  const [, setFavoriteTick] = useState(0);
+  const [article, setArticle] = useState<KnowledgeArticleItem | null>(null);
+  const [articles, setArticles] = useState<KnowledgeArticleItem[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
 
-  const article = useMemo(() => {
-    return findKnowledgeArticle(params.id || '');
-  }, [params.id]);
+  useDidShow(() => {
+    if (!params.id) {
+      setArticle(null);
+      return;
+    }
+    getKnowledgeArticleDetailData(params.id)
+      .then((res) => setArticle(res))
+      .catch(() => setArticle(null));
+    getKnowledgeArticlesData({})
+      .then((res) => setArticles(res))
+      .catch(() => setArticles([]));
+    getKnowledgeOverviewData({})
+      .then((res) => {
+        setFavoriteIds(res.favoriteArticleIds || []);
+      })
+      .catch(() => {
+        setFavoriteIds([]);
+      });
+  });
 
   const articleIndex = useMemo(() => {
-    return findArticleIndex(params.id || '');
-  }, [params.id]);
+    return articles.findIndex((item) => item.id === params.id);
+  }, [articles, params.id]);
 
-  const prevArticle = articleIndex > 0 ? KNOWLEDGE_ARTICLES[articleIndex - 1] : undefined;
+  const prevArticle = articleIndex > 0 ? articles[articleIndex - 1] : undefined;
   const nextArticle =
-    articleIndex >= 0 && articleIndex < KNOWLEDGE_ARTICLES.length - 1
-      ? KNOWLEDGE_ARTICLES[articleIndex + 1]
+    articleIndex >= 0 && articleIndex < articles.length - 1
+      ? articles[articleIndex + 1]
       : undefined;
 
   if (!article) {
@@ -39,7 +64,7 @@ const PetArticleDetail = memo(function PetArticleDetail() {
     );
   }
 
-  const favorite = isArticleFavorited(article.id);
+  const favorite = favoriteIds.includes(article.id);
 
   return (
     <BasicLayout
@@ -51,15 +76,35 @@ const PetArticleDetail = memo(function PetArticleDetail() {
         <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[18rpx] mb-[14rpx]">
           <Text className="text-[30rpx] font-bold text-[#222] block">{article.title}</Text>
           <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">{article.desc}</Text>
+          {article.sourceName ? (
+            <Text className="text-[20rpx] text-[#8a8a8a] mt-[8rpx] block">
+              来源：{article.sourceName}
+            </Text>
+          ) : null}
         </View>
 
         <View className="mb-[14rpx] flex justify-end">
           <View
             className="px-[14rpx] py-[8rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626]"
             style={{ backgroundColor: favorite ? '#FFD93B' : '#F4F4F4' }}
-            onClick={() => {
-              toggleArticleFavorite(article.id);
-              setFavoriteTick((v) => v + 1);
+            onClick={async () => {
+              if (!ensureLoggedIn(`/pages/PetArticleDetail/index?id=${article.id}`)) {
+                return;
+              }
+              try {
+                if (favorite) {
+                  await deleteKnowledgeFavoriteData({ articleId: article.id });
+                  setFavoriteIds((prev) => prev.filter((item) => item !== article.id));
+                } else {
+                  await createKnowledgeFavoriteData({ articleId: article.id });
+                  setFavoriteIds((prev) => [...prev, article.id]);
+                }
+              } catch (error: any) {
+                Taro.showToast({
+                  title: error?.message || '收藏状态更新失败',
+                  icon: 'none',
+                });
+              }
             }}
           >
             <Text className="text-[22rpx] text-[#333]">{favorite ? '已收藏 ★' : '加入收藏 ☆'}</Text>
@@ -72,6 +117,9 @@ const PetArticleDetail = memo(function PetArticleDetail() {
               {line}
             </Text>
           ))}
+          {article.sourceUrl ? (
+            <Text className="text-[20rpx] text-[#6b7fd3] mt-[6rpx] block">参考链接：{article.sourceUrl}</Text>
+          ) : null}
         </View>
 
         <View className="flex gap-[10rpx] mb-[14rpx]">

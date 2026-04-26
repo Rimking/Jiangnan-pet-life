@@ -27,6 +27,7 @@ import {
   updateScheduleData,
 } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const enum TabType {
   Record = 'record',
@@ -41,6 +42,7 @@ const PetSchedule = memo(function PetSchedule() {
   const [careLogs, setCareLogs] = useState<PetCareLogModel[]>([]);
   const [records, setRecords] = useState<PetRecordModel[]>([]);
   const { activePet, activePetId, loading, error } = usePetApiPets();
+  const loggedIn = isLoggedIn();
 
   const refreshPageData = useCallback(async () => {
     if (!activePetId) {
@@ -153,6 +155,15 @@ const PetSchedule = memo(function PetSchedule() {
     borderRadius: PET_UI_RADIUS.pill,
   };
 
+  const hasDayRecords = mergedRecords.length > 0;
+  const hasDayReminders = petReminders.length > 0;
+  const showLoginState = !loggedIn && !activePet && !loading;
+  const showNoPetState = loggedIn && !activePet && !loading;
+  const showEmptyDataState = activePet && !loading && (
+    (activeTab === TabType.Record && !hasDayRecords) ||
+    (activeTab === TabType.Reminder && !hasDayReminders)
+  );
+
   return (
     <BasicLayout
       wrapClassName="w-full h-full"
@@ -205,42 +216,87 @@ const PetSchedule = memo(function PetSchedule() {
 
         <Calendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
-        <View className="w-full mt-4">
-          {activeTab === TabType.Record ? (
-            <RecordTab
-              records={mergedRecords}
-              onAddRecord={() =>
-                Taro.navigateTo({
-                  url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${selectedDate}&mode=record`,
-                })
-              }
-              onAddExpense={() =>
-                Taro.navigateTo({
-                  url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${selectedDate}&mode=expense`,
-                })
-              }
-              onAddCare={() =>
-                Taro.navigateTo({
-                  url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${selectedDate}&mode=care`,
-                })
-              }
-            />
-          ) : (
-            <ReminderTab
-              reminders={petReminders}
-              onAdd={() =>
-                Taro.navigateTo({
-                  url: `/pages/AddPetReminder/index?petId=${activePetId}&date=${selectedDate}`,
-                })
-              }
-              onToggle={switchReminder}
-            />
-          )}
-        </View>
+        {activePet ? (
+          <View className="w-full mt-4">
+            {activeTab === TabType.Record ? (
+              <RecordTab
+                records={mergedRecords}
+                onAddRecord={() =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${selectedDate}&mode=record`,
+                  })
+                }
+                onAddExpense={() =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${selectedDate}&mode=expense`,
+                  })
+                }
+                onAddCare={() =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${selectedDate}&mode=care`,
+                  })
+                }
+              />
+            ) : (
+              <ReminderTab
+                reminders={petReminders}
+                onAdd={() =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetReminder/index?petId=${activePetId}&date=${selectedDate}`,
+                  })
+                }
+                onToggle={switchReminder}
+              />
+            )}
+          </View>
+        ) : null}
 
-        {!activePet && !loading ? (
-          <View className="mt-4">
-            <Text style={{ fontSize: PET_UI_TEXT.body }}>暂无宠物档案，请先创建宠物。</Text>
+        {showLoginState ? (
+          <View className="mt-4 rounded-[28rpx] bg-white px-[28rpx] py-[32rpx] shadow-[0_18rpx_36rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[#2c2c2c] font-semibold" style={{ fontSize: PET_UI_TEXT.title }}>
+              登录后查看你的宠物日程
+            </Text>
+            <Text className="text-[#7a7a7a] mt-[12rpx] block" style={{ fontSize: PET_UI_TEXT.body }}>
+              提醒、护理、花销和日常记录都会跟随账号同步，换设备也能继续看。
+            </Text>
+            <View
+              className="mt-[20rpx] inline-flex px-[26rpx] py-[14rpx] bg-[#FFD93B]"
+              style={tabStyle}
+              onClick={() => ensureLoggedIn('/pages/PetSchedule/index')}
+            >
+              <Text style={{ fontSize: PET_UI_TEXT.body }}>去微信登录</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {showNoPetState ? (
+          <View className="mt-4 rounded-[28rpx] bg-white px-[28rpx] py-[32rpx] shadow-[0_18rpx_36rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[#2c2c2c] font-semibold" style={{ fontSize: PET_UI_TEXT.title }}>
+              还没有宠物档案
+            </Text>
+            <Text className="text-[#7a7a7a] mt-[12rpx] block" style={{ fontSize: PET_UI_TEXT.body }}>
+              先添加一只宠物，后面才能开始管理提醒和照护记录。
+            </Text>
+            <View
+              className="mt-[20rpx] inline-flex px-[26rpx] py-[14rpx] bg-[#FFD93B]"
+              style={tabStyle}
+              onClick={() => Taro.navigateTo({ url: '/pages/EditPetProfile/index' })}
+            >
+              <Text style={{ fontSize: PET_UI_TEXT.body }}>去添加宠物</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {showEmptyDataState ? (
+          <View className="mt-4 rounded-[28rpx] bg-white px-[28rpx] py-[28rpx] shadow-[0_18rpx_36rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[#2c2c2c] font-semibold" style={{ fontSize: PET_UI_TEXT.title }}>
+              {activeTab === TabType.Record ? '这一天还没有记录' : '这一天还没有提醒'}
+            </Text>
+            <Text className="text-[#7a7a7a] mt-[12rpx] block" style={{ fontSize: PET_UI_TEXT.body }}>
+              {activeTab === TabType.Record
+                ? '可以先补一条日常、花销或护理记录，时间线和统计页也会同步更新。'
+                : '可以先添加一个提醒，让喂食、护理和复查安排更清楚。'}
+            </Text>
           </View>
         ) : null}
       </View>

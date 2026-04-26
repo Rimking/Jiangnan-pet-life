@@ -1,6 +1,6 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import Taro, { useDidShow } from '@tarojs/taro';
 import { PET_UI, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 import { formatLocalDateKey } from '@/utils/formatDate';
@@ -10,54 +10,73 @@ import FunctionGrid from './components/FunctionGrid';
 import DailyTip from './components/DailyTip';
 import ExpenseInsight from './components/ExpenseInsight';
 import {
-  getCareRecordListData,
-  getExpenseListData,
-  getRecordListData,
-  getScheduleListData,
-  mapCareRecordToCareLogModel,
-  mapExpenseToExpenseModel,
-  mapRecordToRecordModel,
-  mapScheduleToReminderModel,
+  getProfileOverviewData,
+  mapPetToProfileModel,
 } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
-import { PetCareLogModel, PetExpenseModel, PetRecordModel, PetReminderModel } from '@/types/pet';
+import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const PetProfile = memo(function PetProfile() {
   const { pets, activePet, activePetId, loading, error, setActivePetId } = usePetApiPets();
-  const [reminders, setReminders] = useState<PetReminderModel[]>([]);
-  const [expenses, setExpenses] = useState<PetExpenseModel[]>([]);
-  const [careLogs, setCareLogs] = useState<PetCareLogModel[]>([]);
-  const [records, setRecords] = useState<PetRecordModel[]>([]);
+  const [stats, setStats] = useState({
+    reminders: 0,
+    records: 0,
+    care: 0,
+    monthExpense: 0,
+    milestones: 0,
+  });
+  const [expenseInsight, setExpenseInsight] = useState({
+    monthTotal: 0,
+    categoryTop: [] as Array<{ name: string; amount: number }>,
+    weekSeries: [] as number[],
+  });
+  const [recentMilestone, setRecentMilestone] = useState<{
+    id: string;
+    title: string;
+    occurredAt: string;
+    description?: string;
+  } | null>(null);
 
   const today = formatLocalDateKey(new Date());
-  const monthPrefix = today.slice(0, 7);
+  const loggedIn = isLoggedIn();
 
   const refreshProfileData = useCallback(async () => {
     if (!activePetId) {
-      setReminders([]);
-      setExpenses([]);
-      setCareLogs([]);
-      setRecords([]);
+      setStats({
+        reminders: 0,
+        records: 0,
+        care: 0,
+        monthExpense: 0,
+        milestones: 0,
+      });
+      setExpenseInsight({
+        monthTotal: 0,
+        categoryTop: [],
+        weekSeries: [],
+      });
+      setRecentMilestone(null);
       return;
     }
 
     try {
-      const [scheduleList, expenseList, careRecordList, recordList] = await Promise.all([
-        getScheduleListData({ petId: activePetId }),
-        getExpenseListData({ petId: activePetId }),
-        getCareRecordListData({ petId: activePetId }),
-        getRecordListData({ petId: activePetId }),
-      ]);
-
-      setReminders(scheduleList.map(mapScheduleToReminderModel));
-      setExpenses(expenseList.map(mapExpenseToExpenseModel));
-      setCareLogs(careRecordList.map(mapCareRecordToCareLogModel));
-      setRecords(recordList.map(mapRecordToRecordModel));
+      const profileData = await getProfileOverviewData(activePetId);
+      setStats(profileData.stats);
+      setExpenseInsight(profileData.expenseInsight);
+      setRecentMilestone(profileData.recentMilestone);
     } catch (requestError) {
-      setReminders([]);
-      setExpenses([]);
-      setCareLogs([]);
-      setRecords([]);
+      setStats({
+        reminders: 0,
+        records: 0,
+        care: 0,
+        monthExpense: 0,
+        milestones: 0,
+      });
+      setExpenseInsight({
+        monthTotal: 0,
+        categoryTop: [],
+        weekSeries: [],
+      });
+      setRecentMilestone(null);
     }
   }, [activePetId]);
 
@@ -68,63 +87,6 @@ const PetProfile = memo(function PetProfile() {
   useDidShow(() => {
     refreshProfileData();
   });
-
-  const stats = useMemo(() => {
-    if (!activePet) {
-      return {
-        reminders: 0,
-        records: 0,
-        care: 0,
-        monthExpense: 0,
-      };
-    }
-
-    const petReminders = reminders.filter((item) => item.petId === activePet.id && item.date === today);
-    const petCare = careLogs.filter((item) => item.petId === activePet.id && item.date === today);
-    const petRecords = records.filter((item) => item.petId === activePet.id && item.date === today);
-    const monthExpense = expenses
-      .filter((item) => item.petId === activePet.id && item.date.startsWith(monthPrefix))
-      .reduce((sum, item) => sum + item.amount, 0);
-
-    return {
-      reminders: petReminders.length,
-      records: petRecords.length,
-      care: petCare.length,
-      monthExpense,
-    };
-  }, [activePet, careLogs, expenses, monthPrefix, records, reminders, today]);
-
-  const expenseAnalysis = useMemo(() => {
-    if (!activePet) {
-      return { monthTotal: 0, categoryTop: [], weekSeries: [] as number[] };
-    }
-
-    const monthExpenseList = expenses.filter(
-      (item) => item.petId === activePet.id && item.date.startsWith(monthPrefix)
-    );
-    const monthTotal = monthExpenseList.reduce((sum, item) => sum + item.amount, 0);
-
-    const categoryMap = monthExpenseList.reduce<Record<string, number>>((acc, item) => {
-      acc[item.category] = (acc[item.category] ?? 0) + item.amount;
-      return acc;
-    }, {});
-
-    const categoryTop = Object.entries(categoryMap)
-      .map(([name, amount]) => ({ name, amount }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 3);
-
-    const weekSeries = Array.from({ length: 7 }).map((_, index) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - index));
-      const dateKey = formatLocalDateKey(date);
-      return expenses
-        .filter((item) => item.petId === activePet.id && item.date === dateKey)
-        .reduce((sum, item) => sum + item.amount, 0);
-    });
-
-    return { monthTotal, categoryTop, weekSeries };
-  }, [activePet, expenses, monthPrefix]);
 
   return (
     <BasicLayout
@@ -167,7 +129,22 @@ const PetProfile = memo(function PetProfile() {
 
         {!activePet && !loading ? (
           <View className="px-[28rpx]">
-            <Text style={{ fontSize: PET_UI_TEXT.body }}>暂无宠物档案</Text>
+            <Text style={{ fontSize: PET_UI_TEXT.body }}>
+              {loggedIn ? '暂无宠物档案' : '登录后可创建并同步你的宠物档案'}
+            </Text>
+            {!loggedIn ? (
+              <View
+                className="mt-[18rpx] inline-flex px-[26rpx] py-[14rpx] rounded-[999rpx] border-solid"
+                style={{
+                  border: PET_UI_BORDER.regular,
+                  borderRadius: PET_UI_RADIUS.pill,
+                  backgroundColor: '#FFD93B',
+                }}
+                onClick={() => ensureLoggedIn('/pages/PetProfile/index')}
+              >
+                <Text style={{ fontSize: PET_UI_TEXT.body }}>去微信登录</Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -186,6 +163,7 @@ const PetProfile = memo(function PetProfile() {
               onOpenCare={() =>
                 Taro.navigateTo({ url: `/pages/PetCareStats/index?petId=${activePet.id}` })
               }
+              onOpenMilestones={() => Taro.navigateTo({ url: '/pages/PetMilestones/index' })}
               onAddReminder={() =>
                 Taro.navigateTo({
                   url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${today}`,
@@ -198,13 +176,38 @@ const PetProfile = memo(function PetProfile() {
               }
             />
             <ExpenseInsight
-              monthTotal={expenseAnalysis.monthTotal}
-              categoryTop={expenseAnalysis.categoryTop}
-              weekSeries={expenseAnalysis.weekSeries}
+              monthTotal={expenseInsight.monthTotal}
+              categoryTop={expenseInsight.categoryTop}
+              weekSeries={expenseInsight.weekSeries}
               onOpenDetail={() =>
                 Taro.navigateTo({ url: `/pages/PetExpenseStats/index?petId=${activePet.id}` })
               }
             />
+            <View className="px-[28rpx] mt-[4rpx]">
+              <View
+                className="px-[22rpx] py-[20rpx] border-solid"
+                style={{
+                  border: PET_UI_BORDER.regular,
+                  borderRadius: PET_UI_RADIUS.md,
+                  backgroundColor: '#FFF5FA',
+                }}
+                onClick={() => Taro.navigateTo({ url: '/pages/PetMilestones/index' })}
+              >
+                <Text className="text-[#B25E8B]" style={{ fontSize: PET_UI_TEXT.caption }}>
+                  最近成长里程碑
+                </Text>
+                <Text className="text-[#2B2B2B] font-semibold mt-[8rpx] block" style={{ fontSize: PET_UI_TEXT.body }}>
+                  {recentMilestone
+                    ? `${recentMilestone.title} · ${recentMilestone.occurredAt.slice(0, 10)}`
+                    : '还没有成长节点，去记录第一次到家、第一次出门或疫苗完成吧。'}
+                </Text>
+                {recentMilestone?.description ? (
+                  <Text className="text-[#7B6A74] mt-[6rpx] block" style={{ fontSize: PET_UI_TEXT.caption }}>
+                    {recentMilestone.description}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
           </>
         ) : null}
 

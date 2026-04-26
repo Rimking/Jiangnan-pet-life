@@ -4,6 +4,68 @@ export interface BaseListParams {
   type?: string;
 }
 
+export interface PetOverviewData {
+  pet: PetItem;
+  stats: {
+    schedules: number;
+    pendingSchedules: number;
+    records: number;
+    expenses: number;
+    totalExpense: number;
+    careRecords: number;
+    foods: number;
+    lowInventoryFoods: number;
+    medicines: number;
+    dueMedicines: number;
+    milestones: number;
+  };
+  recent: {
+    upcomingSchedules: Array<{
+      id: string;
+      title: string;
+      category: string;
+      status: string;
+      remindAt: string;
+    }>;
+    latestExpenses: Array<{
+      id: string;
+      category: string;
+      amount: number;
+      spentAt: string;
+      notes?: string;
+    }>;
+    latestCareRecords: Array<{
+      id: string;
+      category: string;
+      occurredAt: string;
+      result?: string;
+      notes?: string;
+    }>;
+    latestMilestones: Array<{
+      id: string;
+      title: string;
+      occurredAt: string;
+      description?: string;
+      tags?: string[];
+    }>;
+  };
+}
+
+export interface PetTimelineData {
+  petId: string;
+  total: number;
+  timeline: Array<{
+    id: string;
+    sourceId: string;
+    petId: string;
+    sourceType: string;
+    title: string;
+    tag: string;
+    description: string;
+    occurredAt: string;
+  }>;
+}
+
 export interface PetItem {
   id: string;
   name: string;
@@ -50,8 +112,9 @@ export type UpdatePetParams = Partial<CreatePetParams>;
  */
 export const getPetListData = (params: BaseListParams) => {
   return apiGet<{
+    code: number;
     data: PetItem[];
-    success: boolean;
+    message: string;
   }>(
     {
       url: '/api/pets',
@@ -72,8 +135,9 @@ export const getPetListData = (params: BaseListParams) => {
  */
 export const createPetData = (params: CreatePetParams) => {
   return apiPost<{
+    code: number;
     data: PetItem;
-    success: boolean;
+    message: string;
   }>(
     {
       url: '/api/pets',
@@ -87,8 +151,9 @@ export const createPetData = (params: CreatePetParams) => {
 
 export const getPetDetailData = (id: string) => {
   return apiGet<{
+    code: number;
     data: PetItem;
-    success: boolean;
+    message: string;
   }>(
     {
       url: `/api/pets/${id}`,
@@ -99,8 +164,9 @@ export const getPetDetailData = (id: string) => {
 
 export const updatePetData = (id: string, params: UpdatePetParams) => {
   return apiPatch<{
+    code: number;
     data: PetItem;
-    success: boolean;
+    message: string;
   }>(
     {
       url: `/api/pets/${id}`,
@@ -114,14 +180,41 @@ export const updatePetData = (id: string, params: UpdatePetParams) => {
 
 export const deletePetData = (id: string) => {
   return apiDelete<{
+    code: number;
     data: {
       id: string;
       deleted: boolean;
     };
-    success: boolean;
+    message: string;
   }>(
     {
       url: `/api/pets/${id}`,
+    },
+    true
+  ).then((res) => res.data);
+};
+
+export const getPetOverviewData = (id: string) => {
+  return apiGet<{
+    code: number;
+    data: PetOverviewData;
+    message: string;
+  }>(
+    {
+      url: `/api/pets/${id}/overview`,
+    },
+    true
+  ).then((res) => res.data);
+};
+
+export const getPetTimelineData = (id: string) => {
+  return apiGet<{
+    code: number;
+    data: PetTimelineData;
+    message: string;
+  }>(
+    {
+      url: `/api/pets/${id}/timeline`,
     },
     true
   ).then((res) => res.data);

@@ -1,28 +1,50 @@
-﻿type QaCategory = 'health' | 'behavior' | 'feed' | 'general';
+﻿import Taro from '@tarojs/taro';
 
-const favoriteArticleIds = new Set<string>();
-const qaStats: Record<QaCategory, number> = {
-  health: 0,
-  behavior: 0,
-  feed: 0,
-  general: 0,
+type QaCategory = 'health' | 'behavior' | 'feed' | 'general';
+
+type QaHistoryItem = {
+  question: string;
+  answer: string;
+  time: string;
+  category: string;
 };
 
-export const isArticleFavorited = (articleId: string) => {
-  return favoriteArticleIds.has(articleId);
+const QA_STATS_STORAGE_KEY = 'knowledge_qa_stats';
+const QA_HISTORY_STORAGE_KEY = 'knowledge_qa_history';
+
+const readQaStats = () => {
+  const value = Taro.getStorageSync(QA_STATS_STORAGE_KEY);
+  return {
+    health: Number(value?.health || 0),
+    behavior: Number(value?.behavior || 0),
+    feed: Number(value?.feed || 0),
+    general: Number(value?.general || 0),
+  } as Record<QaCategory, number>;
 };
 
-export const toggleArticleFavorite = (articleId: string) => {
-  if (favoriteArticleIds.has(articleId)) {
-    favoriteArticleIds.delete(articleId);
-    return false;
-  }
-  favoriteArticleIds.add(articleId);
-  return true;
+const readQaHistory = () => {
+  const value = Taro.getStorageSync(QA_HISTORY_STORAGE_KEY);
+  return Array.isArray(value)
+    ? value.filter(
+        (item) =>
+          item &&
+          typeof item.question === 'string' &&
+          typeof item.answer === 'string' &&
+          typeof item.time === 'string' &&
+          typeof item.category === 'string'
+      )
+    : [];
 };
 
-export const getFavoriteArticleIds = () => {
-  return Array.from(favoriteArticleIds);
+const qaStats: Record<QaCategory, number> = readQaStats();
+let qaHistory: QaHistoryItem[] = readQaHistory();
+
+const syncQaStats = () => {
+  Taro.setStorageSync(QA_STATS_STORAGE_KEY, { ...qaStats });
+};
+
+const syncQaHistory = () => {
+  Taro.setStorageSync(QA_HISTORY_STORAGE_KEY, qaHistory);
 };
 
 export const getQuestionCategory = (question: string): QaCategory => {
@@ -48,8 +70,25 @@ export const getQuestionCategory = (question: string): QaCategory => {
 
 export const recordQaCategory = (category: QaCategory) => {
   qaStats[category] += 1;
+  syncQaStats();
 };
 
 export const getQaCategoryStats = () => {
   return { ...qaStats };
+};
+
+export const addQaHistoryItem = (item: QaHistoryItem) => {
+  qaHistory = [item, ...qaHistory].slice(0, 6);
+  syncQaHistory();
+  return [...qaHistory];
+};
+
+export const getQaHistory = () => {
+  return [...qaHistory];
+};
+
+export const clearQaHistory = () => {
+  qaHistory = [];
+  syncQaHistory();
+  return [];
 };

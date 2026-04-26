@@ -1,36 +1,108 @@
-﻿import BasicLayout from '@/layout/basicLayout';
+import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input } from '@tarojs/components';
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { KNOWLEDGE_ARTICLES, KNOWLEDGE_CATEGORIES } from './data';
-import { getFavoriteArticleIds, isArticleFavorited } from '@/utils/knowledgeState';
+import {
+  deleteKnowledgeFavoriteData,
+  createKnowledgeFavoriteData,
+  getKnowledgeArticlesData,
+  getKnowledgeOverviewData,
+  KnowledgeArticleItem,
+  KnowledgeCategoryItem,
+} from '@/api/data';
+import { ensureLoggedIn } from '@/utils/authState';
 
 const PetKnowledge = memo(function PetKnowledge() {
   const [keyword, setKeyword] = useState('');
   const [activeCategory, setActiveCategory] = useState('feed');
   const [onlyFavorite, setOnlyFavorite] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [categories, setCategories] = useState<KnowledgeCategoryItem[]>([]);
+  const [articles, setArticles] = useState<KnowledgeArticleItem[]>([]);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadOverview = useCallback((category?: string, nextKeyword?: string) => {
+    setLoading(true);
+    getKnowledgeOverviewData({
+      category,
+      keyword: nextKeyword?.trim() || undefined,
+    })
+      .then(async (result) => {
+        const categoryList = result.categories || [];
+        const resolvedCategory = result.activeCategory || '';
+        const categoryCount =
+          categoryList.find((item) => item.key === resolvedCategory)?.count || 0;
+        const articleList =
+          !result.articles?.length && resolvedCategory && categoryCount > 0
+            ? await getKnowledgeArticlesData({
+                category: resolvedCategory,
+                keyword: nextKeyword?.trim() || undefined,
+              }).catch(() => [])
+            : result.articles || [];
+
+        setCategories(result.categories || []);
+        setActiveCategory(resolvedCategory);
+        setLoggedIn(Boolean(result.loggedIn));
+        setFavoriteIds(result.favoriteArticleIds || []);
+        setArticles(articleList);
+      })
+      .catch(() => {
+        setCategories([]);
+        setLoggedIn(false);
+        setFavoriteIds([]);
+        setArticles([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   useDidShow(() => {
-    setRefreshKey((prev) => prev + 1);
+    loadOverview(activeCategory, keyword);
   });
 
-  const filteredArticles = useMemo(() => {
-    const favorites = new Set(getFavoriteArticleIds());
+  const handleKeywordChange = (value: string) => {
+    setKeyword(value);
+    loadOverview(activeCategory, value);
+  };
 
-    return KNOWLEDGE_ARTICLES.filter((item) => {
-      if (item.category !== activeCategory) {
-        return false;
-      }
+  const handleCategoryChange = (category: string) => {
+    setActiveCategory(category);
+    loadOverview(category, keyword);
+  };
+
+  const filteredArticles = useMemo(() => {
+    const favorites = new Set(favoriteIds);
+
+    return articles.filter((item) => {
       if (onlyFavorite && !favorites.has(item.id)) {
         return false;
       }
-      if (!keyword.trim()) {
-        return true;
-      }
-      return item.title.includes(keyword) || item.desc.includes(keyword);
+      return true;
     });
-  }, [activeCategory, keyword, onlyFavorite, refreshKey]);
+  }, [onlyFavorite, articles, favoriteIds]);
+
+  const handleToggleFavorite = async (articleId: string) => {
+    if (!ensureLoggedIn('/pages/PetKnowledge/index')) {
+      return;
+    }
+
+    const favorited = favoriteIds.includes(articleId);
+    try {
+      if (favorited) {
+        await deleteKnowledgeFavoriteData({ articleId });
+        setFavoriteIds((prev) => prev.filter((item) => item !== articleId));
+      } else {
+        await createKnowledgeFavoriteData({ articleId });
+        setFavoriteIds((prev) => [...prev, articleId]);
+      }
+      setLoggedIn(true);
+    } catch (error: any) {
+      Taro.showToast({
+        title: error?.message || '收藏状态更新失败',
+        icon: 'none',
+      });
+    }
+  };
 
   return (
     <BasicLayout
@@ -43,20 +115,23 @@ const PetKnowledge = memo(function PetKnowledge() {
           <Input
             placeholder="搜索：如 软便、挑食、驱虫"
             value={keyword}
-            onInput={(event) => setKeyword(event.detail.value)}
+            onInput={(event) => handleKeywordChange(event.detail.value)}
             className="text-[24rpx]"
           />
         </View>
 
         <View className="grid grid-cols-2 gap-[10rpx] mb-[14rpx]">
-          {KNOWLEDGE_CATEGORIES.map((item) => (
+          {categories.map((item) => (
             <View
               key={item.key}
               className="rounded-[16rpx] border-[2rpx] border-solid border-[#262626] p-[12rpx]"
               style={{ backgroundColor: item.color, opacity: activeCategory === item.key ? 1 : 0.75 }}
-              onClick={() => setActiveCategory(item.key)}
+              onClick={() => handleCategoryChange(item.key)}
             >
               <Text className="text-[24rpx] font-semibold text-[#303030]">{item.label}</Text>
+              <Text className="text-[18rpx] text-[#666] mt-[4rpx] block">
+                {item.count || 0} 篇
+              </Text>
             </View>
           ))}
         </View>
@@ -71,9 +146,17 @@ const PetKnowledge = memo(function PetKnowledge() {
           </View>
         </View>
 
+        {!loggedIn ? (
+          <Text className="text-[20rpx] text-[#7a6f52] mb-[10rpx] block">
+            收藏、同步知识偏好等操作需要先完成微信登录。
+          </Text>
+        ) : null}
+
         <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[12rpx] mb-[14rpx]">
           <Text className="text-[26rpx] font-bold text-[#262626] mb-[8rpx] block">推荐文章</Text>
-          {!filteredArticles.length ? (
+          {loading ? (
+            <Text className="text-[22rpx] text-[#888] py-[10rpx] block">正在加载文章...</Text>
+          ) : !filteredArticles.length ? (
             <Text className="text-[22rpx] text-[#888] py-[10rpx] block">当前条件下暂无文章</Text>
           ) : (
             filteredArticles.map((item) => (
@@ -84,9 +167,17 @@ const PetKnowledge = memo(function PetKnowledge() {
               >
                 <View className="flex items-center justify-between">
                   <Text className="text-[24rpx] text-[#222] block">{item.title}</Text>
-                  <Text className="text-[22rpx]">{isArticleFavorited(item.id) ? '★' : '☆'}</Text>
+                  <Text className="text-[22rpx]" onClick={(event) => {
+                    event.stopPropagation();
+                    handleToggleFavorite(item.id);
+                  }}>{favoriteIds.includes(item.id) ? '★' : '☆'}</Text>
                 </View>
                 <Text className="text-[20rpx] text-[#777] mt-[4rpx] block">{item.desc}</Text>
+                {item.sourceName ? (
+                  <Text className="text-[18rpx] text-[#9a9a9a] mt-[4rpx] block">
+                    来源：{item.sourceName}
+                  </Text>
+                ) : null}
               </View>
             ))
           )}
@@ -96,8 +187,10 @@ const PetKnowledge = memo(function PetKnowledge() {
           className="bg-[#2B8BFF] rounded-[20rpx] p-[12rpx]"
           onClick={() => Taro.navigateTo({ url: '/pages/PetQa/index' })}
         >
-          <Text className="text-[24rpx] text-white font-semibold block">AI 宠物问答</Text>
-          <Text className="text-[20rpx] text-[#dbeaff] mt-[4rpx] block">输入你的问题，后续接后端接口生成答案。</Text>
+          <Text className="text-[24rpx] text-white font-semibold block">知识问答</Text>
+          <Text className="text-[20rpx] text-[#dbeaff] mt-[4rpx] block">
+            可以直接输入常见养护问题，系统会基于当前知识库内容给出建议。
+          </Text>
         </View>
       </View>
     </BasicLayout>

@@ -4,6 +4,7 @@ import Taro, { useRouter } from '@tarojs/taro';
 import { memo, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import { createCareRecordData, createExpenseData, createRecordData, toIsoDateTime } from '@/api/data';
+import { ensureLoggedIn } from '@/utils/authState';
 
 type RecordMode = 'record' | 'expense' | 'care';
 
@@ -69,6 +70,10 @@ const AddPetRecord = memo(function AddPetRecord() {
   };
 
   const handleSave = async () => {
+    if (!ensureLoggedIn(`/pages/AddPetRecord/index?petId=${petId}&date=${date}&mode=${mode}`)) {
+      return;
+    }
+
     if (!date.trim() || !time.trim()) {
       Taro.showToast({ title: '请填写日期和时间', icon: 'none' });
       return;
@@ -357,5 +362,4 @@ const AddPetRecord = memo(function AddPetRecord() {
 });
 
 export default AddPetRecord;
-
 

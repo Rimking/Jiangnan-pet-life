@@ -6,8 +6,14 @@
  */
 
 import Taro from '@tarojs/taro';
+import { getAuthToken } from '@/utils/authState';
 import { DEFAULT_HEADER, GW_API_HOST_ENV, REQUEST_TIMEOUT } from './variable';
-import { baseInterceptor, RequestApiErr, responseInterceptor } from './utils';
+import {
+  baseInterceptor,
+  RequestApiErr,
+  responseInterceptor,
+  sanitizeRequestData,
+} from './utils';
 
 /**
  * 基础请求
@@ -22,14 +28,18 @@ export const baseRequest = <T = any>(
     const { url = '' } = options;
 
     const resultUrl = url?.startsWith('http') ? url : `${GW_API_HOST_ENV}${url}`;
+    const sanitizedData = sanitizeRequestData(options.data);
+    const authToken = getAuthToken();
 
     Taro.request<T>({
       ...options,
+      data: sanitizedData,
       url: resultUrl,
       method,
       timeout: options.timeout || REQUEST_TIMEOUT,
       header: {
         ...DEFAULT_HEADER,
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         ...options.header,
       },
     })

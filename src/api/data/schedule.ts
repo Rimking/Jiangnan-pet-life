@@ -40,8 +40,9 @@ export type UpdateScheduleParams = Partial<CreateScheduleParams>;
 
 export const getScheduleListData = (params: ScheduleListParams = {}) => {
   return apiGet<{
+    code: number;
     data: ScheduleItem[];
-    success: boolean;
+    message: string;
   }>(
     {
       url: '/api/schedules',
@@ -55,8 +56,9 @@ export const getScheduleListData = (params: ScheduleListParams = {}) => {
 
 export const createScheduleData = (params: CreateScheduleParams) => {
   return apiPost<{
+    code: number;
     data: ScheduleItem;
-    success: boolean;
+    message: string;
   }>(
     {
       url: '/api/schedules',
@@ -70,8 +72,9 @@ export const createScheduleData = (params: CreateScheduleParams) => {
 
 export const updateScheduleData = (id: string, params: UpdateScheduleParams) => {
   return apiPatch<{
+    code: number;
     data: ScheduleItem;
-    success: boolean;
+    message: string;
   }>(
     {
       url: `/api/schedules/${id}`,
@@ -85,11 +88,12 @@ export const updateScheduleData = (id: string, params: UpdateScheduleParams) => 
 
 export const deleteScheduleData = (id: string) => {
   return apiDelete<{
+    code: number;
     data: {
       id: string;
       deleted: boolean;
     };
-    success: boolean;
+    message: string;
   }>(
     {
       url: `/api/schedules/${id}`,

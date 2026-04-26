@@ -6,16 +6,18 @@ import { formatLocalDateKey } from '@/utils/formatDate';
 import MenuItem from './components/MenuItem';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
 import {
-  getCareRecordListData,
-  getExpenseListData,
-  getRecordListData,
-  getScheduleListData,
-  mapCareRecordToCareLogModel,
-  mapExpenseToExpenseModel,
-  mapRecordToRecordModel,
-  mapScheduleToReminderModel,
+  getCurrentUserData,
+  getOwnerOverviewData,
+  logoutData,
 } from '@/api/data';
-import { PetCareLogModel, PetExpenseModel, PetRecordModel, PetReminderModel } from '@/types/pet';
+import {
+  AuthUser,
+  clearLoginSession,
+  ensureLoggedIn,
+  getCurrentUser,
+  isLoggedIn,
+  setCurrentUser,
+} from '@/utils/authState';
 
 const getAgeLabel = (birthday: string) => {
   const birth = new Date(birthday);
@@ -43,38 +45,77 @@ const getAgeLabel = (birthday: string) => {
 
 const PetOwner = memo(function PetOwner() {
   const { pets, activePet, activePetId, setActivePetId } = usePetApiPets();
-  const [reminders, setReminders] = useState<PetReminderModel[]>([]);
-  const [expenses, setExpenses] = useState<PetExpenseModel[]>([]);
-  const [careLogs, setCareLogs] = useState<PetCareLogModel[]>([]);
-  const [records, setRecords] = useState<PetRecordModel[]>([]);
+  const [user, setUser] = useState<AuthUser | null>(getCurrentUser());
+  const [reminderCount, setReminderCount] = useState(0);
+  const [achievementCount, setAchievementCount] = useState(0);
+  const [lowInventoryCount, setLowInventoryCount] = useState(0);
+  const [dueMedicineCount, setDueMedicineCount] = useState(0);
+  const [milestoneCount, setMilestoneCount] = useState(0);
+  const [latestMilestone, setLatestMilestone] = useState<{
+    id: string;
+    title: string;
+    occurredAt: string;
+    description?: string;
+  } | null>(null);
 
   useDidShow(() => {
-    Promise.all([
-      getScheduleListData({}),
-      getExpenseListData({}),
-      getCareRecordListData({}),
-      getRecordListData({}),
-    ])
-      .then(([scheduleList, expenseList, careList, recordList]) => {
-        setReminders(scheduleList.map(mapScheduleToReminderModel));
-        setExpenses(expenseList.map(mapExpenseToExpenseModel));
-        setCareLogs(careList.map(mapCareRecordToCareLogModel));
-        setRecords(recordList.map(mapRecordToRecordModel));
+    const cachedUser = getCurrentUser();
+    setUser(cachedUser);
+    if (loggedIn && !cachedUser) {
+      getCurrentUserData()
+        .then((profile) => {
+          setCurrentUser(profile);
+          setUser(profile);
+        })
+        .catch(() => {
+          setUser(null);
+        });
+    }
+    if (!activePetId) {
+      setReminderCount(0);
+      setAchievementCount(0);
+      setLowInventoryCount(0);
+      setDueMedicineCount(0);
+      setMilestoneCount(0);
+      setLatestMilestone(null);
+      return;
+    }
+
+    getOwnerOverviewData(activePetId || undefined)
+      .then((data) => {
+        setReminderCount(data.totals.pendingReminderCount);
+        setAchievementCount(data.totals.achievementCount);
+        setLowInventoryCount(data.totals.lowInventoryCount);
+        setDueMedicineCount(data.totals.dueMedicineCount);
+        setMilestoneCount(data.totals.milestoneCount);
+        setLatestMilestone(data.latestMilestone);
       })
       .catch(() => {
-        setReminders([]);
-        setExpenses([]);
-        setCareLogs([]);
-        setRecords([]);
+        setReminderCount(0);
+        setAchievementCount(0);
+        setLowInventoryCount(0);
+        setDueMedicineCount(0);
+        setMilestoneCount(0);
+        setLatestMilestone(null);
       });
   });
 
-  const reminderCount = reminders.filter((item) => item.petId === activePetId && item.enabled).length;
   const today = formatLocalDateKey(new Date());
-  const achievementCount =
-    records.filter((item) => item.petId === activePetId).length +
-    expenses.filter((item) => item.petId === activePetId).length +
-    careLogs.filter((item) => item.petId === activePetId).length;
+  const loggedIn = isLoggedIn();
+  const handleCreatePet = () => {
+    if (!ensureLoggedIn('/pages/PetOwner/index')) {
+      return;
+    }
+    Taro.navigateTo({ url: '/pages/EditPetProfile/index?mode=create' });
+  };
+  const handleLogout = async () => {
+    try {
+      await logoutData();
+    } catch {}
+    clearLoginSession();
+    setUser(null);
+    Taro.showToast({ title: '已退出登录', icon: 'success' });
+  };
   const activeDays = useMemo(() => {
     if (!activePet?.birthday) {
       return 0;
@@ -93,19 +134,19 @@ const PetOwner = memo(function PetOwner() {
       icon: '👑',
       title: '会员中心',
       bg: '#F6F3ED',
-      onClick: () => Taro.navigateTo({ url: '/pages/ChooseSelectCmp/index' }),
+      onClick: () => Taro.navigateTo({ url: '/pages/PetServiceCenter/index?mode=member' }),
     },
     {
       icon: '🧾',
       title: '订阅中心',
       bg: '#EEF2F8',
-      onClick: () => Taro.navigateTo({ url: '/pages/PetExpenseStats/index' }),
+      onClick: () => Taro.navigateTo({ url: '/pages/PetServiceCenter/index?mode=subscription' }),
     },
     {
       icon: '📨',
       title: '联系我们',
       bg: '#F0EEF8',
-      onClick: () => Taro.navigateTo({ url: '/pages/SendPetSchedule/index' }),
+      onClick: () => Taro.navigateTo({ url: '/pages/PetFeedback/index?mode=contact' }),
     },
   ];
 
@@ -114,8 +155,8 @@ const PetOwner = memo(function PetOwner() {
       icon: '📅',
       title: '日程管理',
       subtitle: '管理提醒和记录',
-      hasBadge: reminders.length > 0,
-      badgeText: String(reminders.length),
+      hasBadge: reminderCount > 0,
+      badgeText: String(reminderCount),
       onClick: () => Taro.switchTab({ url: '/pages/PetSchedule/index' }),
     },
     {
@@ -125,13 +166,12 @@ const PetOwner = memo(function PetOwner() {
       onClick: () => Taro.navigateTo({ url: '/pages/PetExpenseStats/index' }),
     },
     {
-      icon: '💊',
-      title: '用药记录',
-      subtitle: '追踪药品和疗程',
-      onClick: () =>
-        Taro.navigateTo({
-          url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${today}&mode=care`,
-        }),
+      icon: '🍗',
+      title: '食物管理',
+      subtitle: '喂食计划与库存提醒',
+      hasBadge: lowInventoryCount > 0,
+      badgeText: `${lowInventoryCount}`,
+      onClick: () => Taro.navigateTo({ url: '/pages/PetFood/index' }),
     },
     {
       icon: '🩺',
@@ -140,13 +180,29 @@ const PetOwner = memo(function PetOwner() {
       onClick: () => Taro.navigateTo({ url: `/pages/PetCareStats/index?petId=${activePetId}` }),
     },
     {
-      icon: '🧴',
-      title: '洗护记录',
-      subtitle: '美容与护理时间线',
+      icon: '💊',
+      title: '用药管理',
+      subtitle: '追踪药品和疗程',
+      hasBadge: dueMedicineCount > 0,
+      badgeText: `${dueMedicineCount}`,
+      onClick: () => Taro.navigateTo({ url: '/pages/PetMedicine/index' }),
+    },
+    {
+      icon: '🕰️',
+      title: '成长时光轴',
+      subtitle: '按时间查看提醒与记录',
       onClick: () =>
         Taro.navigateTo({
-          url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${today}&mode=care`,
+          url: `/pages/PetTimeline/index${activePetId ? `?petId=${activePetId}` : ''}`,
         }),
+    },
+    {
+      icon: '🌟',
+      title: '成长里程碑',
+      subtitle: '记录第一次出门和重要节点',
+      hasBadge: milestoneCount > 0,
+      badgeText: `${milestoneCount}`,
+      onClick: () => Taro.navigateTo({ url: '/pages/PetMilestones/index' }),
     },
     {
       icon: '💬',
@@ -161,7 +217,7 @@ const PetOwner = memo(function PetOwner() {
       icon: '❓',
       title: '帮助与反馈',
       subtitle: '问题反馈与建议',
-      onClick: () => Taro.navigateTo({ url: '/pages/SendPetSchedule/index' }),
+      onClick: () => Taro.navigateTo({ url: '/pages/PetFeedback/index?mode=feedback' }),
     },
   ];
 
@@ -195,8 +251,18 @@ const PetOwner = memo(function PetOwner() {
             <Text className="text-[56rpx]">{activePet?.avatarEmoji || '🐾'}</Text>
           </View>
           <View className="flex-1">
-            <Text className="text-[40rpx] font-semibold text-[#2C3442]">{activePet?.name || '暂无宠物'}</Text>
-            <Text className="text-[22rpx] text-[#7B8594] mt-[8rpx]">当前有 {pets.length} 只宠物档案</Text>
+            <Text className="text-[40rpx] font-semibold text-[#2C3442]">
+              {loggedIn ? user?.nickname || activePet?.name || '微信用户' : activePet?.name || '未登录'}
+            </Text>
+            <Text className="text-[22rpx] text-[#7B8594] mt-[8rpx]">
+              {loggedIn ? `当前有 ${pets.length} 只宠物档案` : '登录后可同步宠物档案、收藏和个性化记录'}
+            </Text>
+          </View>
+          <View
+            className="px-[14rpx] py-[8rpx] rounded-[999rpx] bg-white border-[2rpx] border-[#262626]"
+            onClick={() => (loggedIn ? handleLogout() : Taro.navigateTo({ url: '/pages/Login/index?redirect=%2Fpages%2FPetOwner%2Findex' }))}
+          >
+            <Text className="text-[20rpx] text-[#333]">{loggedIn ? '退出' : '登录'}</Text>
           </View>
         </View>
 
@@ -218,19 +284,36 @@ const PetOwner = memo(function PetOwner() {
               与{activePet?.name || '它'}一起已经 {activeDays} 天了
             </Text>
           </View>
+          <View
+            className="mt-[14rpx] rounded-[22rpx] bg-[#FFF2F8] border-[3rpx] border-[#262626] px-[18rpx] py-[14rpx]"
+            onClick={() => Taro.navigateTo({ url: '/pages/PetMilestones/index' })}
+          >
+            <View className="flex items-center justify-between">
+              <Text className="text-[24rpx] text-[#7D4764] font-semibold">最近成长节点</Text>
+              <Text className="text-[22rpx] text-[#A45D85]">{milestoneCount} 条</Text>
+            </View>
+            <Text className="text-[24rpx] text-[#2D3441] font-semibold mt-[8rpx] block">
+              {latestMilestone ? latestMilestone.title : '还没有成长节点，去记录第一次到家或第一次出门吧。'}
+            </Text>
+            <Text className="text-[20rpx] text-[#7E6C76] mt-[6rpx] block">
+              {latestMilestone
+                ? `${latestMilestone.occurredAt.slice(0, 10)}${latestMilestone.description ? ` · ${latestMilestone.description}` : ''}`
+                : '记录后会同步到时间线、报告和详情页。'}
+            </Text>
+          </View>
         </View>
 
         <View
           className="rounded-[18rpx] px-[22rpx] py-[18rpx] flex items-center justify-between mb-[18rpx]"
           style={{ background: 'linear-gradient(90deg, #EED7A6 0%, #E7C27C 100%)' }}
-          onClick={() => Taro.navigateTo({ url: '/pages/ChooseSelectCmp/index' })}
+          onClick={() => Taro.navigateTo({ url: '/pages/PetServiceCenter/index?mode=member' })}
         >
           <View className="pr-[12rpx]">
             <Text className="text-[26rpx] text-[#5F3E13] font-semibold">开通会员，解锁更多服务</Text>
             <Text className="text-[20rpx] text-[#805D2A] mt-[6rpx]">当前待处理提醒 {reminderCount} 条，开通后可自动推送</Text>
           </View>
           <View className="px-[14rpx] py-[8rpx] rounded-[20rpx] bg-[#2E220F]">
-            <Text className="text-[20rpx] text-[#F6DEAF]">开通会员 ›</Text>
+            <Text className="text-[20rpx] text-[#F6DEAF]">查看权益 ›</Text>
           </View>
         </View>
 
@@ -276,7 +359,7 @@ const PetOwner = memo(function PetOwner() {
             </Text>
             <View
               className="w-[42rpx] h-[42rpx] rounded-full border-[2rpx] border-[#262626] flex items-center justify-center bg-[#FFF7D5]"
-              onClick={() => Taro.navigateTo({ url: '/pages/EditPetProfile/index?mode=create' })}
+              onClick={handleCreatePet}
             >
               <Text className="text-[28rpx]">+</Text>
             </View>
@@ -336,7 +419,7 @@ const PetOwner = memo(function PetOwner() {
 
             <View
               className="w-full h-[92rpx] rounded-[18rpx] border-[3rpx] border-dashed border-[#262626] flex items-center justify-center bg-[#FFFDF4]"
-              onClick={() => Taro.navigateTo({ url: '/pages/EditPetProfile/index?mode=create' })}
+              onClick={handleCreatePet}
             >
               <Text className="text-[28rpx] text-[#404040]">⊕ 添加宠物</Text>
             </View>

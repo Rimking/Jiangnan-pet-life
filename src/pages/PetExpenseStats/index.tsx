@@ -1,12 +1,13 @@
 import BasicLayout from '@/layout/basicLayout';
-import { View, Text } from '@tarojs/components';
-import { useRouter } from '@tarojs/taro';
+import { View, Text, Input } from '@tarojs/components';
+import Taro, { useRouter } from '@tarojs/taro';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { PET_UI, PET_UI_SHADOW } from '@/constants/petUi';
-import { getExpenseListData, mapExpenseToExpenseModel } from '@/api/data';
+import { getExpenseListData, mapExpenseToExpenseModel, updatePetData } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
 import { PetExpenseModel } from '@/types/pet';
 import { useDidShow } from '@tarojs/taro';
+import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
 
@@ -19,10 +20,14 @@ const buildMonthOptions = () => {
   });
 };
 
+type ExpenseBudgetMap = Record<string, string>;
+
 const PetExpenseStats = memo(function PetExpenseStats() {
   const { params } = useRouter();
-  const { pets, activePet } = usePetApiPets();
+  const { pets, activePet, activeRawPet, refreshPets } = usePetApiPets();
   const [expenses, setExpenses] = useState<PetExpenseModel[]>([]);
+  const [savingBudget, setSavingBudget] = useState(false);
+  const loggedIn = isLoggedIn();
 
   const petId = params.petId || activePet?.id || '';
   const pet = pets.find((item) => item.id === petId) || activePet;
@@ -48,6 +53,32 @@ const PetExpenseStats = memo(function PetExpenseStats() {
 
   const monthOptions = useMemo(() => buildMonthOptions(), []);
   const [activeMonth, setActiveMonth] = useState(monthOptions[0].key);
+  const [budgetInput, setBudgetInput] = useState('');
+
+  const budgetMap = useMemo<ExpenseBudgetMap>(() => {
+    const rawBudgets = activeRawPet?.profileExtras?.expenseBudgets;
+    if (!rawBudgets || typeof rawBudgets !== 'object' || Array.isArray(rawBudgets)) {
+      return {};
+    }
+
+    return Object.entries(rawBudgets as Record<string, unknown>).reduce<ExpenseBudgetMap>(
+      (acc, [key, value]) => {
+        if (typeof value === 'string' || typeof value === 'number') {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {}
+    );
+  }, [activeRawPet?.profileExtras]);
+
+  useEffect(() => {
+    if (!petId) {
+      setBudgetInput('');
+      return;
+    }
+    setBudgetInput(budgetMap[activeMonth] || '');
+  }, [activeMonth, budgetMap, petId]);
 
   const monthlyExpenses = useMemo(() => {
     return expenses
@@ -73,6 +104,52 @@ const PetExpenseStats = memo(function PetExpenseStats() {
     };
   }, [monthlyExpenses]);
 
+  const budgetAmount = Number(budgetInput || 0);
+  const budgetDiff = budgetAmount - summary.total;
+  const isOverBudget = budgetAmount > 0 && summary.total > budgetAmount;
+
+  const handleSaveBudget = async () => {
+    if (!ensureLoggedIn('/pages/PetExpenseStats/index')) {
+      return;
+    }
+
+    if (!petId) {
+      Taro.showToast({ title: '缺少宠物信息', icon: 'none' });
+      return;
+    }
+
+    if (!activeRawPet) {
+      Taro.showToast({ title: '宠物信息加载中', icon: 'none' });
+      return;
+    }
+
+    const nextBudgets = {
+      ...budgetMap,
+      [activeMonth]: budgetInput.trim(),
+    };
+
+    if (!budgetInput.trim()) {
+      delete nextBudgets[activeMonth];
+    }
+
+    setSavingBudget(true);
+    try {
+      await updatePetData(petId, {
+        profileExtras: {
+          ...(activeRawPet.profileExtras || {}),
+          expenseBudgets: nextBudgets,
+        },
+      });
+      await refreshPets();
+      Taro.showToast({ title: '预算已保存', icon: 'success' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '预算保存失败';
+      Taro.showToast({ title: message, icon: 'none' });
+    } finally {
+      setSavingBudget(false);
+    }
+  };
+
   return (
     <BasicLayout
       wrapClassName="w-full h-full"
@@ -89,6 +166,42 @@ const PetExpenseStats = memo(function PetExpenseStats() {
         <View className="mb-3">
           <Text className="text-[26rpx] text-[#555]">宠物：{pet?.name || '暂无'}</Text>
         </View>
+
+        {!loggedIn ? (
+          <View
+            className="mb-4 p-5 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white"
+            style={{ boxShadow: PET_UI_SHADOW }}
+          >
+            <Text className="text-[30rpx] font-bold block">登录后查看花销统计</Text>
+            <Text className="text-[22rpx] text-[#666] mt-2 block">
+              每一笔花销都会跟随账号保存，还可以继续记录预算和分类占比。
+            </Text>
+            <View
+              className="mt-3 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+              onClick={() => ensureLoggedIn('/pages/PetExpenseStats/index')}
+            >
+              <Text className="text-[24rpx] font-semibold">去微信登录</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {loggedIn && !petId ? (
+          <View
+            className="mb-4 p-5 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white"
+            style={{ boxShadow: PET_UI_SHADOW }}
+          >
+            <Text className="text-[30rpx] font-bold block">还没有宠物档案</Text>
+            <Text className="text-[22rpx] text-[#666] mt-2 block">
+              先添加宠物，后面的花销统计和预算提醒才会开始累计。
+            </Text>
+            <View
+              className="mt-3 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+              onClick={() => Taro.navigateTo({ url: '/pages/EditPetProfile/index' })}
+            >
+              <Text className="text-[24rpx] font-semibold">去添加宠物</Text>
+            </View>
+          </View>
+        ) : null}
 
         <View className="flex flex-wrap gap-2 mb-4">
           {monthOptions.map((item) => (
@@ -109,6 +222,37 @@ const PetExpenseStats = memo(function PetExpenseStats() {
         >
           <Text className="text-[28rpx] font-bold">当月总花销：¥{summary.total.toFixed(2)}</Text>
           <Text className="text-[22rpx] text-[#666] mt-1 block">记录笔数：{summary.count}</Text>
+          {budgetAmount > 0 ? (
+            <Text
+              className="text-[22rpx] mt-1 block"
+              style={{ color: isOverBudget ? '#d65a31' : '#33b36b' }}
+            >
+              {isOverBudget
+                ? `已超预算 ¥${Math.abs(budgetDiff).toFixed(2)}`
+                : `距离预算还剩 ¥${budgetDiff.toFixed(2)}`}
+            </Text>
+          ) : null}
+        </View>
+
+        <View
+          className="mb-4 p-4 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-[#f4f4f4]"
+          style={{ boxShadow: PET_UI_SHADOW }}
+        >
+          <Text className="text-[30rpx] font-bold mb-3 block">月度预算</Text>
+          <View className="rounded-[12rpx] border-[2rpx] border-solid border-[#262626] bg-white px-3 py-2">
+            <Input
+              type="digit"
+              value={budgetInput}
+              placeholder="输入本月预算金额"
+              onInput={(e) => setBudgetInput(e.detail.value)}
+            />
+          </View>
+          <View
+            className="mt-3 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+            onClick={handleSaveBudget}
+          >
+            <Text className="text-[24rpx] font-semibold">{savingBudget ? '保存中...' : '保存预算'}</Text>
+          </View>
         </View>
 
         <View
@@ -132,7 +276,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
               );
             })
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">本月暂无花销记录</Text>
+            <Text className="text-[24rpx] text-[#8a8a8a]">本月还没有花销记录，可以先补一笔粮食、用品或医疗开销。</Text>
           )}
         </View>
 
@@ -160,7 +304,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">本月暂无明细</Text>
+            <Text className="text-[24rpx] text-[#8a8a8a]">本月还没有花销明细</Text>
           )}
         </View>
       </View>

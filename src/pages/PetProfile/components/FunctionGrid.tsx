@@ -9,9 +9,11 @@ interface Props {
     records: number;
     care: number;
     monthExpense: number;
+    milestones: number;
   };
   onOpenSchedule: () => void;
   onOpenCare: () => void;
+  onOpenMilestones: () => void;
   onAddReminder: () => void;
   onAddRecord: () => void;
 }
@@ -33,6 +35,7 @@ const FunctionGrid = memo(function FunctionGrid({
   stats,
   onOpenSchedule,
   onOpenCare,
+  onOpenMilestones,
   onAddReminder,
   onAddRecord,
 }: Props) {
@@ -58,6 +61,17 @@ const FunctionGrid = memo(function FunctionGrid({
             <Text style={{ fontSize: PET_UI_TEXT.body }}>本月花销</Text>
             <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.body }}>
               ¥{stats.monthExpense.toFixed(2)}
+            </Text>
+          </View>
+
+          <View
+            className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]"
+            style={metricRowStyle}
+            onClick={onOpenMilestones}
+          >
+            <Text style={{ fontSize: PET_UI_TEXT.body }}>成长节点</Text>
+            <Text className="text-[#d06aa1]" style={{ fontSize: PET_UI_TEXT.body }}>
+              {stats.milestones}
             </Text>
           </View>
 
