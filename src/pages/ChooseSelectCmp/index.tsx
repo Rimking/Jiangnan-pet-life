@@ -4,6 +4,7 @@ import { memo, useMemo } from 'react';
 import Taro from '@tarojs/taro';
 import { formatLocalDateKey } from '@/utils/formatDate';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn } from '@/utils/authState';
 
 type ShortcutEntry = {
@@ -15,7 +16,7 @@ type ShortcutEntry = {
 };
 
 const ChooseSelectCmp = memo(function ChooseSelectCmp() {
-  const { activePetId } = usePetApiPets();
+  const { activePet, activePetId } = usePetApiPets();
   const today = formatLocalDateKey(new Date());
 
   const shortcutEntries = useMemo<ShortcutEntry[]>(
@@ -24,14 +25,14 @@ const ChooseSelectCmp = memo(function ChooseSelectCmp() {
         title: '宠物档案',
         desc: '查看当前宠物卡片、今日照护和最近成长节点。',
         actionText: '打开首页',
-        action: () => Taro.switchTab({ url: '/pages/PetProfile/index' }),
+        action: () => switchTabWithActivePet('/pages/PetProfile/index', activePetId),
       },
       {
         title: '宠物日程',
         desc: '查看日历、提醒和当天记录。',
         actionText: '查看日程',
         tone: 'blue',
-        action: () => Taro.switchTab({ url: '/pages/PetSchedule/index' }),
+        action: () => switchTabWithActivePet('/pages/PetSchedule/index', activePetId),
       },
       {
         title: '新增提醒',
@@ -70,7 +71,7 @@ const ChooseSelectCmp = memo(function ChooseSelectCmp() {
         title: '铲屎官主页',
         desc: '查看多宠切换、服务入口和最近成长摘要。',
         actionText: '打开主页',
-        action: () => Taro.switchTab({ url: '/pages/PetOwner/index' }),
+        action: () => switchTabWithActivePet('/pages/PetOwner/index', activePetId),
       },
       {
         title: '知识库',
@@ -84,27 +85,43 @@ const ChooseSelectCmp = memo(function ChooseSelectCmp() {
         desc: '记录第一次到家、出门、疫苗完成等重要节点。',
         actionText: '记录节点',
         tone: 'pink',
-        action: () => Taro.navigateTo({ url: '/pages/PetMilestones/index' }),
+        action: () =>
+          Taro.navigateTo({
+            url: `/pages/PetMilestones/index${activePetId ? `?petId=${activePetId}` : ''}`,
+          }),
       },
       {
         title: '快捷创建提醒',
         desc: '用一页表单快速补一条提醒。',
         actionText: '快速创建',
-        action: () => Taro.navigateTo({ url: '/pages/SendPetSchedule/index' }),
+        action: () => {
+          if (activePetId) {
+            setStoredActivePetId(activePetId);
+          }
+          Taro.navigateTo({
+            url: `/pages/SendPetSchedule/index${activePetId ? `?petId=${activePetId}` : ''}`,
+          });
+        },
       },
       {
         title: '食物管理',
         desc: '维护库存、主粮和过敏提醒。',
         actionText: '进入食物页',
         tone: 'yellow',
-        action: () => Taro.navigateTo({ url: '/pages/PetFood/index' }),
+        action: () =>
+          Taro.navigateTo({
+            url: `/pages/PetFood/index${activePetId ? `?petId=${activePetId}` : ''}`,
+          }),
       },
       {
         title: '用药管理',
         desc: '维护疗程、剂量和提醒安排。',
         actionText: '进入用药页',
         tone: 'blue',
-        action: () => Taro.navigateTo({ url: '/pages/PetMedicine/index' }),
+        action: () =>
+          Taro.navigateTo({
+            url: `/pages/PetMedicine/index${activePetId ? `?petId=${activePetId}` : ''}`,
+          }),
       },
     ],
     [activePetId, today]
@@ -117,6 +134,25 @@ const ChooseSelectCmp = memo(function ChooseSelectCmp() {
       navOptions={{ navTitle: '常用入口', needBack: true }}
     >
       <View className="px-6 pt-4 pb-[120rpx]">
+        <View className="mb-5 border-[2rpx] border-solid border-[#262626] rounded-[16rpx] bg-[#FFF9E7] p-4">
+          <Text className="text-[28rpx] font-semibold text-[#303030] block">当前快捷上下文</Text>
+          <Text className="text-[22rpx] text-[#666] mt-2 block">
+            {activePet
+              ? `当前以 ${activePet.name} 为核心继续操作，提醒、记录、时间线和统计都会优先落到它下面。`
+              : '当前还没有明确的宠物上下文，涉及记录和提醒的动作会先引导你选择或创建宠物。'}
+          </Text>
+          {activePetId ? (
+            <View className="flex gap-3 mt-4">
+              <View
+                className="flex-1 h-[62rpx] rounded-[34rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', activePetId)}
+              >
+                <Text className="text-[24rpx] font-semibold">查看 {activePet?.name} 日程</Text>
+              </View>
+            </View>
+          ) : null}
+        </View>
+
         <View className="mb-5 border-[2rpx] border-solid border-[#262626] rounded-[16rpx] bg-white p-4">
           <Text className="text-[30rpx] font-semibold mb-2 block">项目常用入口</Text>
           <Text className="text-[22rpx] text-[#666] mb-3 block">

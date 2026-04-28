@@ -1,6 +1,6 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input, Textarea } from '@tarojs/components';
-import Taro, { useDidShow } from '@tarojs/taro';
+import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import {
@@ -12,6 +12,7 @@ import {
   updateMilestoneData,
 } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { setStoredActivePetId } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 import { formatLocalDateKey } from '@/utils/formatDate';
 
@@ -32,7 +33,9 @@ const isValidDateString = (value: string) => {
 };
 
 const PetMilestones = memo(function PetMilestones() {
-  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets();
+  const { params } = useRouter();
+  const preferredPetId = params.petId || '';
+  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets(preferredPetId);
   const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
   const [form, setForm] = useState(defaultForm);
   const [editingId, setEditingId] = useState('');
@@ -40,6 +43,11 @@ const PetMilestones = memo(function PetMilestones() {
   const loggedIn = isLoggedIn();
 
   const refreshMilestones = useCallback(() => {
+    if (!loggedIn) {
+      setMilestones([]);
+      return Promise.resolve();
+    }
+
     if (!activePetId) {
       setMilestones([]);
       return Promise.resolve();
@@ -48,15 +56,24 @@ const PetMilestones = memo(function PetMilestones() {
     return getMilestoneListData({ petId: activePetId })
       .then((list) => setMilestones(list))
       .catch(() => setMilestones([]));
-  }, [activePetId]);
+  }, [activePetId, loggedIn]);
 
   useEffect(() => {
+    if (activePetId) {
+      setStoredActivePetId(activePetId);
+    }
     refreshMilestones();
-  }, [refreshMilestones]);
+  }, [activePetId, refreshMilestones]);
 
   useDidShow(() => {
     refreshMilestones();
   });
+
+  useEffect(() => {
+    if (editingId && !milestones.some((item) => item.id === editingId)) {
+      resetForm();
+    }
+  }, [editingId, milestones]);
 
   const resetForm = () => {
     setForm({
@@ -78,7 +95,7 @@ const PetMilestones = memo(function PetMilestones() {
   };
 
   const handleSubmit = async () => {
-    if (!ensureLoggedIn('/pages/PetMilestones/index')) {
+    if (!ensureLoggedIn(`/pages/PetMilestones/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)) {
       return;
     }
 
@@ -110,6 +127,7 @@ const PetMilestones = memo(function PetMilestones() {
 
     setSaving(true);
     try {
+      setStoredActivePetId(activePetId);
       if (editingId) {
         await updateMilestoneData(editingId, payload);
       } else {
@@ -127,7 +145,7 @@ const PetMilestones = memo(function PetMilestones() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!ensureLoggedIn('/pages/PetMilestones/index')) {
+    if (!ensureLoggedIn(`/pages/PetMilestones/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)) {
       return;
     }
 
@@ -144,8 +162,11 @@ const PetMilestones = memo(function PetMilestones() {
 
     try {
       await deleteMilestoneData(id);
+      if (editingId === id) {
+        resetForm();
+      }
       Taro.showToast({ title: '已删除', icon: 'success' });
-      refreshMilestones();
+      await refreshMilestones();
     } catch (error) {
       const message = error instanceof Error ? error.message : '删除失败';
       Taro.showToast({ title: message, icon: 'none' });
@@ -172,7 +193,11 @@ const PetMilestones = memo(function PetMilestones() {
             </Text>
             <View
               className="mt-3 inline-flex px-4 py-2 rounded-[999rpx] bg-[#FFD93B]"
-              onClick={() => ensureLoggedIn('/pages/PetMilestones/index')}
+              onClick={() =>
+                ensureLoggedIn(
+                  `/pages/PetMilestones/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`
+                )
+              }
             >
               <Text className="text-[22rpx] text-[#5D4510] font-semibold">去微信登录</Text>
             </View>
@@ -203,7 +228,11 @@ const PetMilestones = memo(function PetMilestones() {
                 backgroundColor: activePetId === pet.id ? '#FFD93B' : '#f4f4f4',
                 border: '2rpx solid #262626',
               }}
-              onClick={() => setActivePetId(pet.id)}
+              onClick={() => {
+                setActivePetId(pet.id);
+                setStoredActivePetId(pet.id);
+                Taro.redirectTo({ url: `/pages/PetMilestones/index?petId=${pet.id}` });
+              }}
             >
               <Text className="text-[24rpx]">{pet.name}</Text>
             </View>
@@ -218,6 +247,37 @@ const PetMilestones = memo(function PetMilestones() {
             当前已记录 {milestones.length} 个重要里程碑
           </Text>
         </View>
+
+        {activePetId ? (
+          <View className="rounded-[24rpx] bg-[#FFF7D5] p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.05)]">
+            <Text className="text-[28rpx] font-semibold text-[#2b2b2b] block">
+              围绕{activePet?.name || '当前宠物'}继续整理成长轨迹
+            </Text>
+            <Text className="text-[22rpx] text-[#6E5A2C] mt-[8rpx] block">
+              记录完成长节点后，可以继续回看时间线、查看成长报告，或者回到详情页继续维护其它资料。
+            </Text>
+            <View className="flex gap-3 mt-4">
+              <View
+                className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#E9D7AF] flex items-center justify-center"
+                onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${activePetId}` })}
+              >
+                <Text className="text-[22rpx] text-[#8b6c3f]">查看时间线</Text>
+              </View>
+              <View
+                className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#E9D7AF] flex items-center justify-center"
+                onClick={() => Taro.navigateTo({ url: `/pages/PetReport/index?petId=${activePetId}` })}
+              >
+                <Text className="text-[22rpx] text-[#8b6c3f]">查看报告</Text>
+              </View>
+              <View
+                className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#FFD93B] flex items-center justify-center"
+                onClick={() => Taro.navigateTo({ url: `/pages/PetDetailPage/index?petId=${activePetId}` })}
+              >
+                <Text className="text-[22rpx] font-semibold text-[#5D4510]">宠物详情</Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.08)]">
           <View className="mb-4 flex items-center justify-between">
@@ -315,9 +375,27 @@ const PetMilestones = memo(function PetMilestones() {
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">
-              还没有成长里程碑，可以先记录第一次到家、第一次出门或疫苗完成这类节点。
-            </Text>
+            <View className="rounded-[18rpx] bg-[#FFFBEA] p-4">
+              <Text className="text-[24rpx] text-[#8a8a8a]">
+                {activePet?.name || '当前宠物'}还没有成长里程碑，可以先记录第一次到家、第一次出门或疫苗完成这类节点。
+              </Text>
+              {activePetId ? (
+                <View className="flex gap-3 mt-4">
+                  <View
+                    className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#FFD93B] flex items-center justify-center"
+                    onClick={() => Taro.pageScrollTo({ scrollTop: 0, duration: 250 })}
+                  >
+                    <Text className="text-[22rpx] font-semibold text-[#5D4510]">去记录节点</Text>
+                  </View>
+                  <View
+                    className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#E9D7AF] flex items-center justify-center"
+                    onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${activePetId}` })}
+                  >
+                    <Text className="text-[22rpx] text-[#8b6c3f]">查看时间线</Text>
+                  </View>
+                </View>
+              ) : null}
+            </View>
           )}
         </View>
       </View>

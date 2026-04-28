@@ -12,6 +12,7 @@ interface Props {
     milestones: number;
   };
   onOpenSchedule: () => void;
+  onOpenExpense: () => void;
   onOpenCare: () => void;
   onOpenMilestones: () => void;
   onAddReminder: () => void;
@@ -34,6 +35,7 @@ const FunctionGrid = memo(function FunctionGrid({
   petName,
   stats,
   onOpenSchedule,
+  onOpenExpense,
   onOpenCare,
   onOpenMilestones,
   onAddReminder,
@@ -43,7 +45,11 @@ const FunctionGrid = memo(function FunctionGrid({
     <View className="w-full h-[340rpx] px-[28rpx] py-[12rpx] gap-[14rpx] flex justify-between">
       <View className="w-[324rpx] h-full border-solid" style={cardStyle}>
         <View className="w-full h-full flex flex-col justify-center items-center gap-[10rpx] px-[10rpx]">
-          <View className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]" style={metricRowStyle}>
+          <View
+            className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]"
+            style={metricRowStyle}
+            onClick={onOpenSchedule}
+          >
             <Text style={{ fontSize: PET_UI_TEXT.body }}>今日提醒</Text>
             <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.body }}>{stats.reminders}</Text>
           </View>
@@ -57,7 +63,11 @@ const FunctionGrid = memo(function FunctionGrid({
             <Text className="text-[#008ecf]" style={{ fontSize: PET_UI_TEXT.body }}>{stats.care}</Text>
           </View>
 
-          <View className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]" style={metricRowStyle}>
+          <View
+            className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]"
+            style={metricRowStyle}
+            onClick={onOpenExpense}
+          >
             <Text style={{ fontSize: PET_UI_TEXT.body }}>本月花销</Text>
             <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.body }}>
               ¥{stats.monthExpense.toFixed(2)}

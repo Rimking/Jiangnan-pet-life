@@ -2,15 +2,40 @@ import { useCallback, useMemo, useState } from 'react';
 import { useDidShow } from '@tarojs/taro';
 import { getPetListData, mapPetToProfileModel, PetItem } from '@/api/data';
 import { PetProfileModel } from '@/types/pet';
+import { isLoggedIn } from '@/utils/authState';
+import {
+  clearStoredActivePetId,
+  getStoredActivePetId,
+  setStoredActivePetId,
+} from '@/utils/activePetState';
 
-export const usePetApiPets = () => {
+export const usePetApiPets = (preferredPetId?: string) => {
   const [pets, setPets] = useState<PetProfileModel[]>([]);
   const [rawPets, setRawPets] = useState<PetItem[]>([]);
-  const [activePetId, setActivePetId] = useState('');
+  const [activePetId, setActivePetIdState] = useState(() => preferredPetId || getStoredActivePetId());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const setActivePetId = useCallback((petId: string) => {
+    setActivePetIdState(petId);
+    setStoredActivePetId(petId);
+  }, []);
+
+  const resetPets = useCallback(() => {
+    setPets([]);
+    setRawPets([]);
+    setActivePetIdState('');
+    clearStoredActivePetId();
+    setError('');
+    setLoading(false);
+  }, []);
+
   const refreshPets = useCallback(async () => {
+    if (!isLoggedIn()) {
+      resetPets();
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -19,21 +44,28 @@ export const usePetApiPets = () => {
       const profileList = petList.map(mapPetToProfileModel);
       setRawPets(petList);
       setPets(profileList);
-
-      setActivePetId((prev) => {
-        if (prev && profileList.some((item) => item.id === prev)) {
-          return prev;
-        }
-        return profileList[0]?.id || '';
-      });
+      const storedActivePetId = getStoredActivePetId();
+      const nextActivePetId =
+        (preferredPetId && profileList.some((item) => item.id === preferredPetId) && preferredPetId) ||
+        (activePetId && profileList.some((item) => item.id === activePetId) && activePetId) ||
+        (storedActivePetId &&
+          profileList.some((item) => item.id === storedActivePetId) &&
+          storedActivePetId) ||
+        profileList[0]?.id ||
+        '';
+      setActivePetId(nextActivePetId);
     } catch (requestError) {
       const message =
         requestError instanceof Error ? requestError.message : '宠物数据加载失败';
+      setRawPets([]);
+      setPets([]);
+      setActivePetIdState('');
+      clearStoredActivePetId();
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activePetId, preferredPetId, resetPets, setActivePetId]);
 
   useDidShow(() => {
     refreshPets();
@@ -57,5 +89,6 @@ export const usePetApiPets = () => {
     error,
     setActivePetId,
     refreshPets,
+    resetPets,
   };
 };

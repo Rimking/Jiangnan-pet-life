@@ -3,7 +3,7 @@ import { View, Text, Input, Textarea } from '@tarojs/components';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import { memo, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
-import { createFeedbackData, getFeedbackListData } from '@/api/data';
+import { createFeedbackData, FeedbackMode, getFeedbackListData } from '@/api/data';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 type FeedbackRecord = {
@@ -15,7 +15,7 @@ type FeedbackRecord = {
 
 const PetFeedback = memo(function PetFeedback() {
   const { params } = useRouter();
-  const mode = params.mode === 'contact' ? 'contact' : 'feedback';
+  const mode: FeedbackMode = params.mode === 'contact' ? 'contact' : 'feedback';
   const [content, setContent] = useState('');
   const [contact, setContact] = useState('');
   const [history, setHistory] = useState<FeedbackRecord[]>([]);
@@ -129,6 +129,7 @@ const PetFeedback = memo(function PetFeedback() {
             <Input
               className="mt-2"
               placeholder="微信 / 手机 / 邮箱，选填"
+              maxlength={100}
               value={contact}
               onInput={(e) => setContact(e.detail.value)}
             />
@@ -139,6 +140,7 @@ const PetFeedback = memo(function PetFeedback() {
               className="mt-2 min-h-[180rpx]"
               autoHeight
               placeholder="例如：新增宠物时希望支持更多字段，或这里描述你的接口联调问题"
+              maxlength={2000}
               value={content}
               onInput={(e) => setContent(e.detail.value)}
             />

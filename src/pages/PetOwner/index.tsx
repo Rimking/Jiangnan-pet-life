@@ -18,6 +18,7 @@ import {
   isLoggedIn,
   setCurrentUser,
 } from '@/utils/authState';
+import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 
 const getAgeLabel = (birthday: string) => {
   const birth = new Date(birthday);
@@ -44,7 +45,7 @@ const getAgeLabel = (birthday: string) => {
 };
 
 const PetOwner = memo(function PetOwner() {
-  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets();
+  const { pets, activePet, activePetId, setActivePetId, resetPets } = usePetApiPets();
   const [user, setUser] = useState<AuthUser | null>(getCurrentUser());
   const [reminderCount, setReminderCount] = useState(0);
   const [achievementCount, setAchievementCount] = useState(0);
@@ -70,6 +71,15 @@ const PetOwner = memo(function PetOwner() {
         .catch(() => {
           setUser(null);
         });
+    }
+    if (!loggedIn) {
+      setReminderCount(0);
+      setAchievementCount(0);
+      setLowInventoryCount(0);
+      setDueMedicineCount(0);
+      setMilestoneCount(0);
+      setLatestMilestone(null);
+      return;
     }
     if (!activePetId) {
       setReminderCount(0);
@@ -113,6 +123,7 @@ const PetOwner = memo(function PetOwner() {
       await logoutData();
     } catch {}
     clearLoginSession();
+    resetPets();
     setUser(null);
     Taro.showToast({ title: '已退出登录', icon: 'success' });
   };
@@ -128,19 +139,61 @@ const PetOwner = memo(function PetOwner() {
     const diff = now.getTime() - birth.getTime();
     return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
   }, [activePet?.birthday]);
+  const ownerNextActions = activePetId
+    ? [
+        {
+          title: reminderCount > 0 ? '处理提醒' : '新增提醒',
+          subtitle:
+            reminderCount > 0
+              ? `还有 ${reminderCount} 条待办，先回日程页处理`
+              : '先给当前宠物补一个提醒安排',
+          accent: '#5a78d4',
+          onClick: () =>
+            reminderCount > 0
+              ? switchTabWithActivePet('/pages/PetSchedule/index', activePetId)
+              : Taro.navigateTo({ url: `/pages/AddPetReminder/index?petId=${activePetId}&date=${today}` }),
+        },
+        {
+          title: '查看报告',
+          subtitle: '回看最近趋势、亮点和摘要',
+          accent: '#466481',
+          onClick: () => Taro.navigateTo({ url: `/pages/PetReport/index?petId=${activePetId}` }),
+        },
+        {
+          title: lowInventoryCount > 0 || dueMedicineCount > 0 ? '处理库存/疗程' : '继续补记录',
+          subtitle:
+            lowInventoryCount > 0 || dueMedicineCount > 0
+              ? `库存提醒 ${lowInventoryCount} 条，用药关注 ${dueMedicineCount} 条`
+              : '去补日常、花销或护理，让摘要更完整',
+          accent: '#8A6A2C',
+          onClick: () =>
+            lowInventoryCount > 0
+              ? Taro.navigateTo({ url: `/pages/PetFood/index?petId=${activePetId}` })
+              : dueMedicineCount > 0
+                ? Taro.navigateTo({ url: `/pages/PetMedicine/index?petId=${activePetId}` })
+                : Taro.navigateTo({ url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${today}&mode=record` }),
+        },
+      ]
+    : [];
 
   const quickMenus = [
     {
       icon: '👑',
       title: '会员中心',
       bg: '#F6F3ED',
-      onClick: () => Taro.navigateTo({ url: '/pages/PetServiceCenter/index?mode=member' }),
+      onClick: () =>
+        Taro.navigateTo({
+          url: `/pages/PetServiceCenter/index?mode=member${activePetId ? `&petId=${activePetId}` : ''}`,
+        }),
     },
     {
       icon: '🧾',
       title: '订阅中心',
       bg: '#EEF2F8',
-      onClick: () => Taro.navigateTo({ url: '/pages/PetServiceCenter/index?mode=subscription' }),
+      onClick: () =>
+        Taro.navigateTo({
+          url: `/pages/PetServiceCenter/index?mode=subscription${activePetId ? `&petId=${activePetId}` : ''}`,
+        }),
     },
     {
       icon: '📨',
@@ -157,13 +210,16 @@ const PetOwner = memo(function PetOwner() {
       subtitle: '管理提醒和记录',
       hasBadge: reminderCount > 0,
       badgeText: String(reminderCount),
-      onClick: () => Taro.switchTab({ url: '/pages/PetSchedule/index' }),
+      onClick: () => switchTabWithActivePet('/pages/PetSchedule/index', activePetId),
     },
     {
       icon: '📊',
       title: '数据统计',
       subtitle: '查看近期花销和护理趋势',
-      onClick: () => Taro.navigateTo({ url: '/pages/PetExpenseStats/index' }),
+      onClick: () =>
+        Taro.navigateTo({
+          url: `/pages/PetExpenseStats/index${activePetId ? `?petId=${activePetId}` : ''}`,
+        }),
     },
     {
       icon: '🍗',
@@ -171,7 +227,10 @@ const PetOwner = memo(function PetOwner() {
       subtitle: '喂食计划与库存提醒',
       hasBadge: lowInventoryCount > 0,
       badgeText: `${lowInventoryCount}`,
-      onClick: () => Taro.navigateTo({ url: '/pages/PetFood/index' }),
+      onClick: () =>
+        Taro.navigateTo({
+          url: `/pages/PetFood/index${activePetId ? `?petId=${activePetId}` : ''}`,
+        }),
     },
     {
       icon: '🩺',
@@ -185,7 +244,10 @@ const PetOwner = memo(function PetOwner() {
       subtitle: '追踪药品和疗程',
       hasBadge: dueMedicineCount > 0,
       badgeText: `${dueMedicineCount}`,
-      onClick: () => Taro.navigateTo({ url: '/pages/PetMedicine/index' }),
+      onClick: () =>
+        Taro.navigateTo({
+          url: `/pages/PetMedicine/index${activePetId ? `?petId=${activePetId}` : ''}`,
+        }),
     },
     {
       icon: '🕰️',
@@ -202,7 +264,10 @@ const PetOwner = memo(function PetOwner() {
       subtitle: '记录第一次出门和重要节点',
       hasBadge: milestoneCount > 0,
       badgeText: `${milestoneCount}`,
-      onClick: () => Taro.navigateTo({ url: '/pages/PetMilestones/index' }),
+      onClick: () =>
+        Taro.navigateTo({
+          url: `/pages/PetMilestones/index${activePetId ? `?petId=${activePetId}` : ''}`,
+        }),
     },
     {
       icon: '💬',
@@ -240,7 +305,7 @@ const PetOwner = memo(function PetOwner() {
           </View>
           <View
             className="w-[44rpx] h-[44rpx] rounded-full border border-[#8D97A6] flex items-center justify-center"
-            onClick={() => Taro.switchTab({ url: '/pages/PetSchedule/index' })}
+            onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', activePetId)}
           >
             <Text className="text-[22rpx] text-[#5C6675]">◉</Text>
           </View>
@@ -268,12 +333,22 @@ const PetOwner = memo(function PetOwner() {
 
         <View className="bg-white rounded-[28rpx] border-[3rpx] border-[#262626] px-[22rpx] py-[18rpx] mb-[18rpx] shadow-[0_10rpx_0_rgba(0,0,0,0.14)]">
           <View className="flex justify-between items-center">
-            <View className="flex-1">
+            <View
+              className="flex-1"
+              onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', activePetId)}
+            >
               <Text className="text-[22rpx] text-[#8C95A2]">待处理提醒</Text>
               <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">{reminderCount}</Text>
             </View>
             <View className="w-[2rpx] h-[72rpx] bg-[#262626] opacity-20" />
-            <View className="flex-1 pl-[24rpx]">
+            <View
+              className="flex-1 pl-[24rpx]"
+              onClick={() =>
+                Taro.navigateTo({
+                  url: `/pages/PetMilestones/index${activePetId ? `?petId=${activePetId}` : ''}`,
+                })
+              }
+            >
               <Text className="text-[22rpx] text-[#8C95A2]">我的成就</Text>
               <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">{achievementCount}</Text>
             </View>
@@ -284,9 +359,37 @@ const PetOwner = memo(function PetOwner() {
               与{activePet?.name || '它'}一起已经 {activeDays} 天了
             </Text>
           </View>
+          {activePetId ? (
+            <View className="mt-[14rpx] flex gap-[12rpx]">
+              <View
+                className="flex-1 rounded-[18rpx] bg-[#2B8BFF] border-[3rpx] border-[#262626] px-[16rpx] py-[14rpx] flex items-center justify-center"
+                onClick={() =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetReminder/index?petId=${activePetId}&date=${today}`,
+                  })
+                }
+              >
+                <Text className="text-[22rpx] text-white font-semibold">新增提醒</Text>
+              </View>
+              <View
+                className="flex-1 rounded-[18rpx] bg-[#FFD93B] border-[3rpx] border-[#262626] px-[16rpx] py-[14rpx] flex items-center justify-center"
+                onClick={() =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${today}&mode=record`,
+                  })
+                }
+              >
+                <Text className="text-[22rpx] text-[#2D3441] font-semibold">新增记录</Text>
+              </View>
+            </View>
+          ) : null}
           <View
             className="mt-[14rpx] rounded-[22rpx] bg-[#FFF2F8] border-[3rpx] border-[#262626] px-[18rpx] py-[14rpx]"
-            onClick={() => Taro.navigateTo({ url: '/pages/PetMilestones/index' })}
+            onClick={() =>
+              Taro.navigateTo({
+                url: `/pages/PetMilestones/index${activePetId ? `?petId=${activePetId}` : ''}`,
+              })
+            }
           >
             <View className="flex items-center justify-between">
               <Text className="text-[24rpx] text-[#7D4764] font-semibold">最近成长节点</Text>
@@ -301,12 +404,44 @@ const PetOwner = memo(function PetOwner() {
                 : '记录后会同步到时间线、报告和详情页。'}
             </Text>
           </View>
+          {activePetId ? (
+            <View className="mt-[14rpx] rounded-[22rpx] bg-[#F8FAFF] border-[3rpx] border-[#262626] px-[18rpx] py-[14rpx]">
+              <Text className="text-[24rpx] text-[#466481] font-semibold">当前宠物下一步</Text>
+              <Text className="text-[22rpx] text-[#4D5664] mt-[8rpx] block">
+                {reminderCount > 0
+                  ? `${activePet?.name || '当前宠物'} 还有 ${reminderCount} 条提醒待处理，建议先回到日程页确认。`
+                  : lowInventoryCount > 0 || dueMedicineCount > 0
+                    ? `${activePet?.name || '当前宠物'} 目前有库存或疗程需要关注，处理后服务页和报告会同步更新。`
+                    : `当前摘要已经切到 ${activePet?.name || '这只宠物'}，可以继续看报告、补记录或回时间线。`}
+              </Text>
+              <View className="grid grid-cols-3 gap-[12rpx] mt-[14rpx]">
+                {ownerNextActions.map((item) => (
+                  <View
+                    key={item.title}
+                    className="rounded-[18rpx] bg-white border-[2rpx] border-[#262626] px-[12rpx] py-[12rpx]"
+                    onClick={item.onClick}
+                  >
+                    <Text className="text-[22rpx] font-semibold" style={{ color: item.accent }}>
+                      {item.title}
+                    </Text>
+                    <Text className="text-[18rpx] text-[#6b6b6b] mt-[6rpx] block">
+                      {item.subtitle}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
         </View>
 
         <View
           className="rounded-[18rpx] px-[22rpx] py-[18rpx] flex items-center justify-between mb-[18rpx]"
           style={{ background: 'linear-gradient(90deg, #EED7A6 0%, #E7C27C 100%)' }}
-          onClick={() => Taro.navigateTo({ url: '/pages/PetServiceCenter/index?mode=member' })}
+          onClick={() =>
+            Taro.navigateTo({
+              url: `/pages/PetServiceCenter/index?mode=member${activePetId ? `&petId=${activePetId}` : ''}`,
+            })
+          }
         >
           <View className="pr-[12rpx]">
             <Text className="text-[26rpx] text-[#5F3E13] font-semibold">开通会员，解锁更多服务</Text>
@@ -336,7 +471,13 @@ const PetOwner = memo(function PetOwner() {
         <View
           className="rounded-[999rpx] pl-[18rpx] pr-[10rpx] py-[10rpx] flex items-center justify-between mb-[24rpx]"
           style={{ background: 'linear-gradient(90deg, #2B8BFF 0%, #1F66F0 100%)' }}
-          onClick={() => Taro.switchTab({ url: '/pages/PetSchedule/index' })}
+          onClick={() =>
+            activePetId
+              ? Taro.navigateTo({
+                  url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${today}&mode=care`,
+                })
+              : switchTabWithActivePet('/pages/PetSchedule/index', activePetId)
+          }
         >
           <View className="flex items-center flex-1 mr-[10rpx]">
             <View className="w-[84rpx] h-[84rpx] rounded-full bg-[#FFC67D] border-[2rpx] border-[#ffffff] flex items-center justify-center mr-[10rpx]">
@@ -344,11 +485,13 @@ const PetOwner = memo(function PetOwner() {
             </View>
             <View>
               <Text className="text-[24rpx] text-[#F7FBFF]">本周计划</Text>
-              <Text className="text-[36rpx] font-semibold text-white leading-[1.1]">从养护开始</Text>
+              <Text className="text-[36rpx] font-semibold text-white leading-[1.1]">
+                {activePet?.name ? `继续照护 ${activePet.name}` : '从养护开始'}
+              </Text>
             </View>
           </View>
           <View className="w-[86rpx] h-[86rpx] rounded-full bg-[#FDC53A] border-[2rpx] border-[#FFE29C] flex items-center justify-center">
-            <Text className="text-[34rpx] font-bold text-[#2656BD]">GO</Text>
+            <Text className="text-[28rpx] font-bold text-[#2656BD]">{activePetId ? '护理' : 'GO'}</Text>
           </View>
         </View>
 
@@ -375,7 +518,10 @@ const PetOwner = memo(function PetOwner() {
                   style={{
                     boxShadow: isActive ? '0 8rpx 0 rgba(255, 191, 54, 0.28)' : '0 8rpx 0 rgba(0,0,0,0.1)',
                   }}
-                  onClick={() => Taro.navigateTo({ url: `/pages/PetDetailPage/index?petId=${pet.id}` })}
+                  onClick={() => {
+                    setStoredActivePetId(pet.id);
+                    Taro.navigateTo({ url: `/pages/PetDetailPage/index?petId=${pet.id}` });
+                  }}
                 >
                   <View className="flex items-center mb-[10rpx]">
                     <View className="w-[72rpx] h-[72rpx] rounded-[16rpx] bg-[#FFF0B3] border-[2rpx] border-[#262626] flex items-center justify-center mr-[12rpx]">

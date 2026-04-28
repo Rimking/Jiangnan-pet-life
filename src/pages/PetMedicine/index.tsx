@@ -1,6 +1,6 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input, Textarea } from '@tarojs/components';
-import Taro, { useDidShow } from '@tarojs/taro';
+import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import {
@@ -13,6 +13,7 @@ import {
   updateMedicineData,
 } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const defaultForm = {
@@ -60,7 +61,9 @@ const isValidTimeString = (value: string) => {
 };
 
 const PetMedicine = memo(function PetMedicine() {
-  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets();
+  const { params } = useRouter();
+  const preferredPetId = params.petId || '';
+  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets(preferredPetId);
   const [medicines, setMedicines] = useState<MedicineItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState('');
@@ -68,6 +71,11 @@ const PetMedicine = memo(function PetMedicine() {
   const loggedIn = isLoggedIn();
 
   const refreshMedicines = useCallback(() => {
+    if (!loggedIn) {
+      setMedicines([]);
+      return Promise.resolve();
+    }
+
     if (!activePetId) {
       setMedicines([]);
       return Promise.resolve();
@@ -76,15 +84,24 @@ const PetMedicine = memo(function PetMedicine() {
     return getMedicineListData({ petId: activePetId })
       .then((list) => setMedicines(list))
       .catch(() => setMedicines([]));
-  }, [activePetId]);
+  }, [activePetId, loggedIn]);
 
   useEffect(() => {
+    if (activePetId) {
+      setStoredActivePetId(activePetId);
+    }
     refreshMedicines();
-  }, [refreshMedicines]);
+  }, [activePetId, refreshMedicines]);
 
   useDidShow(() => {
     refreshMedicines();
   });
+
+  useEffect(() => {
+    if (editingId && !medicines.some((item) => item.id === editingId)) {
+      resetForm();
+    }
+  }, [editingId, medicines]);
 
   const dueSoonCount = useMemo(() => {
     return medicines.filter((item) => Number(item.remainingDays || 0) > 0 && Number(item.remainingDays || 0) <= 3).length;
@@ -129,7 +146,7 @@ const PetMedicine = memo(function PetMedicine() {
   };
 
   const handleSubmit = async () => {
-    if (!ensureLoggedIn('/pages/PetMedicine/index')) {
+    if (!ensureLoggedIn(`/pages/PetMedicine/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)) {
       return;
     }
 
@@ -160,6 +177,7 @@ const PetMedicine = memo(function PetMedicine() {
 
     setSaving(true);
     try {
+      setStoredActivePetId(activePetId);
       const payload = {
         petId: activePetId,
         name: form.name.trim(),
@@ -184,7 +202,7 @@ const PetMedicine = memo(function PetMedicine() {
           title: `用药提醒：${medicine.name}`,
           category: 'health',
           type: '用药提醒',
-          status: 'todo',
+          status: 'pending',
           repeatRule: '单次',
           remindAt: toIsoDateTime(form.reminderDate.trim(), form.reminderTime.trim() || '08:00'),
           notes: [medicine.dosage, medicine.usage, medicine.mealTiming]
@@ -195,7 +213,13 @@ const PetMedicine = memo(function PetMedicine() {
 
       resetForm();
       Taro.showToast({
-        title: editingId ? '用药已更新' : '用药已保存',
+        title: form.reminderDate.trim()
+          ? editingId
+            ? '用药和提醒已更新'
+            : '用药和提醒已保存'
+          : editingId
+            ? '用药已更新'
+            : '用药已保存',
         icon: 'success',
       });
       await refreshMedicines();
@@ -208,7 +232,7 @@ const PetMedicine = memo(function PetMedicine() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!ensureLoggedIn('/pages/PetMedicine/index')) {
+    if (!ensureLoggedIn(`/pages/PetMedicine/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)) {
       return;
     }
 
@@ -225,8 +249,11 @@ const PetMedicine = memo(function PetMedicine() {
 
     try {
       await deleteMedicineData(id);
+      if (editingId === id) {
+        resetForm();
+      }
       Taro.showToast({ title: '已删除', icon: 'success' });
-      refreshMedicines();
+      await refreshMedicines();
     } catch (error) {
       const message = error instanceof Error ? error.message : '删除失败';
       Taro.showToast({ title: message, icon: 'none' });
@@ -255,7 +282,11 @@ const PetMedicine = memo(function PetMedicine() {
                 backgroundColor: activePetId === pet.id ? '#FFD93B' : '#f4f4f4',
                 border: '2rpx solid #262626',
               }}
-              onClick={() => setActivePetId(pet.id)}
+              onClick={() => {
+                setActivePetId(pet.id);
+                setStoredActivePetId(pet.id);
+                Taro.redirectTo({ url: `/pages/PetMedicine/index?petId=${pet.id}` });
+              }}
             >
               <Text className="text-[24rpx]">{pet.name}</Text>
             </View>
@@ -269,7 +300,11 @@ const PetMedicine = memo(function PetMedicine() {
             </Text>
             <View
               className="mt-3 inline-flex px-4 py-2 rounded-[999rpx] bg-[#E9D8FF]"
-              onClick={() => ensureLoggedIn('/pages/PetMedicine/index')}
+              onClick={() =>
+                ensureLoggedIn(
+                  `/pages/PetMedicine/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`
+                )
+              }
             >
               <Text className="text-[22rpx] text-[#6C4DA0] font-semibold">去微信登录</Text>
             </View>
@@ -302,6 +337,37 @@ const PetMedicine = memo(function PetMedicine() {
             已过期药品 {expiredCount} 条
           </Text>
         </View>
+
+        {activePetId ? (
+          <View className="mb-5 rounded-[24rpx] bg-[#F6F0FF] p-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.05)]">
+            <Text className="text-[28rpx] font-semibold text-[#2b2b2b] block">
+              围绕{activePet?.name || '当前宠物'}继续安排
+            </Text>
+            <Text className="text-[22rpx] text-[#6C5C90] mt-[8rpx] block">
+              维护完用药后，可以直接去看日程提醒、时间线回流，或者查看这只宠物的整体报告。
+            </Text>
+            <View className="flex gap-3 mt-4">
+              <View
+                className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#E9D8FF] flex items-center justify-center"
+                onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', activePetId)}
+              >
+                <Text className="text-[22rpx] font-semibold text-[#6C4DA0]">查看日程</Text>
+              </View>
+              <View
+                className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#E8DDFC] flex items-center justify-center"
+                onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${activePetId}` })}
+              >
+                <Text className="text-[22rpx] text-[#7c57b0]">查看时间线</Text>
+              </View>
+              <View
+                className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#E8DDFC] flex items-center justify-center"
+                onClick={() => Taro.navigateTo({ url: `/pages/PetReport/index?petId=${activePetId}` })}
+              >
+                <Text className="text-[22rpx] text-[#7c57b0]">查看报告</Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.08)]">
           <View className="mb-4 flex items-center justify-between">
@@ -462,7 +528,27 @@ const PetMedicine = memo(function PetMedicine() {
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">当前宠物还没有用药记录，先补一条药品、剂量或疗程档案吧。</Text>
+            <View className="rounded-[18rpx] bg-[#F8F5FF] p-4">
+              <Text className="text-[24rpx] text-[#8a8a8a]">
+                {activePet?.name || '当前宠物'}还没有用药记录，先补一条药品、剂量或疗程档案吧。
+              </Text>
+              {activePetId ? (
+                <View className="flex gap-3 mt-4">
+                  <View
+                    className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#E9D8FF] flex items-center justify-center"
+                    onClick={() => Taro.pageScrollTo({ scrollTop: 0, duration: 250 })}
+                  >
+                    <Text className="text-[22rpx] font-semibold text-[#6C4DA0]">去新增用药</Text>
+                  </View>
+                  <View
+                    className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#E8DDFC] flex items-center justify-center"
+                    onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', activePetId)}
+                  >
+                    <Text className="text-[22rpx] text-[#7c57b0]">查看日程</Text>
+                  </View>
+                </View>
+              ) : null}
+            </View>
           )}
         </View>
       </View>

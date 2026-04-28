@@ -19,6 +19,7 @@ const PetInfoCard = memo(function PetInfoCard({ pet, onOpenDetail }: Props) {
           backgroundColor: PET_UI.panelBackground,
           boxShadow: PET_UI_SHADOW,
         }}
+        onClick={onOpenDetail}
       >
         <View
           className="w-[92rpx] h-[16rpx] mb-[14rpx] m-auto border-solid bg-[#f46a6a]"

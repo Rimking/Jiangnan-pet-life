@@ -27,6 +27,7 @@ import {
   updateScheduleData,
 } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const enum TabType {
@@ -41,10 +42,18 @@ const PetSchedule = memo(function PetSchedule() {
   const [expenses, setExpenses] = useState<PetExpenseModel[]>([]);
   const [careLogs, setCareLogs] = useState<PetCareLogModel[]>([]);
   const [records, setRecords] = useState<PetRecordModel[]>([]);
-  const { activePet, activePetId, loading, error } = usePetApiPets();
+  const { pets, activePet, activePetId, loading, error, setActivePetId } = usePetApiPets();
   const loggedIn = isLoggedIn();
 
   const refreshPageData = useCallback(async () => {
+    if (!loggedIn) {
+      setReminders([]);
+      setExpenses([]);
+      setCareLogs([]);
+      setRecords([]);
+      return;
+    }
+
     if (!activePetId) {
       setReminders([]);
       setExpenses([]);
@@ -64,7 +73,7 @@ const PetSchedule = memo(function PetSchedule() {
     setExpenses(expenseList.map(mapExpenseToExpenseModel));
     setCareLogs(careRecordList.map(mapCareRecordToCareLogModel));
     setRecords(recordList.map(mapRecordToRecordModel));
-  }, [activePetId]);
+  }, [activePetId, loggedIn]);
 
   useEffect(() => {
     refreshPageData().catch(() => {
@@ -145,6 +154,10 @@ const PetSchedule = memo(function PetSchedule() {
         status: target.enabled ? 'done' : 'pending',
       });
       await refreshPageData();
+      Taro.showToast({
+        title: target.enabled ? '已标记完成' : '已恢复待办',
+        icon: 'success',
+      });
     } catch (error) {
       Taro.showToast({ title: '更新提醒失败', icon: 'none' });
     }
@@ -177,11 +190,67 @@ const PetSchedule = memo(function PetSchedule() {
       }}
     >
       <View className="px-8 pb-[180rpx] mt-4">
+        {pets.length ? (
+          <View className="mb-3 flex gap-2 flex-wrap">
+            {pets.map((pet) => (
+              <View
+                key={pet.id}
+                className="px-4 py-2 rounded-[16rpx]"
+                style={{
+                  backgroundColor: activePetId === pet.id ? '#FFD93B' : '#f4f4f4',
+                  border: '2rpx solid #262626',
+                }}
+                onClick={() => setActivePetId(pet.id)}
+              >
+                <Text style={{ fontSize: PET_UI_TEXT.body }}>{pet.name}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
         <View className="mb-2 px-1">
           <Text className="text-[#5f5f5f]" style={{ fontSize: PET_UI_TEXT.caption }}>
             当前宠物：{activePet?.name || '暂无'}
           </Text>
         </View>
+
+        {activePet ? (
+          <View className="mb-4 rounded-[28rpx] bg-white px-[24rpx] py-[24rpx] shadow-[0_18rpx_36rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[#2c2c2c] font-semibold block" style={{ fontSize: PET_UI_TEXT.title }}>
+              围绕{activePet.name}继续安排今天
+            </Text>
+            <Text className="text-[#7a7a7a] mt-[10rpx] block" style={{ fontSize: PET_UI_TEXT.body }}>
+              日程处理完后，可以继续去时间线回看记录，或者查看这只宠物的整体现状报告。
+            </Text>
+            <View className="flex gap-[12rpx] mt-[18rpx]">
+              <View
+                className="flex-1 inline-flex px-[18rpx] py-[14rpx] bg-[#FFD93B] justify-center"
+                style={tabStyle}
+                onClick={() =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${selectedDate}`,
+                  })
+                }
+              >
+                <Text style={{ fontSize: PET_UI_TEXT.body }}>新增提醒</Text>
+              </View>
+              <View
+                className="flex-1 inline-flex px-[18rpx] py-[14rpx] bg-[#ffffff] justify-center"
+                style={tabStyle}
+                onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${activePet.id}` })}
+              >
+                <Text style={{ fontSize: PET_UI_TEXT.body }}>查看时间线</Text>
+              </View>
+              <View
+                className="flex-1 inline-flex px-[18rpx] py-[14rpx] bg-[#ffffff] justify-center"
+                style={tabStyle}
+                onClick={() => Taro.navigateTo({ url: `/pages/PetReport/index?petId=${activePet.id}` })}
+              >
+                <Text style={{ fontSize: PET_UI_TEXT.body }}>查看报告</Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         {error ? (
           <View className="mb-2 px-1">
@@ -290,13 +359,68 @@ const PetSchedule = memo(function PetSchedule() {
         {showEmptyDataState ? (
           <View className="mt-4 rounded-[28rpx] bg-white px-[28rpx] py-[28rpx] shadow-[0_18rpx_36rpx_rgba(0,0,0,0.06)]">
             <Text className="text-[#2c2c2c] font-semibold" style={{ fontSize: PET_UI_TEXT.title }}>
-              {activeTab === TabType.Record ? '这一天还没有记录' : '这一天还没有提醒'}
+              {activePet
+                ? `${activePet.name}在这一天还没有${activeTab === TabType.Record ? '记录' : '提醒'}`
+                : activeTab === TabType.Record
+                  ? '这一天还没有记录'
+                  : '这一天还没有提醒'}
             </Text>
             <Text className="text-[#7a7a7a] mt-[12rpx] block" style={{ fontSize: PET_UI_TEXT.body }}>
               {activeTab === TabType.Record
-                ? '可以先补一条日常、花销或护理记录，时间线和统计页也会同步更新。'
-                : '可以先添加一个提醒，让喂食、护理和复查安排更清楚。'}
+                ? `可以先给${activePet?.name || '这只宠物'}补一条日常、花销或护理记录，时间线和统计页也会同步更新。`
+                : `可以先给${activePet?.name || '这只宠物'}添加一个提醒，让喂食、护理和复查安排更清楚。`}
             </Text>
+            {activePet ? (
+              <View className="mt-[18rpx] flex gap-[12rpx]">
+                {activeTab === TabType.Record ? (
+                  <>
+                    <View
+                      className="flex-1 inline-flex px-[20rpx] py-[14rpx] bg-[#FFD93B] justify-center"
+                      style={tabStyle}
+                      onClick={() =>
+                        Taro.navigateTo({
+                          url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${selectedDate}&mode=record`,
+                        })
+                      }
+                    >
+                      <Text style={{ fontSize: PET_UI_TEXT.body }}>新增日常记录</Text>
+                    </View>
+                    <View
+                      className="flex-1 inline-flex px-[20rpx] py-[14rpx] bg-[#ffffff] justify-center"
+                      style={tabStyle}
+                      onClick={() =>
+                        Taro.navigateTo({
+                          url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${selectedDate}&mode=care`,
+                        })
+                      }
+                    >
+                      <Text style={{ fontSize: PET_UI_TEXT.body }}>新增护理记录</Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View
+                      className="inline-flex px-[26rpx] py-[14rpx] bg-[#FFD93B] justify-center"
+                      style={tabStyle}
+                      onClick={() =>
+                        Taro.navigateTo({
+                          url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${selectedDate}`,
+                        })
+                      }
+                    >
+                      <Text style={{ fontSize: PET_UI_TEXT.body }}>新增提醒</Text>
+                    </View>
+                    <View
+                      className="inline-flex px-[26rpx] py-[14rpx] bg-[#ffffff] justify-center"
+                      style={tabStyle}
+                      onClick={() => switchTabWithActivePet('/pages/PetServiceCenter/index', activePet.id)}
+                    >
+                      <Text style={{ fontSize: PET_UI_TEXT.body }}>查看服务概览</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            ) : null}
           </View>
         ) : null}
       </View>

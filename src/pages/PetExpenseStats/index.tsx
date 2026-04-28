@@ -7,6 +7,8 @@ import { getExpenseListData, mapExpenseToExpenseModel, updatePetData } from '@/a
 import { usePetApiPets } from '@/hooks/usePetApiPets';
 import { PetExpenseModel } from '@/types/pet';
 import { useDidShow } from '@tarojs/taro';
+import { setStoredActivePetId } from '@/utils/activePetState';
+import { formatLocalDateKey } from '@/utils/formatDate';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
@@ -24,15 +26,22 @@ type ExpenseBudgetMap = Record<string, string>;
 
 const PetExpenseStats = memo(function PetExpenseStats() {
   const { params } = useRouter();
-  const { pets, activePet, activeRawPet, refreshPets } = usePetApiPets();
+  const preferredPetId = params.petId || '';
+  const { pets, activePet, activeRawPet, refreshPets } = usePetApiPets(preferredPetId);
   const [expenses, setExpenses] = useState<PetExpenseModel[]>([]);
   const [savingBudget, setSavingBudget] = useState(false);
   const loggedIn = isLoggedIn();
 
-  const petId = params.petId || activePet?.id || '';
+  const petId = preferredPetId || activePet?.id || '';
   const pet = pets.find((item) => item.id === petId) || activePet;
+  const today = formatLocalDateKey(new Date());
 
   const refreshExpenses = useCallback(() => {
+    if (!loggedIn) {
+      setExpenses([]);
+      return Promise.resolve();
+    }
+
     if (!petId) {
       setExpenses([]);
       return Promise.resolve();
@@ -41,11 +50,14 @@ const PetExpenseStats = memo(function PetExpenseStats() {
     return getExpenseListData({ petId })
       .then((list) => setExpenses(list.map(mapExpenseToExpenseModel)))
       .catch(() => setExpenses([]));
-  }, [petId]);
+  }, [loggedIn, petId]);
 
   useEffect(() => {
+    if (petId) {
+      setStoredActivePetId(petId);
+    }
     refreshExpenses();
-  }, [refreshExpenses]);
+  }, [petId, refreshExpenses]);
 
   useDidShow(() => {
     refreshExpenses();
@@ -109,7 +121,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
   const isOverBudget = budgetAmount > 0 && summary.total > budgetAmount;
 
   const handleSaveBudget = async () => {
-    if (!ensureLoggedIn('/pages/PetExpenseStats/index')) {
+    if (!ensureLoggedIn(`/pages/PetExpenseStats/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)) {
       return;
     }
 
@@ -163,9 +175,54 @@ const PetExpenseStats = memo(function PetExpenseStats() {
       }}
     >
       <View className="px-8 pt-4 pb-[120rpx]">
+        <View className="flex flex-wrap gap-2 mb-4">
+          {pets.map((item) => (
+            <View
+              key={item.id}
+              className="px-4 py-2 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
+              style={{ backgroundColor: petId === item.id ? '#FFD93B' : '#f4f4f4' }}
+              onClick={() => {
+                setStoredActivePetId(item.id);
+                Taro.redirectTo({ url: `/pages/PetExpenseStats/index?petId=${item.id}` });
+              }}
+            >
+              <Text className="text-[24rpx]">{item.name}</Text>
+            </View>
+          ))}
+        </View>
+
         <View className="mb-3">
           <Text className="text-[26rpx] text-[#555]">宠物：{pet?.name || '暂无'}</Text>
         </View>
+
+        {petId ? (
+          <View className="grid grid-cols-2 gap-3 mb-4">
+            <View
+              className="rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white p-4"
+              style={{ boxShadow: PET_UI_SHADOW }}
+              onClick={() =>
+                Taro.navigateTo({
+                  url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense`,
+                })
+              }
+            >
+              <Text className="text-[26rpx] font-bold text-[#2c2c2c]">新增花销</Text>
+              <Text className="text-[20rpx] text-[#7a7a7a] mt-2 block">
+                给 {pet?.name || '当前宠物'} 继续补一笔消费记录
+              </Text>
+            </View>
+            <View
+              className="rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white p-4"
+              style={{ boxShadow: PET_UI_SHADOW }}
+              onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${petId}` })}
+            >
+              <Text className="text-[26rpx] font-bold text-[#2c2c2c]">查看时间线</Text>
+              <Text className="text-[20rpx] text-[#7a7a7a] mt-2 block">
+                回到这只宠物的完整记录流
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
         {!loggedIn ? (
           <View
@@ -178,7 +235,11 @@ const PetExpenseStats = memo(function PetExpenseStats() {
             </Text>
             <View
               className="mt-3 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-              onClick={() => ensureLoggedIn('/pages/PetExpenseStats/index')}
+              onClick={() =>
+                ensureLoggedIn(
+                  `/pages/PetExpenseStats/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`
+                )
+              }
             >
               <Text className="text-[24rpx] font-semibold">去微信登录</Text>
             </View>
@@ -276,7 +337,23 @@ const PetExpenseStats = memo(function PetExpenseStats() {
               );
             })
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">本月还没有花销记录，可以先补一笔粮食、用品或医疗开销。</Text>
+            <View className="rounded-[16rpx] bg-white p-4">
+              <Text className="text-[24rpx] text-[#8a8a8a]">
+                {pet?.name || '当前宠物'}本月还没有花销记录，可以先补一笔粮食、用品或医疗开销。
+              </Text>
+              {petId ? (
+                <View
+                  className="mt-4 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                  onClick={() =>
+                    Taro.navigateTo({
+                      url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense`,
+                    })
+                  }
+                >
+                  <Text className="text-[24rpx] font-semibold">去补一笔花销</Text>
+                </View>
+              ) : null}
+            </View>
           )}
         </View>
 
@@ -304,7 +381,9 @@ const PetExpenseStats = memo(function PetExpenseStats() {
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">本月还没有花销明细</Text>
+            <Text className="text-[24rpx] text-[#8a8a8a]">
+              {pet?.name || '当前宠物'}本月还没有花销明细
+            </Text>
           )}
         </View>
       </View>

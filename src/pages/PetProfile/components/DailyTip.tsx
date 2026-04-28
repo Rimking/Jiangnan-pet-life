@@ -2,7 +2,12 @@
 import { memo } from 'react';
 import { PET_UI, PET_UI_SHADOW, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 
-const DailyTip = memo(function DailyTip() {
+interface Props {
+  onOpenKnowledge?: () => void;
+  onOpenQa?: () => void;
+}
+
+const DailyTip = memo(function DailyTip({ onOpenKnowledge, onOpenQa }: Props) {
   return (
     <View
       className="mx-[28rpx] mb-[14rpx] p-[14rpx] border-solid"
@@ -22,10 +27,25 @@ const DailyTip = memo(function DailyTip() {
         当猫咪出现尾巴竖起、炸毛、瞳孔放大并紧盯目标时，通常是“狩猎本能”被激活。可以用逗猫棒互动5-10分钟，帮助它释放精力，避免因为能量过剩而焦躁。
       </Text>
 
-      <View className="flex items-center pt-[10rpx] mt-[10rpx] border-t border-[#e2e2e2] gap-[8rpx]">
-        <Text style={{ fontSize: PET_UI_TEXT.body }}>❤️</Text>
-        <Text style={{ fontSize: PET_UI_TEXT.body }}>💬</Text>
-        <Text style={{ fontSize: PET_UI_TEXT.body }}>🔖</Text>
+      <View className="flex items-center justify-between pt-[10rpx] mt-[10rpx] border-t border-[#e2e2e2] gap-[10rpx]">
+        <View
+          className="flex-1 px-[12rpx] py-[10rpx] bg-white border-solid flex items-center justify-center"
+          style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.sm }}
+          onClick={onOpenKnowledge}
+        >
+          <Text className="text-[#4f4f4f]" style={{ fontSize: PET_UI_TEXT.body }}>
+            去知识库
+          </Text>
+        </View>
+        <View
+          className="flex-1 px-[12rpx] py-[10rpx] bg-[#FFF6CE] border-solid flex items-center justify-center"
+          style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.sm }}
+          onClick={onOpenQa}
+        >
+          <Text className="text-[#4f4f4f]" style={{ fontSize: PET_UI_TEXT.body }}>
+            问养宠问题
+          </Text>
+        </View>
       </View>
     </View>
   );

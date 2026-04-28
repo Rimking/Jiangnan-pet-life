@@ -1,12 +1,14 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../config';
 
+export type ScheduleStatus = 'pending' | 'done';
+
 export interface ScheduleItem {
   id: string;
   petId: string;
   title: string;
   category: string;
   type?: string;
-  status: string;
+  status: ScheduleStatus;
   repeatRule?: string;
   remindAt?: string;
   advanceMinutes?: number;
@@ -27,7 +29,7 @@ export interface CreateScheduleParams {
   title: string;
   category: string;
   type?: string;
-  status?: string;
+  status?: ScheduleStatus;
   repeatRule?: string;
   remindAt?: string;
   advanceMinutes?: number;

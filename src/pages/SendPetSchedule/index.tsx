@@ -1,9 +1,10 @@
 ﻿import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input, Textarea } from '@tarojs/components';
 import { memo, useState } from 'react';
-import Taro from '@tarojs/taro';
+import Taro, { useRouter } from '@tarojs/taro';
 import { createScheduleData, toIsoDateTime } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 import { formatLocalDateKey } from '@/utils/formatDate';
 
@@ -29,7 +30,9 @@ const isValidDateString = (value: string) => {
 const isValidTimeString = (value: string) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
 
 const SendPetSchedule = memo(function SendPetSchedule() {
-  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets();
+  const { params } = useRouter();
+  const preferredPetId = params.petId || '';
+  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets(preferredPetId);
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(() => formatLocalDateKey(new Date()));
   const [time, setTime] = useState('09:00');
@@ -38,7 +41,7 @@ const SendPetSchedule = memo(function SendPetSchedule() {
   const loggedIn = isLoggedIn();
 
   const handleSubmit = async () => {
-    if (!ensureLoggedIn('/pages/SendPetSchedule/index')) {
+    if (!ensureLoggedIn(`/pages/SendPetSchedule/index${activePetId ? `?petId=${activePetId}` : ''}`)) {
       return;
     }
 
@@ -74,10 +77,11 @@ const SendPetSchedule = memo(function SendPetSchedule() {
         remindAt: toIsoDateTime(date.trim(), time.trim()),
         notes: content.trim() || undefined,
       });
+      setStoredActivePetId(activePetId);
       Taro.showToast({ title: '提醒已创建', icon: 'success' });
       setTitle('');
       setContent('');
-      Taro.switchTab({ url: '/pages/PetSchedule/index' });
+      switchTabWithActivePet('/pages/PetSchedule/index', activePetId);
     } catch (error) {
       const message = error instanceof Error ? error.message : '创建失败';
       Taro.showToast({ title: message, icon: 'none' });
@@ -101,7 +105,9 @@ const SendPetSchedule = memo(function SendPetSchedule() {
             </Text>
             <View
               className="mt-3 inline-flex px-4 py-2 rounded-[999rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626]"
-              onClick={() => ensureLoggedIn('/pages/SendPetSchedule/index')}
+              onClick={() =>
+                ensureLoggedIn(`/pages/SendPetSchedule/index${activePetId ? `?petId=${activePetId}` : ''}`)
+              }
             >
               <Text className="text-[24rpx] font-semibold">去微信登录</Text>
             </View>
@@ -132,7 +138,11 @@ const SendPetSchedule = memo(function SendPetSchedule() {
                 backgroundColor: activePetId === pet.id ? '#FFD93B' : '#f4f4f4',
                 border: '2rpx solid #262626',
               }}
-              onClick={() => setActivePetId(pet.id)}
+              onClick={() => {
+                setActivePetId(pet.id);
+                setStoredActivePetId(pet.id);
+                Taro.redirectTo({ url: `/pages/SendPetSchedule/index?petId=${pet.id}` });
+              }}
             >
               <Text className="text-[24rpx]">{pet.name}</Text>
             </View>
@@ -142,6 +152,9 @@ const SendPetSchedule = memo(function SendPetSchedule() {
         <View className="mb-4 border-[2rpx] border-solid border-[#262626] rounded-[16rpx] bg-white p-4">
           <Text className="text-[22rpx] text-[#666]">当前宠物</Text>
           <Text className="text-[26rpx] text-[#303030] mt-2 block">{activePet?.name || '暂无'}</Text>
+          <Text className="text-[20rpx] text-[#7a7a7a] mt-2 block">
+            创建成功后会直接回到这只宠物的日程页。
+          </Text>
         </View>
 
         <View className="mb-4 border-[2rpx] border-solid border-[#262626] rounded-[16rpx] bg-white p-4">
@@ -176,5 +189,3 @@ const SendPetSchedule = memo(function SendPetSchedule() {
 });
 
 export default SendPetSchedule;
-
-

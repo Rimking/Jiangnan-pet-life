@@ -1,4 +1,5 @@
 import Taro from '@tarojs/taro';
+import { clearStoredActivePetId } from './activePetState';
 
 const AUTH_TOKEN_KEY = 'pet_app_auth_token';
 const AUTH_USER_KEY = 'pet_app_auth_user';
@@ -47,6 +48,7 @@ export const setLoginSession = (token: string, user: AuthUser) => {
 export const clearLoginSession = () => {
   Taro.removeStorageSync(AUTH_TOKEN_KEY);
   Taro.removeStorageSync(AUTH_USER_KEY);
+  clearStoredActivePetId();
 };
 
 export const isLoggedIn = () => {

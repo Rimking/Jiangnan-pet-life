@@ -1,8 +1,10 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../config';
 
+export type FeedbackMode = 'feedback' | 'contact';
+
 export interface FeedbackItem {
   id: string;
-  mode: string;
+  mode: FeedbackMode;
   content: string;
   contact?: string;
   createdAt: string;
@@ -10,7 +12,7 @@ export interface FeedbackItem {
 }
 
 export interface CreateFeedbackParams {
-  mode?: string;
+  mode?: FeedbackMode;
   content: string;
   contact?: string;
 }

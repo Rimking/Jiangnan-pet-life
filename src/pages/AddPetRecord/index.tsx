@@ -3,7 +3,15 @@ import { View, Text, Input } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { memo, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
-import { createCareRecordData, createExpenseData, createRecordData, toIsoDateTime } from '@/api/data';
+import {
+  createCareRecordData,
+  createExpenseData,
+  createRecordData,
+  createScheduleData,
+  toIsoDateTime,
+} from '@/api/data';
+import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { setStoredActivePetId } from '@/utils/activePetState';
 import { ensureLoggedIn } from '@/utils/authState';
 
 type RecordMode = 'record' | 'expense' | 'care';
@@ -38,12 +46,14 @@ const addDays = (baseDate: string, days: number) => {
 const AddPetRecord = memo(function AddPetRecord() {
   const { params } = useRouter();
   const petId = params.petId || '';
+  const { pets } = usePetApiPets(petId);
 
   const defaultDate = useMemo(() => {
     return params.date || toDateInput(new Date());
   }, [params.date]);
 
   const initialMode = (params.mode as RecordMode) || 'record';
+  const currentPet = pets.find((item) => item.id === petId) || null;
 
   const [mode, setMode] = useState<RecordMode>(initialMode);
 
@@ -94,7 +104,7 @@ const AddPetRecord = memo(function AddPetRecord() {
       }
     }
 
-    if (!petId) {
+    if (!petId || !currentPet) {
       Taro.showToast({ title: '缺少宠物信息', icon: 'none' });
       return;
     }
@@ -134,10 +144,26 @@ const AddPetRecord = memo(function AddPetRecord() {
           nextReminderAt: nextDate ? toIsoDateTime(nextDate, '09:00') : undefined,
           notes: note,
         });
+
+        if (nextDate) {
+          await createScheduleData({
+            petId,
+            title: `${careType}复查提醒`,
+            category: 'care',
+            type: careType,
+            status: 'pending',
+            repeatRule: '单次',
+            remindAt: toIsoDateTime(nextDate, '09:00'),
+            notes: note || `${careType}后续跟进`,
+          });
+        }
       }
 
+      setStoredActivePetId(petId);
       Taro.showToast({ title: '记录已保存', icon: 'success' });
-      setTimeout(() => Taro.navigateBack(), 300);
+      setTimeout(() => {
+        Taro.redirectTo({ url: `/pages/PetTimeline/index?petId=${petId}` });
+      }, 300);
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存失败';
       Taro.showToast({ title: message, icon: 'none' });
@@ -157,6 +183,63 @@ const AddPetRecord = memo(function AddPetRecord() {
       }}
     >
       <View className="p-8 pb-[120rpx]">
+        {pets.length ? (
+          <View className="mb-5">
+            <Text className="text-[22rpx] text-[#666] block mb-2">选择宠物</Text>
+            <View className="flex flex-wrap gap-2">
+              {pets.map((pet) => (
+                <View
+                  key={pet.id}
+                  className="px-4 py-2 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
+                  style={{ backgroundColor: pet.id === petId ? '#FFD93B' : '#f4f4f4' }}
+                  onClick={() => {
+                    setStoredActivePetId(pet.id);
+                    Taro.redirectTo({
+                      url: `/pages/AddPetRecord/index?petId=${pet.id}&date=${date}&mode=${mode}`,
+                    });
+                  }}
+                >
+                  <Text className="text-[24rpx]">{pet.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
+          <Text className="text-[22rpx] text-[#666]">当前宠物</Text>
+          <Text className="text-[28rpx] font-semibold mt-2 block">
+            {currentPet?.name || '未选择宠物'}
+          </Text>
+          <Text className="text-[22rpx] text-[#888] mt-2 block">
+            当前新增的日常、花销和护理记录都只会归属到这只宠物。
+          </Text>
+        </View>
+
+        {!pets.length ? (
+          <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
+            <Text className="text-[26rpx] font-semibold block">先添加宠物档案</Text>
+            <Text className="text-[22rpx] text-[#666] mt-2 block">
+              所有记录都必须和具体宠物绑定，后面时间线、报告和统计才能按宠物区分。
+            </Text>
+            <View
+              className="mt-3 inline-flex px-4 py-2 rounded-[999rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626]"
+              onClick={() => Taro.navigateTo({ url: '/pages/EditPetProfile/index' })}
+            >
+              <Text className="text-[24rpx] font-semibold">去添加宠物</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {pets.length > 0 && !currentPet ? (
+          <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
+            <Text className="text-[26rpx] font-semibold block">没有找到对应宠物</Text>
+            <Text className="text-[22rpx] text-[#666] mt-2 block">
+              这个记录入口没有绑定到有效宠物，请先重新选择一只宠物再继续。
+            </Text>
+          </View>
+        ) : null}
+
         <View className="flex gap-2 mb-5">
           <View
             className="flex-1 h-[64rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
@@ -362,4 +445,3 @@ const AddPetRecord = memo(function AddPetRecord() {
 });
 
 export default AddPetRecord;
-

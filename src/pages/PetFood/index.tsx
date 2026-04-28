@@ -1,6 +1,6 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input, Textarea } from '@tarojs/components';
-import Taro, { useDidShow } from '@tarojs/taro';
+import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import {
@@ -11,6 +11,7 @@ import {
   updateFoodData,
 } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { setStoredActivePetId } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const defaultForm = {
@@ -26,7 +27,9 @@ const defaultForm = {
 };
 
 const PetFood = memo(function PetFood() {
-  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets();
+  const { params } = useRouter();
+  const preferredPetId = params.petId || '';
+  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets(preferredPetId);
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState('');
@@ -34,6 +37,11 @@ const PetFood = memo(function PetFood() {
   const loggedIn = isLoggedIn();
 
   const refreshFoods = useCallback(() => {
+    if (!loggedIn) {
+      setFoods([]);
+      return Promise.resolve();
+    }
+
     if (!activePetId) {
       setFoods([]);
       return Promise.resolve();
@@ -42,15 +50,24 @@ const PetFood = memo(function PetFood() {
     return getFoodListData({ petId: activePetId })
       .then((list) => setFoods(list))
       .catch(() => setFoods([]));
-  }, [activePetId]);
+  }, [activePetId, loggedIn]);
 
   useEffect(() => {
+    if (activePetId) {
+      setStoredActivePetId(activePetId);
+    }
     refreshFoods();
-  }, [refreshFoods]);
+  }, [activePetId, refreshFoods]);
 
   useDidShow(() => {
     refreshFoods();
   });
+
+  useEffect(() => {
+    if (editingId && !foods.some((item) => item.id === editingId)) {
+      resetForm();
+    }
+  }, [editingId, foods]);
 
   const lowInventoryCount = useMemo(() => {
     return foods.filter((item) => {
@@ -95,7 +112,7 @@ const PetFood = memo(function PetFood() {
   };
 
   const handleSubmit = async () => {
-    if (!ensureLoggedIn('/pages/PetFood/index')) {
+    if (!ensureLoggedIn(`/pages/PetFood/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)) {
       return;
     }
 
@@ -111,6 +128,7 @@ const PetFood = memo(function PetFood() {
 
     setSaving(true);
     try {
+      setStoredActivePetId(activePetId);
       const payload = {
         petId: activePetId,
         name: form.name.trim(),
@@ -146,7 +164,7 @@ const PetFood = memo(function PetFood() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!ensureLoggedIn('/pages/PetFood/index')) {
+    if (!ensureLoggedIn(`/pages/PetFood/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)) {
       return;
     }
 
@@ -163,8 +181,11 @@ const PetFood = memo(function PetFood() {
 
     try {
       await deleteFoodData(id);
+      if (editingId === id) {
+        resetForm();
+      }
       Taro.showToast({ title: '已删除', icon: 'success' });
-      refreshFoods();
+      await refreshFoods();
     } catch (error) {
       const message = error instanceof Error ? error.message : '删除失败';
       Taro.showToast({ title: message, icon: 'none' });
@@ -193,7 +214,11 @@ const PetFood = memo(function PetFood() {
                 backgroundColor: activePetId === pet.id ? '#FFD93B' : '#f4f4f4',
                 border: '2rpx solid #262626',
               }}
-              onClick={() => setActivePetId(pet.id)}
+              onClick={() => {
+                setActivePetId(pet.id);
+                setStoredActivePetId(pet.id);
+                Taro.redirectTo({ url: `/pages/PetFood/index?petId=${pet.id}` });
+              }}
             >
               <Text className="text-[24rpx]">{pet.name}</Text>
             </View>
@@ -207,7 +232,9 @@ const PetFood = memo(function PetFood() {
             </Text>
             <View
               className="mt-3 inline-flex px-4 py-2 rounded-[999rpx] bg-[#FFD93B]"
-              onClick={() => ensureLoggedIn('/pages/PetFood/index')}
+              onClick={() =>
+                ensureLoggedIn(`/pages/PetFood/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)
+              }
             >
               <Text className="text-[22rpx] text-[#5D4510] font-semibold">去微信登录</Text>
             </View>
@@ -240,6 +267,37 @@ const PetFood = memo(function PetFood() {
             当前库存总量 {totalInventory.toFixed(2)}
           </Text>
         </View>
+
+        {activePetId ? (
+          <View className="mb-5 rounded-[24rpx] bg-[#FFF9E4] p-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.05)]">
+            <Text className="text-[28rpx] font-semibold text-[#2b2b2b] block">
+              围绕{activePet?.name || '当前宠物'}继续管理
+            </Text>
+            <Text className="text-[22rpx] text-[#7a6b42] mt-[8rpx] block">
+              维护完食物档案后，可以继续查看时间线、报告，或者回到这只宠物详情页继续处理其它事项。
+            </Text>
+            <View className="flex gap-3 mt-4">
+              <View
+                className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#E9D7AF] flex items-center justify-center"
+                onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${activePetId}` })}
+              >
+                <Text className="text-[22rpx] text-[#8b6c3f]">查看时间线</Text>
+              </View>
+              <View
+                className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#E9D7AF] flex items-center justify-center"
+                onClick={() => Taro.navigateTo({ url: `/pages/PetReport/index?petId=${activePetId}` })}
+              >
+                <Text className="text-[22rpx] text-[#8b6c3f]">查看报告</Text>
+              </View>
+              <View
+                className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#FFD93B] flex items-center justify-center"
+                onClick={() => Taro.navigateTo({ url: `/pages/PetDetailPage/index?petId=${activePetId}` })}
+              >
+                <Text className="text-[22rpx] font-semibold text-[#5D4510]">宠物详情</Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.08)]">
           <View className="mb-4 flex items-center justify-between">
@@ -381,7 +439,27 @@ const PetFood = memo(function PetFood() {
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">当前宠物还没有食物记录，先补一条主粮、零食或罐头档案吧。</Text>
+            <View className="rounded-[18rpx] bg-[#FFFBEA] p-4">
+              <Text className="text-[24rpx] text-[#8a8a8a]">
+                {activePet?.name || '当前宠物'}还没有食物记录，先补一条主粮、零食或罐头档案吧。
+              </Text>
+              {activePetId ? (
+                <View className="flex gap-3 mt-4">
+                  <View
+                    className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#FFD93B] flex items-center justify-center"
+                    onClick={() => Taro.pageScrollTo({ scrollTop: 0, duration: 250 })}
+                  >
+                    <Text className="text-[22rpx] font-semibold text-[#5D4510]">去新增食物</Text>
+                  </View>
+                  <View
+                    className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#E9D7AF] flex items-center justify-center"
+                    onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${activePetId}` })}
+                  >
+                    <Text className="text-[22rpx] text-[#8b6c3f]">查看时间线</Text>
+                  </View>
+                </View>
+              ) : null}
+            </View>
           )}
         </View>
       </View>

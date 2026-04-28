@@ -30,10 +30,11 @@ const ExpenseInsight = memo(function ExpenseInsight({
         borderRadius: PET_UI_RADIUS.md,
         boxShadow: PET_UI_SHADOW,
       }}
+      onClick={onOpenDetail}
     >
       <View className="flex items-center justify-between mb-[10rpx]">
         <Text className="font-bold" style={{ fontSize: PET_UI_TEXT.title }}>花销洞察</Text>
-        <View className="items-end" onClick={onOpenDetail}>
+        <View className="items-end">
           <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.body }}>本月 ¥{monthTotal.toFixed(2)}</Text>
           <Text className="text-[#7a7a7a]" style={{ fontSize: PET_UI_TEXT.caption }}>查看明细</Text>
         </View>
@@ -91,4 +92,3 @@ const ExpenseInsight = memo(function ExpenseInsight({
 });
 
 export default ExpenseInsight;
-

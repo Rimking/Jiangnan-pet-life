@@ -1,9 +1,10 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
-import { memo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import { getReportData, ReportData } from '@/api/data';
+import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const PetReport = memo(function PetReport() {
@@ -14,6 +15,12 @@ const PetReport = memo(function PetReport() {
   const loggedIn = isLoggedIn();
 
   const loadData = (petId?: string) => {
+    if (!loggedIn) {
+      setReport(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     getReportData(petId)
       .then((res) => setReport(res))
@@ -25,8 +32,141 @@ const PetReport = memo(function PetReport() {
     loadData(initialPetId || undefined);
   });
 
+  const currentPetId = report?.activePet?.id || initialPetId;
+
+  useEffect(() => {
+    if (currentPetId) {
+      setStoredActivePetId(currentPetId);
+    }
+  }, [currentPetId]);
+
   const expenseList = Object.entries(report?.expenseByCategory || {}).sort((a, b) => b[1] - a[1]);
   const careList = Object.entries(report?.careByCategory || {}).sort((a, b) => b[1] - a[1]);
+  const quickLinks = useMemo(
+    () => [
+      {
+        title: '成长时光轴',
+        subtitle: '回看提醒、护理和里程碑',
+        accent: '#5a78d4',
+        url: `/pages/PetTimeline/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+      },
+      {
+        title: '花销统计',
+        subtitle: '查看预算和分类构成',
+        accent: '#8A6A2C',
+        url: `/pages/PetExpenseStats/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+      },
+      {
+        title: '护理记录',
+        subtitle: '检查近期护理和复查安排',
+        accent: '#7A61A7',
+        url: `/pages/PetCareStats/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+      },
+      {
+        title: '成长里程碑',
+        subtitle: '继续补充关键成长节点',
+        accent: '#B25E8B',
+        url: `/pages/PetMilestones/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+      },
+    ],
+    [currentPetId]
+  );
+  const summaryCards = [
+    {
+      title: '最近 30 天花销',
+      value: `¥${Number(report?.summary.recentExpense || 0).toFixed(2)}`,
+      url: `/pages/PetExpenseStats/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+    },
+    {
+      title: '待处理提醒',
+      value: `${report?.summary.pendingSchedules || 0}`,
+      url: '/pages/PetSchedule/index',
+    },
+    {
+      title: '护理记录',
+      value: `${report?.summary.totalCareRecords || 0}`,
+      url: `/pages/PetCareStats/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+    },
+    {
+      title: '日常记录',
+      value: `${report?.summary.totalRecords || 0}`,
+      url: `/pages/PetTimeline/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+    },
+    {
+      title: '食物档案',
+      value: `${report?.summary.totalFoods || 0}`,
+      url: `/pages/PetFood/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+    },
+    {
+      title: '用药档案',
+      value: `${report?.summary.totalMedicines || 0}`,
+      url: `/pages/PetMedicine/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+    },
+    {
+      title: '成长里程碑',
+      value: `${report?.summary.totalMilestones || 0}`,
+      url: `/pages/PetMilestones/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+      fullWidth: true,
+    },
+  ];
+  const handleRecentMomentClick = (type: string) => {
+    if (!currentPetId) {
+      return;
+    }
+
+    if (type === 'milestone') {
+      Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${currentPetId}` });
+      return;
+    }
+
+    if (type === 'expense') {
+      Taro.navigateTo({ url: `/pages/PetExpenseStats/index?petId=${currentPetId}` });
+      return;
+    }
+
+    if (type === 'care') {
+      Taro.navigateTo({ url: `/pages/PetCareStats/index?petId=${currentPetId}` });
+      return;
+    }
+
+    if (type === 'food') {
+      Taro.navigateTo({ url: `/pages/PetFood/index?petId=${currentPetId}` });
+      return;
+    }
+
+    if (type === 'medicine') {
+      Taro.navigateTo({ url: `/pages/PetMedicine/index?petId=${currentPetId}` });
+      return;
+    }
+
+    Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${currentPetId}` });
+  };
+  const missingActions = [
+    {
+      title: '补提醒',
+      visible: (report?.summary.pendingSchedules || 0) === 0,
+      onClick: () =>
+        currentPetId
+          ? Taro.navigateTo({ url: `/pages/AddPetReminder/index?petId=${currentPetId}` })
+          : undefined,
+    },
+    {
+      title: '补记录',
+      visible: (report?.summary.totalRecords || 0) === 0,
+      onClick: () =>
+        currentPetId
+          ? Taro.navigateTo({ url: `/pages/AddPetRecord/index?petId=${currentPetId}&mode=record` })
+          : undefined,
+    },
+    {
+      title: '补里程碑',
+      visible: (report?.summary.totalMilestones || 0) === 0,
+      onClick: () =>
+        currentPetId
+          ? Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${currentPetId}` })
+          : undefined,
+    },
+  ].filter((item) => item.visible);
 
   return (
     <BasicLayout
@@ -48,6 +188,7 @@ const PetReport = memo(function PetReport() {
                 border: '2rpx solid #262626',
               }}
               onClick={() => {
+                setStoredActivePetId(pet.petId);
                 loadData(pet.petId);
                 Taro.redirectTo({ url: `/pages/PetReport/index?petId=${pet.petId}` });
               }}
@@ -66,7 +207,9 @@ const PetReport = memo(function PetReport() {
             <View
               className="mt-[20rpx] inline-flex px-[24rpx] py-[14rpx] rounded-[999rpx] bg-[#FFD93B]"
               style={{ border: '2rpx solid #262626' }}
-              onClick={() => ensureLoggedIn('/pages/PetReport/index')}
+              onClick={() =>
+                ensureLoggedIn(`/pages/PetReport/index${initialPetId ? `?petId=${initialPetId}` : ''}`)
+              }
             >
               <Text className="text-[24rpx] text-[#2c2c2c]">去微信登录</Text>
             </View>
@@ -98,51 +241,91 @@ const PetReport = memo(function PetReport() {
               ? '正在整理报告...'
               : `一起生活 ${report?.summary.activeDays || 0} 天，累计记录花销 ¥${Number(report?.summary.totalExpense || 0).toFixed(2)}。`}
           </Text>
+          {report?.activePet ? (
+            <Text className="text-[22rpx] text-[#8A6A2C] mt-[10rpx] block">
+              当前报告只统计 {report.activePet.name} 的专属数据，不和其他宠物混合。
+            </Text>
+          ) : null}
         </View>
 
+        {currentPetId ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">报告下一步建议</Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.7]">
+              报告已经是当前宠物的单独视角了。看完摘要后，最适合继续补齐缺失数据，或者直接回到时间线和日程里处理当天事项。
+            </Text>
+            {missingActions.length ? (
+              <View className="grid grid-cols-3 gap-3 mt-4">
+                {missingActions.map((item) => (
+                  <View
+                    key={item.title}
+                    className="rounded-[18rpx] bg-[#FFF9E8] p-4"
+                    onClick={item.onClick}
+                  >
+                    <Text className="text-[24rpx] font-semibold text-[#5D4510]">{item.title}</Text>
+                    <Text className="text-[20rpx] text-[#7D6532] mt-[6rpx] block">继续补全数据</Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View className="grid grid-cols-2 gap-3 mt-4">
+                <View
+                  className="rounded-[18rpx] bg-[#EEF4FF] p-4"
+                  onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', currentPetId)}
+                >
+                  <Text className="text-[24rpx] font-semibold text-[#466481]">回到日程</Text>
+                  <Text className="text-[20rpx] text-[#6D8092] mt-[6rpx] block">继续处理待办</Text>
+                </View>
+                <View
+                  className="rounded-[18rpx] bg-[#F8FAFF] p-4"
+                  onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${currentPetId}` })}
+                >
+                  <Text className="text-[24rpx] font-semibold text-[#466481]">回看时间线</Text>
+                  <Text className="text-[20rpx] text-[#6D8092] mt-[6rpx] block">检查最近动态回流</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {currentPetId ? (
+          <View className="grid grid-cols-2 gap-3 mb-5">
+            {quickLinks.map((item) => (
+              <View
+                key={item.title}
+                className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)]"
+                onClick={() => Taro.navigateTo({ url: item.url })}
+              >
+                <Text className="text-[24rpx] font-semibold text-[#2c2c2c]">{item.title}</Text>
+                <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">{item.subtitle}</Text>
+                <Text className="text-[20rpx] mt-[10rpx] block" style={{ color: item.accent }}>
+                  继续查看
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
         <View className="grid grid-cols-2 gap-3 mb-5">
-          <View className="rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)]">
-            <Text className="text-[22rpx] text-[#777]">最近 30 天花销</Text>
-            <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
-              ¥{Number(report?.summary.recentExpense || 0).toFixed(2)}
-            </Text>
-          </View>
-          <View className="rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)]">
-            <Text className="text-[22rpx] text-[#777]">待处理提醒</Text>
-            <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
-              {report?.summary.pendingSchedules || 0}
-            </Text>
-          </View>
-          <View className="rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)]">
-            <Text className="text-[22rpx] text-[#777]">护理记录</Text>
-            <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
-              {report?.summary.totalCareRecords || 0}
-            </Text>
-          </View>
-          <View className="rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)]">
-            <Text className="text-[22rpx] text-[#777]">日常记录</Text>
-            <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
-              {report?.summary.totalRecords || 0}
-            </Text>
-          </View>
-          <View className="rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)]">
-            <Text className="text-[22rpx] text-[#777]">食物档案</Text>
-            <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
-              {report?.summary.totalFoods || 0}
-            </Text>
-          </View>
-          <View className="rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)]">
-            <Text className="text-[22rpx] text-[#777]">用药档案</Text>
-            <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
-              {report?.summary.totalMedicines || 0}
-            </Text>
-          </View>
-          <View className="rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)] col-span-2">
-            <Text className="text-[22rpx] text-[#777]">成长里程碑</Text>
-            <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
-              {report?.summary.totalMilestones || 0}
-            </Text>
-          </View>
+          {summaryCards.map((item) => (
+            <View
+              key={item.title}
+              className={`rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)] ${item.fullWidth ? 'col-span-2' : ''}`}
+              onClick={() => {
+                if (item.url === '/pages/PetSchedule/index') {
+                  switchTabWithActivePet(item.url, currentPetId);
+                  return;
+                }
+                Taro.navigateTo({ url: item.url });
+              }}
+            >
+              <Text className="text-[22rpx] text-[#777]">{item.title}</Text>
+              <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
+                {item.value}
+              </Text>
+              <Text className="text-[20rpx] text-[#5a78d4] mt-[10rpx] block">继续查看</Text>
+            </View>
+          ))}
         </View>
 
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
@@ -183,11 +366,19 @@ const PetReport = memo(function PetReport() {
 
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
           <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">亮点总结</Text>
-          {(report?.highlights || []).map((item) => (
-            <View key={item} className="rounded-[16rpx] bg-[#FFF9E8] p-4 mb-3">
-              <Text className="text-[22rpx] text-[#6f5a2b] leading-[1.7]">{item}</Text>
+          {(report?.highlights || []).length ? (
+            (report?.highlights || []).map((item) => (
+              <View key={item} className="rounded-[16rpx] bg-[#FFF9E8] p-4 mb-3">
+                <Text className="text-[22rpx] text-[#6f5a2b] leading-[1.7]">{item}</Text>
+              </View>
+            ))
+          ) : (
+            <View className="rounded-[16rpx] bg-[#FFF9E8] p-4">
+              <Text className="text-[22rpx] text-[#6f5a2b] leading-[1.7]">
+                {report?.activePet?.name || '当前宠物'}最近还没有足够的数据生成亮点总结，先补一些提醒、记录或里程碑，报告会逐步变完整。
+              </Text>
             </View>
-          ))}
+          )}
         </View>
 
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
@@ -259,7 +450,11 @@ const PetReport = memo(function PetReport() {
           <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">最近动态</Text>
           {(report?.recentMoments || []).length ? (
             (report?.recentMoments || []).map((item) => (
-              <View key={item.id} className="rounded-[16rpx] bg-[#F8FAFF] p-4 mb-3">
+              <View
+                key={item.id}
+                className="rounded-[16rpx] bg-[#F8FAFF] p-4 mb-3"
+                onClick={() => handleRecentMomentClick(item.type)}
+              >
                 <View className="flex items-center justify-between">
                   <Text className="text-[22rpx] text-[#333]">{item.title}</Text>
                   <Text className="text-[18rpx] text-[#8a8a8a]">
@@ -269,10 +464,31 @@ const PetReport = memo(function PetReport() {
                 <Text className="text-[20rpx] text-[#7b7b7b] mt-[6rpx] block">
                   {item.date.slice(0, 10)}
                 </Text>
+                <Text className="text-[18rpx] text-[#5a78d4] mt-[8rpx] block">查看相关页面</Text>
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">最近还没有新的动态</Text>
+            <View className="rounded-[16rpx] bg-[#F8FAFF] p-4">
+              <Text className="text-[24rpx] text-[#8a8a8a]">
+                最近还没有新的动态，可以先去补提醒、记录或里程碑，新的数据会很快回流到这里。
+              </Text>
+              {currentPetId ? (
+                <View className="flex gap-3 mt-4">
+                  <View
+                    className="flex-1 rounded-[16rpx] bg-[#FFD93B] px-4 py-3 flex items-center justify-center"
+                    onClick={() => Taro.navigateTo({ url: `/pages/AddPetReminder/index?petId=${currentPetId}` })}
+                  >
+                    <Text className="text-[22rpx] font-semibold text-[#5D4510]">新增提醒</Text>
+                  </View>
+                  <View
+                    className="flex-1 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#D8E6FF] px-4 py-3 flex items-center justify-center"
+                    onClick={() => Taro.navigateTo({ url: `/pages/AddPetRecord/index?petId=${currentPetId}&mode=record` })}
+                  >
+                    <Text className="text-[22rpx] text-[#466481]">新增记录</Text>
+                  </View>
+                </View>
+              ) : null}
+            </View>
           )}
         </View>
       </View>

@@ -1,12 +1,14 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { formatLocalDateKey } from '@/utils/formatDate';
 import {
   getPetTimelineData,
 } from '@/api/data';
+import { setStoredActivePetId } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 type TimelineItem = {
@@ -35,14 +37,27 @@ const colorMap: Record<string, string> = {
 const PetTimeline = memo(function PetTimeline() {
   const { params } = useRouter();
   const initialPetId = params.petId || '';
-  const { pets, activePetId, setActivePetId } = usePetApiPets();
+  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets(initialPetId);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(false);
   const loggedIn = isLoggedIn();
 
   const currentPetId = initialPetId || activePetId;
+  const today = formatLocalDateKey(new Date());
+
+  useEffect(() => {
+    if (currentPetId) {
+      setStoredActivePetId(currentPetId);
+    }
+  }, [currentPetId]);
 
   useDidShow(() => {
+    if (!loggedIn) {
+      setTimeline([]);
+      setLoading(false);
+      return;
+    }
+
     if (!currentPetId) {
       setTimeline([]);
       return;
@@ -78,7 +93,7 @@ const PetTimeline = memo(function PetTimeline() {
   });
 
   const groupedTimeline = useMemo(() => {
-    return timeline.reduce<Array<{ date: string; items: TimelineItem[] }>>((acc, item) => {
+    const groups = timeline.reduce<Array<{ date: string; items: TimelineItem[] }>>((acc, item) => {
       const group = acc.find((entry) => entry.date === item.date);
       if (group) {
         group.items.push(item);
@@ -87,6 +102,12 @@ const PetTimeline = memo(function PetTimeline() {
       }
       return acc;
     }, []);
+    return groups
+      .map((group) => ({
+        ...group,
+        items: [...group.items].sort((a, b) => b.createdAt - a.createdAt),
+      }))
+      .sort((a, b) => b.date.localeCompare(a.date));
   }, [timeline]);
 
   return (
@@ -110,6 +131,7 @@ const PetTimeline = memo(function PetTimeline() {
               }}
               onClick={() => {
                 setActivePetId(pet.id);
+                setStoredActivePetId(pet.id);
                 Taro.redirectTo({ url: `/pages/PetTimeline/index?petId=${pet.id}` });
               }}
             >
@@ -128,6 +150,48 @@ const PetTimeline = memo(function PetTimeline() {
           </Text>
         </View>
 
+        {currentPetId && activePet ? (
+          <View className="rounded-[24rpx] bg-[#F6F9FF] p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.05)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">
+              围绕{activePet.name}继续补全时间线
+            </Text>
+            <Text className="text-[22rpx] text-[#64748b] mt-[8rpx] block">
+              时间线会持续聚合提醒、日常、花销、护理、用药和成长节点，看完后可以直接回到当前宠物的下一步动作里。
+            </Text>
+            <View className="grid grid-cols-3 gap-3 mt-4">
+              <View
+                className="rounded-[18rpx] bg-[#FFF9E8] p-4"
+                onClick={() =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`,
+                  })
+                }
+              >
+                <Text className="text-[24rpx] font-semibold text-[#5D4510]">新增提醒</Text>
+                <Text className="text-[20rpx] text-[#7D6532] mt-[6rpx] block">补一条今天的安排</Text>
+              </View>
+              <View
+                className="rounded-[18rpx] bg-[#EEF8FF] p-4"
+                onClick={() =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`,
+                  })
+                }
+              >
+                <Text className="text-[24rpx] font-semibold text-[#2c5f7a]">新增记录</Text>
+                <Text className="text-[20rpx] text-[#5E7680] mt-[6rpx] block">继续补日常或花销</Text>
+              </View>
+              <View
+                className="rounded-[18rpx] bg-white p-4 border-[2rpx] border-solid border-[#D8E6FF]"
+                onClick={() => Taro.navigateTo({ url: `/pages/PetReport/index?petId=${currentPetId}` })}
+              >
+                <Text className="text-[24rpx] font-semibold text-[#466481]">查看报告</Text>
+                <Text className="text-[20rpx] text-[#6D8092] mt-[6rpx] block">看看整体汇总</Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
         {!loggedIn ? (
           <View className="rounded-[24rpx] bg-white p-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
             <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">登录后查看完整成长时光轴</Text>
@@ -137,7 +201,9 @@ const PetTimeline = memo(function PetTimeline() {
             <View
               className="mt-[20rpx] inline-flex px-[24rpx] py-[14rpx] rounded-[999rpx] bg-[#FFD93B]"
               style={{ border: '2rpx solid #262626' }}
-              onClick={() => ensureLoggedIn('/pages/PetTimeline/index')}
+              onClick={() =>
+                ensureLoggedIn(`/pages/PetTimeline/index${currentPetId ? `?petId=${currentPetId}` : ''}`)
+              }
             >
               <Text className="text-[24rpx] text-[#2c2c2c]">去微信登录</Text>
             </View>
@@ -188,8 +254,47 @@ const PetTimeline = memo(function PetTimeline() {
         ) : (
           <View className="rounded-[24rpx] bg-white p-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
             <Text className="text-[24rpx] text-[#8a8a8a]">
-              这个宠物还没有足够的时间线数据，先去添加提醒、记录、花销、食物、护理或成长里程碑吧。
+              {activePet?.name || '这个宠物'}还没有足够的时间线数据，先去添加提醒、记录、花销、食物、护理或成长里程碑吧。
             </Text>
+            {currentPetId ? (
+              <View className="grid grid-cols-2 gap-3 mt-4">
+                <View
+                  className="rounded-[18rpx] bg-[#FFF9E8] p-4"
+                  onClick={() =>
+                    Taro.navigateTo({
+                      url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`,
+                    })
+                  }
+                >
+                  <Text className="text-[24rpx] font-semibold text-[#5D4510]">新增提醒</Text>
+                  <Text className="text-[20rpx] text-[#7D6532] mt-[6rpx] block">
+                    从喂食、护理或复查安排开始
+                  </Text>
+                </View>
+                <View
+                  className="rounded-[18rpx] bg-[#EEF8FF] p-4"
+                  onClick={() =>
+                    Taro.navigateTo({
+                      url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`,
+                    })
+                  }
+                >
+                  <Text className="text-[24rpx] font-semibold text-[#2c5f7a]">新增记录</Text>
+                  <Text className="text-[20rpx] text-[#5E7680] mt-[6rpx] block">
+                    先补一条日常、花销或护理记录
+                  </Text>
+                </View>
+                <View
+                  className="rounded-[18rpx] bg-[#FFF0F6] p-4 col-span-2"
+                  onClick={() => Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${currentPetId}` })}
+                >
+                  <Text className="text-[24rpx] font-semibold text-[#8A5374]">记录成长里程碑</Text>
+                  <Text className="text-[20rpx] text-[#7B6070] mt-[6rpx] block">
+                    第一次到家、第一次出门、疫苗完成都可以成为时间线起点
+                  </Text>
+                </View>
+              </View>
+            ) : null}
           </View>
         )}
       </View>

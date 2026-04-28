@@ -15,6 +15,8 @@ import {
   getQuestionCategory,
   recordQaCategory,
 } from '@/utils/knowledgeState';
+import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { switchTabWithActivePet } from '@/utils/activePetState';
 import { isLoggedIn } from '@/utils/authState';
 
 const QUICK_QUESTIONS = [
@@ -71,6 +73,7 @@ const categoryLabelMap: Record<string, string> = {
 const mapCategoryLabel = (category: string) => categoryLabelMap[category] || '通用';
 
 const PetQa = memo(function PetQa() {
+  const { activePet, activePetId } = usePetApiPets();
   const [question, setQuestion] = useState('');
   const [asked, setAsked] = useState('');
   const [answerText, setAnswerText] = useState('');
@@ -182,6 +185,31 @@ const PetQa = memo(function PetQa() {
       navOptions={{ navTitle: '知识问答', needBack: true }}
     >
       <View className="px-[24rpx] pt-[16rpx] pb-[120rpx]">
+        {activePetId ? (
+          <View className="bg-[#EEF5FF] rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[14rpx] mb-[14rpx]">
+            <Text className="text-[24rpx] font-semibold text-[#222] block">
+              当前宠物：{activePet?.name || '已选宠物'}
+            </Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
+              问完问题后，可以直接回到这只宠物的首页或日程继续记录和安排。
+            </Text>
+            <View className="flex gap-[10rpx] mt-[10rpx]">
+              <View
+                className="flex-1 h-[60rpx] rounded-[30rpx] bg-white border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                onClick={() => switchTabWithActivePet('/pages/PetProfile/index', activePetId)}
+              >
+                <Text className="text-[22rpx] text-[#333]">回到首页</Text>
+              </View>
+              <View
+                className="flex-1 h-[60rpx] rounded-[30rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', activePetId)}
+              >
+                <Text className="text-[22rpx] text-[#333] font-semibold">查看日程</Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
         <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[14rpx] mb-[14rpx]">
           <Text className="text-[24rpx] font-semibold text-[#222] block">问答说明</Text>
           <Text className="text-[22rpx] text-[#666] leading-[1.7] mt-[8rpx] block">

@@ -1,27 +1,35 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter, useDidShow } from '@tarojs/taro';
+import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import { PET_UI, PET_UI_SHADOW } from '@/constants/petUi';
 import { getCareRecordListData, getScheduleListData, mapCareRecordToCareLogModel, mapScheduleToReminderModel } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
 import { PetCareLogModel, PetReminderModel } from '@/types/pet';
 import { formatLocalDateKey } from '@/utils/formatDate';
+import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
 
 const PetCareStats = memo(function PetCareStats() {
   const { params } = useRouter();
-  const { pets, activePet } = usePetApiPets();
+  const preferredPetId = params.petId || '';
+  const { pets, activePet, activePetId, setActivePetId } = usePetApiPets(preferredPetId);
   const [careLogs, setCareLogs] = useState<PetCareLogModel[]>([]);
   const [reminders, setReminders] = useState<PetReminderModel[]>([]);
   const loggedIn = isLoggedIn();
 
-  const petId = params.petId || activePet?.id || '';
+  const petId = preferredPetId || activePetId || activePet?.id || '';
   const pet = pets.find((item) => item.id === petId) || activePet;
 
   const refreshCareData = useCallback(() => {
+    if (!loggedIn) {
+      setCareLogs([]);
+      setReminders([]);
+      return Promise.resolve();
+    }
+
     if (!petId) {
       setCareLogs([]);
       setReminders([]);
@@ -37,11 +45,14 @@ const PetCareStats = memo(function PetCareStats() {
         setCareLogs([]);
         setReminders([]);
       });
-  }, [petId]);
+  }, [loggedIn, petId]);
 
   useEffect(() => {
+    if (petId) {
+      setStoredActivePetId(petId);
+    }
     refreshCareData();
-  }, [refreshCareData]);
+  }, [petId, refreshCareData]);
 
   useDidShow(() => {
     refreshCareData();
@@ -57,6 +68,7 @@ const PetCareStats = memo(function PetCareStats() {
   }, [careList]);
 
   const [activeType, setActiveType] = useState('全部');
+  const today = formatLocalDateKey(new Date());
 
   const filteredCareList = useMemo(() => {
     return activeType === '全部' ? careList : careList.filter((item) => item.careType === activeType);
@@ -109,6 +121,23 @@ const PetCareStats = memo(function PetCareStats() {
       }}
     >
       <View className="px-8 pt-4 pb-[120rpx]">
+        <View className="flex flex-wrap gap-2 mb-4">
+          {pets.map((item) => (
+            <View
+              key={item.id}
+              className="px-4 py-2 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
+              style={{ backgroundColor: petId === item.id ? '#bdeeff' : '#f4f4f4' }}
+              onClick={() => {
+                setActivePetId(item.id);
+                setStoredActivePetId(item.id);
+                Taro.redirectTo({ url: `/pages/PetCareStats/index?petId=${item.id}` });
+              }}
+            >
+              <Text className="text-[24rpx]">{item.name}</Text>
+            </View>
+          ))}
+        </View>
+
         {!loggedIn ? (
           <View
             className="mb-4 p-5 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white"
@@ -120,7 +149,9 @@ const PetCareStats = memo(function PetCareStats() {
             </Text>
             <View
               className="mt-3 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-              onClick={() => ensureLoggedIn('/pages/PetCareStats/index')}
+              onClick={() =>
+                ensureLoggedIn(`/pages/PetCareStats/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)
+              }
             >
               <Text className="text-[24rpx] font-semibold">去微信登录</Text>
             </View>
@@ -158,6 +189,35 @@ const PetCareStats = memo(function PetCareStats() {
             </Text>
           ) : null}
         </View>
+
+        {petId ? (
+          <View className="grid grid-cols-2 gap-3 mb-4">
+            <View
+              className="rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white p-4"
+              style={{ boxShadow: PET_UI_SHADOW }}
+              onClick={() =>
+                Taro.navigateTo({
+                  url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=care`,
+                })
+              }
+            >
+              <Text className="text-[26rpx] font-bold text-[#2c2c2c]">新增护理</Text>
+              <Text className="text-[20rpx] text-[#7a7a7a] mt-2 block">
+                继续补一条洗护、驱虫、疫苗或体检记录
+              </Text>
+            </View>
+            <View
+              className="rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white p-4"
+              style={{ boxShadow: PET_UI_SHADOW }}
+              onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', petId)}
+            >
+              <Text className="text-[26rpx] font-bold text-[#2c2c2c]">查看日程</Text>
+              <Text className="text-[20rpx] text-[#7a7a7a] mt-2 block">
+                回到这只宠物的提醒和复查安排
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
         <View className="grid grid-cols-3 gap-3 mb-4">
           <View
@@ -251,7 +311,31 @@ const PetCareStats = memo(function PetCareStats() {
               );
             })
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">还没有护理记录，可以先补一条洗护、驱虫、疫苗或体检记录。</Text>
+            <View className="rounded-[16rpx] bg-white p-4">
+              <Text className="text-[24rpx] text-[#8a8a8a]">
+                {pet?.name || '当前宠物'}还没有护理记录，可以先补一条洗护、驱虫、疫苗或体检记录。
+              </Text>
+              {petId ? (
+                <View className="flex gap-3 mt-4">
+                  <View
+                    className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#BDEEFF] flex items-center justify-center"
+                    onClick={() =>
+                      Taro.navigateTo({
+                        url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=care`,
+                      })
+                    }
+                  >
+                    <Text className="text-[22rpx] font-semibold text-[#2c5f7a]">新增护理记录</Text>
+                  </View>
+                  <View
+                    className="flex-1 px-4 py-3 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#CBE5F0] flex items-center justify-center"
+                    onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', petId)}
+                  >
+                    <Text className="text-[22rpx] text-[#3b82f6]">查看日程</Text>
+                  </View>
+                </View>
+              ) : null}
+            </View>
           )}
         </View>
       </View>

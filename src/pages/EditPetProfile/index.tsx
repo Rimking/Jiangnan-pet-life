@@ -10,6 +10,7 @@ import {
   updatePetData,
 } from '@/api/data';
 import { ensureLoggedIn } from '@/utils/authState';
+import { setStoredActivePetId } from '@/utils/activePetState';
 
 type PetProfileExtras = {
   personality?: string;
@@ -159,16 +160,30 @@ const EditPetProfile = memo(function EditPetProfile() {
 
     setSaving(true);
     try {
+      let savedPetId = petId;
       if (mode === 'edit' && petId) {
-        await updatePetData(petId, payload);
+        const updatedPet = await updatePetData(petId, payload);
+        savedPetId = updatedPet.id;
       } else {
-        await createPetData(payload);
+        const createdPet = await createPetData(payload);
+        savedPetId = createdPet.id;
       }
+
+      if (savedPetId) {
+        setStoredActivePetId(savedPetId);
+      }
+
       Taro.showToast({
         title: mode === 'edit' ? '宠物信息已更新' : '宠物已添加',
         icon: 'success',
       });
-      setTimeout(() => Taro.navigateBack(), 300);
+      setTimeout(() => {
+        if (savedPetId) {
+          Taro.redirectTo({ url: `/pages/PetDetailPage/index?petId=${savedPetId}` });
+          return;
+        }
+        Taro.navigateBack();
+      }, 300);
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存失败';
       Taro.showToast({ title: message, icon: 'none' });
