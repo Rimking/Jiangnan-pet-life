@@ -34,7 +34,27 @@ const PetExpenseStats = memo(function PetExpenseStats() {
 
   const petId = preferredPetId || activePet?.id || '';
   const pet = pets.find((item) => item.id === petId) || activePet;
+  const hasValidPetContext = Boolean(petId && pet && activePet);
   const today = formatLocalDateKey(new Date());
+  const canSaveBudget = Boolean(petId && pet && activeRawPet && activePet);
+  const ensureActivePetContext = () => {
+    if (!ensureLoggedIn(`/pages/PetExpenseStats/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)) {
+      return false;
+    }
+
+    if (petId && pet && activePet) {
+      return true;
+    }
+
+    Taro.showToast({ title: pets.length > 0 ? '请先重新选择宠物' : '请先选择或创建宠物', icon: 'none' });
+    return false;
+  };
+  const openPetPage = (url: string) => {
+    if (!ensureActivePetContext()) {
+      return;
+    }
+    Taro.navigateTo({ url });
+  };
 
   const refreshExpenses = useCallback(() => {
     if (!loggedIn) {
@@ -42,7 +62,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
       return Promise.resolve();
     }
 
-    if (!petId) {
+    if (!petId || !pet || !activePet) {
       setExpenses([]);
       return Promise.resolve();
     }
@@ -50,7 +70,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
     return getExpenseListData({ petId })
       .then((list) => setExpenses(list.map(mapExpenseToExpenseModel)))
       .catch(() => setExpenses([]));
-  }, [loggedIn, petId]);
+  }, [activePet, loggedIn, pet, petId]);
 
   useEffect(() => {
     if (petId) {
@@ -85,12 +105,12 @@ const PetExpenseStats = memo(function PetExpenseStats() {
   }, [activeRawPet?.profileExtras]);
 
   useEffect(() => {
-    if (!petId) {
+    if (!petId || !pet || !activePet) {
       setBudgetInput('');
       return;
     }
     setBudgetInput(budgetMap[activeMonth] || '');
-  }, [activeMonth, budgetMap, petId]);
+  }, [activeMonth, activePet, budgetMap, pet, petId]);
 
   const monthlyExpenses = useMemo(() => {
     return expenses
@@ -125,8 +145,8 @@ const PetExpenseStats = memo(function PetExpenseStats() {
       return;
     }
 
-    if (!petId) {
-      Taro.showToast({ title: '缺少宠物信息', icon: 'none' });
+    if (!petId || !pet || !activePet) {
+      Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
       return;
     }
 
@@ -192,19 +212,17 @@ const PetExpenseStats = memo(function PetExpenseStats() {
         </View>
 
         <View className="mb-3">
-          <Text className="text-[26rpx] text-[#555]">宠物：{pet?.name || '暂无'}</Text>
+          <Text className="text-[26rpx] text-[#555]">
+            宠物：{pet?.name || (loggedIn && pets.length > 0 ? '未选择有效宠物' : '暂无')}
+          </Text>
         </View>
 
-        {petId ? (
+        {hasValidPetContext ? (
           <View className="grid grid-cols-2 gap-3 mb-4">
             <View
               className="rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white p-4"
               style={{ boxShadow: PET_UI_SHADOW }}
-              onClick={() =>
-                Taro.navigateTo({
-                  url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense`,
-                })
-              }
+              onClick={() => openPetPage(`/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense`)}
             >
               <Text className="text-[26rpx] font-bold text-[#2c2c2c]">新增花销</Text>
               <Text className="text-[20rpx] text-[#7a7a7a] mt-2 block">
@@ -214,7 +232,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
             <View
               className="rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white p-4"
               style={{ boxShadow: PET_UI_SHADOW }}
-              onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${petId}` })}
+              onClick={() => openPetPage(`/pages/PetTimeline/index?petId=${petId}`)}
             >
               <Text className="text-[26rpx] font-bold text-[#2c2c2c]">查看时间线</Text>
               <Text className="text-[20rpx] text-[#7a7a7a] mt-2 block">
@@ -246,7 +264,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
           </View>
         ) : null}
 
-        {loggedIn && !petId ? (
+        {loggedIn && !pets.length ? (
           <View
             className="mb-4 p-5 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white"
             style={{ boxShadow: PET_UI_SHADOW }}
@@ -261,6 +279,18 @@ const PetExpenseStats = memo(function PetExpenseStats() {
             >
               <Text className="text-[24rpx] font-semibold">去添加宠物</Text>
             </View>
+          </View>
+        ) : null}
+
+        {loggedIn && pets.length > 0 && !hasValidPetContext ? (
+          <View
+            className="mb-4 p-5 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white"
+            style={{ boxShadow: PET_UI_SHADOW }}
+          >
+            <Text className="text-[30rpx] font-bold block">请先重新选择宠物</Text>
+            <Text className="text-[22rpx] text-[#666] mt-2 block">
+              当前花销统计页没有绑定到有效宠物，你可以直接从上方切换到一只现有宠物继续查看预算和明细。
+            </Text>
           </View>
         ) : null}
 
@@ -309,8 +339,15 @@ const PetExpenseStats = memo(function PetExpenseStats() {
             />
           </View>
           <View
-            className="mt-3 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-            onClick={handleSaveBudget}
+            className="mt-3 h-[72rpx] rounded-[36rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+            style={{ backgroundColor: canSaveBudget ? '#FFD93B' : '#E5E5E5', opacity: canSaveBudget ? 1 : 0.7 }}
+            onClick={() => {
+              if (!canSaveBudget) {
+                Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
+                return;
+              }
+              handleSaveBudget();
+            }}
           >
             <Text className="text-[24rpx] font-semibold">{savingBudget ? '保存中...' : '保存预算'}</Text>
           </View>
@@ -341,14 +378,10 @@ const PetExpenseStats = memo(function PetExpenseStats() {
               <Text className="text-[24rpx] text-[#8a8a8a]">
                 {pet?.name || '当前宠物'}本月还没有花销记录，可以先补一笔粮食、用品或医疗开销。
               </Text>
-              {petId ? (
+              {hasValidPetContext ? (
                 <View
                   className="mt-4 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-                  onClick={() =>
-                    Taro.navigateTo({
-                      url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense`,
-                    })
-                  }
+                  onClick={() => openPetPage(`/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense`)}
                 >
                   <Text className="text-[24rpx] font-semibold">去补一笔花销</Text>
                 </View>

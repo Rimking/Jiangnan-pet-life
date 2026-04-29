@@ -53,6 +53,18 @@ export const getCareRecordListData = (params: CareRecordListParams = {}) => {
   ).then((res) => res.data);
 };
 
+export const getCareRecordDetailData = (id: string) => {
+  return apiGet<{
+    data: CareRecordItem;
+    success: boolean;
+  }>(
+    {
+      url: `/api/care-records/${id}`,
+    },
+    true
+  ).then((res) => res.data);
+};
+
 export const createCareRecordData = (params: CreateCareRecordParams) => {
   return apiPost<{
     data: CareRecordItem;

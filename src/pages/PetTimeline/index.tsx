@@ -6,6 +6,13 @@ import { PET_UI } from '@/constants/petUi';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
 import { formatLocalDateKey } from '@/utils/formatDate';
 import {
+  deleteCareRecordData,
+  deleteExpenseData,
+  deleteFoodData,
+  deleteMedicineData,
+  deleteMilestoneData,
+  deleteRecordData,
+  deleteScheduleData,
   getPetTimelineData,
 } from '@/api/data';
 import { setStoredActivePetId } from '@/utils/activePetState';
@@ -13,6 +20,8 @@ import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 type TimelineItem = {
   id: string;
+  sourceId: string;
+  sourceType: string;
   petId: string;
   date: string;
   time: string;
@@ -44,14 +53,7 @@ const PetTimeline = memo(function PetTimeline() {
 
   const currentPetId = initialPetId || activePetId;
   const today = formatLocalDateKey(new Date());
-
-  useEffect(() => {
-    if (currentPetId) {
-      setStoredActivePetId(currentPetId);
-    }
-  }, [currentPetId]);
-
-  useDidShow(() => {
+  const refreshTimeline = () => {
     if (!loggedIn) {
       setTimeline([]);
       setLoading(false);
@@ -76,6 +78,8 @@ const PetTimeline = memo(function PetTimeline() {
             : `${`${target.getHours()}`.padStart(2, '0')}:${`${target.getMinutes()}`.padStart(2, '0')}`;
           return {
             id: item.id,
+            sourceId: item.sourceId,
+            sourceType: item.sourceType,
             petId: item.petId,
             date,
             time,
@@ -90,7 +94,56 @@ const PetTimeline = memo(function PetTimeline() {
       })
       .catch(() => setTimeline([]))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (currentPetId) {
+      setStoredActivePetId(currentPetId);
+    }
+  }, [currentPetId]);
+
+  useDidShow(() => {
+    refreshTimeline();
   });
+
+  const handleDelete = async (item: TimelineItem) => {
+    const result = await Taro.showModal({
+      title: '确认删除',
+      content: `是否删除这条${item.tag}记录？`,
+      confirmText: '删除',
+      confirmColor: '#d65a31',
+    });
+
+    if (!result.confirm) {
+      return;
+    }
+
+    try {
+      if (item.sourceType === 'schedule') {
+        await deleteScheduleData(item.sourceId);
+      } else if (item.sourceType === 'record') {
+        await deleteRecordData(item.sourceId);
+      } else if (item.sourceType === 'expense') {
+        await deleteExpenseData(item.sourceId);
+      } else if (item.sourceType === 'care') {
+        await deleteCareRecordData(item.sourceId);
+      } else if (item.sourceType === 'food') {
+        await deleteFoodData(item.sourceId);
+      } else if (item.sourceType === 'medicine') {
+        await deleteMedicineData(item.sourceId);
+      } else if (item.sourceType === 'milestone') {
+        await deleteMilestoneData(item.sourceId);
+      } else {
+        Taro.showToast({ title: '暂不支持删除这类数据', icon: 'none' });
+        return;
+      }
+
+      await Promise.resolve(refreshTimeline());
+      Taro.showToast({ title: '已删除', icon: 'success' });
+    } catch (error) {
+      Taro.showToast({ title: '删除失败', icon: 'none' });
+    }
+  };
 
   const groupedTimeline = useMemo(() => {
     const groups = timeline.reduce<Array<{ date: string; items: TimelineItem[] }>>((acc, item) => {
@@ -222,6 +275,13 @@ const PetTimeline = memo(function PetTimeline() {
               <Text className="text-[24rpx] text-[#2c2c2c]">去添加宠物</Text>
             </View>
           </View>
+        ) : !currentPetId || !activePet ? (
+          <View className="rounded-[24rpx] bg-white p-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">请先重新选择宠物</Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.7]">
+              当前时间线没有绑定到有效宠物。你可以直接点上方宠物标签，切回某一只宠物后再继续回看成长轨迹。
+            </Text>
+          </View>
         ) : groupedTimeline.length ? (
           groupedTimeline.map((group) => (
             <View key={group.date} className="mb-5">
@@ -238,8 +298,16 @@ const PetTimeline = memo(function PetTimeline() {
                   >
                     <View className="flex items-center justify-between mb-[8rpx]">
                       <Text className="text-[28rpx] font-semibold text-[#2c2c2c]">{item.title}</Text>
-                      <View className="px-[12rpx] py-[6rpx] rounded-[999rpx] bg-white/80">
-                        <Text className="text-[20rpx] text-[#555]">{item.tag}</Text>
+                      <View className="flex items-center gap-2">
+                        <View className="px-[12rpx] py-[6rpx] rounded-[999rpx] bg-white/80">
+                          <Text className="text-[20rpx] text-[#555]">{item.tag}</Text>
+                        </View>
+                        <View
+                          className="px-[12rpx] py-[6rpx] rounded-[999rpx] bg-white/80"
+                          onClick={() => handleDelete(item)}
+                        >
+                          <Text className="text-[20rpx] text-[#b36439]">删除</Text>
+                        </View>
                       </View>
                     </View>
                     <Text className="text-[22rpx] text-[#555] leading-[1.7]">{item.desc}</Text>

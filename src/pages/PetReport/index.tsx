@@ -13,6 +13,29 @@ const PetReport = memo(function PetReport() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const loggedIn = isLoggedIn();
+  const currentPetId =
+    report?.activePet?.id ||
+    report?.petOptions?.find((item) => item.active)?.petId ||
+    '';
+  const hasValidPetContext = Boolean(currentPetId && report?.activePet);
+  const ensureActivePetContext = () => {
+    if (!ensureLoggedIn(`/pages/PetReport/index${initialPetId ? `?petId=${initialPetId}` : ''}`)) {
+      return false;
+    }
+
+    if (currentPetId && report?.activePet) {
+      return true;
+    }
+
+    Taro.showToast({ title: '请先选择或创建宠物', icon: 'none' });
+    return false;
+  };
+  const openPetPage = (url: string) => {
+    if (!ensureActivePetContext()) {
+      return;
+    }
+    Taro.navigateTo({ url });
+  };
 
   const loadData = (petId?: string) => {
     if (!loggedIn) {
@@ -31,8 +54,6 @@ const PetReport = memo(function PetReport() {
   useDidShow(() => {
     loadData(initialPetId || undefined);
   });
-
-  const currentPetId = report?.activePet?.id || initialPetId;
 
   useEffect(() => {
     if (currentPetId) {
@@ -115,56 +136,50 @@ const PetReport = memo(function PetReport() {
     }
 
     if (type === 'milestone') {
-      Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${currentPetId}` });
+      openPetPage(`/pages/PetMilestones/index?petId=${currentPetId}`);
       return;
     }
 
     if (type === 'expense') {
-      Taro.navigateTo({ url: `/pages/PetExpenseStats/index?petId=${currentPetId}` });
+      openPetPage(`/pages/PetExpenseStats/index?petId=${currentPetId}`);
       return;
     }
 
     if (type === 'care') {
-      Taro.navigateTo({ url: `/pages/PetCareStats/index?petId=${currentPetId}` });
+      openPetPage(`/pages/PetCareStats/index?petId=${currentPetId}`);
       return;
     }
 
     if (type === 'food') {
-      Taro.navigateTo({ url: `/pages/PetFood/index?petId=${currentPetId}` });
+      openPetPage(`/pages/PetFood/index?petId=${currentPetId}`);
       return;
     }
 
     if (type === 'medicine') {
-      Taro.navigateTo({ url: `/pages/PetMedicine/index?petId=${currentPetId}` });
+      openPetPage(`/pages/PetMedicine/index?petId=${currentPetId}`);
       return;
     }
 
-    Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${currentPetId}` });
+    openPetPage(`/pages/PetTimeline/index?petId=${currentPetId}`);
   };
   const missingActions = [
     {
       title: '补提醒',
       visible: (report?.summary.pendingSchedules || 0) === 0,
       onClick: () =>
-        currentPetId
-          ? Taro.navigateTo({ url: `/pages/AddPetReminder/index?petId=${currentPetId}` })
-          : undefined,
+        currentPetId ? openPetPage(`/pages/AddPetReminder/index?petId=${currentPetId}`) : undefined,
     },
     {
       title: '补记录',
       visible: (report?.summary.totalRecords || 0) === 0,
       onClick: () =>
-        currentPetId
-          ? Taro.navigateTo({ url: `/pages/AddPetRecord/index?petId=${currentPetId}&mode=record` })
-          : undefined,
+        currentPetId ? openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&mode=record`) : undefined,
     },
     {
       title: '补里程碑',
       visible: (report?.summary.totalMilestones || 0) === 0,
       onClick: () =>
-        currentPetId
-          ? Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${currentPetId}` })
-          : undefined,
+        currentPetId ? openPetPage(`/pages/PetMilestones/index?petId=${currentPetId}`) : undefined,
     },
   ].filter((item) => item.visible);
 
@@ -232,9 +247,18 @@ const PetReport = memo(function PetReport() {
           </View>
         ) : null}
 
+        {loggedIn && !loading && Boolean(report?.petOptions?.length) && !report?.activePet ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[30rpx] font-semibold text-[#2c2c2c] block">请先重新选择宠物</Text>
+            <Text className="text-[22rpx] text-[#666] mt-[10rpx] block leading-[1.7]">
+              当前报告没有绑定到有效宠物。你可以直接点上方宠物标签，切回某一只宠物后再继续查看摘要和趋势。
+            </Text>
+          </View>
+        ) : null}
+
         <View className="rounded-[28rpx] bg-[#FFF7D5] px-5 py-6 mb-5 shadow-[0_16rpx_34rpx_rgba(230,193,82,0.18)]">
           <Text className="text-[34rpx] font-semibold text-[#5D4510] block">
-            {report?.activePet?.name || '当前宠物'}的数据小结
+            {report?.activePet?.name || (loggedIn && report?.petOptions?.length ? '未选择有效宠物' : '当前宠物')}的数据小结
           </Text>
           <Text className="text-[22rpx] text-[#7D6532] leading-[1.7] mt-[10rpx] block">
             {loading
@@ -248,7 +272,7 @@ const PetReport = memo(function PetReport() {
           ) : null}
         </View>
 
-        {currentPetId ? (
+        {hasValidPetContext ? (
           <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
             <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">报告下一步建议</Text>
             <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.7]">
@@ -278,7 +302,7 @@ const PetReport = memo(function PetReport() {
                 </View>
                 <View
                   className="rounded-[18rpx] bg-[#F8FAFF] p-4"
-                  onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${currentPetId}` })}
+                  onClick={() => openPetPage(`/pages/PetTimeline/index?petId=${currentPetId}`)}
                 >
                   <Text className="text-[24rpx] font-semibold text-[#466481]">回看时间线</Text>
                   <Text className="text-[20rpx] text-[#6D8092] mt-[6rpx] block">检查最近动态回流</Text>
@@ -288,13 +312,13 @@ const PetReport = memo(function PetReport() {
           </View>
         ) : null}
 
-        {currentPetId ? (
+        {hasValidPetContext ? (
           <View className="grid grid-cols-2 gap-3 mb-5">
             {quickLinks.map((item) => (
               <View
                 key={item.title}
                 className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)]"
-                onClick={() => Taro.navigateTo({ url: item.url })}
+                onClick={() => openPetPage(item.url)}
               >
                 <Text className="text-[24rpx] font-semibold text-[#2c2c2c]">{item.title}</Text>
                 <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">{item.subtitle}</Text>
@@ -313,10 +337,13 @@ const PetReport = memo(function PetReport() {
               className={`rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)] ${item.fullWidth ? 'col-span-2' : ''}`}
               onClick={() => {
                 if (item.url === '/pages/PetSchedule/index') {
+                  if (!ensureActivePetContext()) {
+                    return;
+                  }
                   switchTabWithActivePet(item.url, currentPetId);
                   return;
                 }
-                Taro.navigateTo({ url: item.url });
+                openPetPage(item.url);
               }}
             >
               <Text className="text-[22rpx] text-[#777]">{item.title}</Text>
@@ -472,17 +499,17 @@ const PetReport = memo(function PetReport() {
               <Text className="text-[24rpx] text-[#8a8a8a]">
                 最近还没有新的动态，可以先去补提醒、记录或里程碑，新的数据会很快回流到这里。
               </Text>
-              {currentPetId ? (
+              {hasValidPetContext ? (
                 <View className="flex gap-3 mt-4">
                   <View
                     className="flex-1 rounded-[16rpx] bg-[#FFD93B] px-4 py-3 flex items-center justify-center"
-                    onClick={() => Taro.navigateTo({ url: `/pages/AddPetReminder/index?petId=${currentPetId}` })}
+                    onClick={() => openPetPage(`/pages/AddPetReminder/index?petId=${currentPetId}`)}
                   >
                     <Text className="text-[22rpx] font-semibold text-[#5D4510]">新增提醒</Text>
                   </View>
                   <View
                     className="flex-1 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#D8E6FF] px-4 py-3 flex items-center justify-center"
-                    onClick={() => Taro.navigateTo({ url: `/pages/AddPetRecord/index?petId=${currentPetId}&mode=record` })}
+                    onClick={() => openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&mode=record`)}
                   >
                     <Text className="text-[22rpx] text-[#466481]">新增记录</Text>
                   </View>

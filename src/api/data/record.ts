@@ -41,6 +41,18 @@ export const getRecordListData = (params: RecordListParams = {}) => {
   ).then((res) => res.data);
 };
 
+export const getRecordDetailData = (id: string) => {
+  return apiGet<{
+    data: RecordItem;
+    success: boolean;
+  }>(
+    {
+      url: `/api/records/${id}`,
+    },
+    true
+  ).then((res) => res.data);
+};
+
 export const createRecordData = (params: CreateRecordParams) => {
   return apiPost<{
     data: RecordItem;

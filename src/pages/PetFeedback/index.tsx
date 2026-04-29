@@ -4,6 +4,8 @@ import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import { memo, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import { createFeedbackData, FeedbackMode, getFeedbackListData } from '@/api/data';
+import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 type FeedbackRecord = {
@@ -16,12 +18,26 @@ type FeedbackRecord = {
 const PetFeedback = memo(function PetFeedback() {
   const { params } = useRouter();
   const mode: FeedbackMode = params.mode === 'contact' ? 'contact' : 'feedback';
+  const { activePet, activePetId } = usePetApiPets();
+  const currentPetId = activePet?.id || activePetId || '';
   const [content, setContent] = useState('');
   const [contact, setContact] = useState('');
   const [history, setHistory] = useState<FeedbackRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const loggedIn = isLoggedIn();
+  const ensureActivePetContext = () => {
+    if (!ensureLoggedIn(`/pages/PetFeedback/index?mode=${mode}`)) {
+      return false;
+    }
+
+    if (currentPetId && activePet) {
+      return true;
+    }
+
+    Taro.showToast({ title: '请先重新选择宠物', icon: 'none' });
+    return false;
+  };
 
   useDidShow(() => {
     if (!loggedIn) {
@@ -91,6 +107,35 @@ const PetFeedback = memo(function PetFeedback() {
     '食物管理和用药管理已经支持新增、编辑、删除，用药还能顺手创建提醒。',
     '成长里程碑、时间线和报告页已经联通，记录关键节点后会同步出现在多个页面里。',
   ];
+  const nextFeedbackActions = currentPetId && activePet
+    ? [
+        {
+          title: '回到首页',
+          subtitle: '继续围绕当前宠物查看摘要和入口',
+          onClick: () => {
+            if (!ensureActivePetContext()) {
+              return;
+            }
+            switchTabWithActivePet('/pages/PetProfile/index', currentPetId);
+          },
+        },
+        {
+          title: '查看报告',
+          subtitle: '回看这只宠物的数据总结和最近动态',
+          onClick: () => Taro.navigateTo({ url: `/pages/PetReport/index?petId=${currentPetId}` }),
+        },
+        {
+          title: '查看日程',
+          subtitle: '继续处理提醒或新增安排',
+          onClick: () => {
+            if (!ensureActivePetContext()) {
+              return;
+            }
+            switchTabWithActivePet('/pages/PetSchedule/index', currentPetId);
+          },
+        },
+      ]
+    : [];
 
   return (
     <BasicLayout
@@ -102,6 +147,38 @@ const PetFeedback = memo(function PetFeedback() {
       navOptions={{ navTitle: pageTitle, needBack: true }}
     >
       <View className="px-6 pt-4 pb-[110rpx]">
+        {currentPetId && activePet ? (
+          <View className="rounded-[24rpx] bg-[#EEF5FF] p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">
+              当前宠物：{activePet.name}
+            </Text>
+            <Text className="text-[22rpx] text-[#666] leading-[1.7] mt-[10rpx] block">
+              反馈页本身是通用支持页，但提交问题后，你仍然可以顺着当前宠物回到首页、报告或日程继续操作。
+            </Text>
+            <View className="grid grid-cols-3 gap-3 mt-4">
+              {nextFeedbackActions.map((item) => (
+                <View
+                  key={item.title}
+                  className="rounded-[16rpx] bg-white p-4 border-[2rpx] border-solid border-[#d8e6ff]"
+                  onClick={item.onClick}
+                >
+                  <Text className="text-[22rpx] font-semibold text-[#333]">{item.title}</Text>
+                  <Text className="text-[20rpx] text-[#6b6b6b] mt-[6rpx] block">{item.subtitle}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {loggedIn && currentPetId && !activePet ? (
+          <View className="rounded-[24rpx] bg-[#EEF5FF] p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">请先重新选择宠物</Text>
+            <Text className="text-[22rpx] text-[#666] leading-[1.7] mt-[10rpx] block">
+              反馈页本身是公共支持页，但你要回到单宠首页、报告或日程之前，需要先恢复有效的宠物上下文。
+            </Text>
+          </View>
+        ) : null}
+
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.06)]">
           <Text className="text-[30rpx] font-semibold text-[#2c2c2c] block">
             {mode === 'contact' ? '联系支持团队' : '提交问题与建议'}

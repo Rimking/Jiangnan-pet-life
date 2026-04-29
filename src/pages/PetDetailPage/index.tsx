@@ -101,7 +101,7 @@ const PetDetailPage = memo(function PetDetailPage() {
     }
 
     if (!petId) {
-      Taro.showToast({ title: '缺少宠物信息', icon: 'none' });
+      Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
       return;
     }
 
@@ -218,6 +218,28 @@ const PetDetailPage = memo(function PetDetailPage() {
       }}
       navOptions={{ navTitle: '宠物详情', needBack: true }}
     >
+      {!pet ? (
+        <View className="px-6 pt-6 pb-[110rpx]">
+          <View className="rounded-[28rpx] bg-[#FFFDF6] p-6 shadow-[0_18rpx_40rpx_rgba(169,136,44,0.16)]">
+            <Text className="text-[32rpx] font-semibold text-[#2d2d2d] block">没有找到对应宠物</Text>
+            <Text className="text-[24rpx] text-[#6A5B2A] leading-[1.7] mt-[12rpx] block">
+              当前详情页没有绑定到有效宠物。你可以回宠物首页重新选择，或者先去创建新的宠物档案。
+            </Text>
+            <View
+              className="mt-5 h-[84rpx] rounded-[42rpx] bg-[#FFD93B] flex items-center justify-center"
+              onClick={() => Taro.switchTab({ url: '/pages/PetProfile/index' })}
+            >
+              <Text className="text-[28rpx] font-semibold text-[#5D4510]">回宠物首页</Text>
+            </View>
+            <View
+              className="mt-3 h-[84rpx] rounded-[42rpx] bg-white border-[2rpx] border-solid border-[#E5D28D] flex items-center justify-center"
+              onClick={() => Taro.navigateTo({ url: '/pages/EditPetProfile/index' })}
+            >
+              <Text className="text-[28rpx] font-semibold text-[#6A5B2A]">去添加宠物</Text>
+            </View>
+          </View>
+        </View>
+      ) : (
       <View className="px-6 pt-4 pb-[110rpx]">
         <View className="relative pt-[12rpx]">
           <View className="absolute left-[20rpx] right-[10rpx] top-0 h-full rounded-[34rpx] bg-[#F7E8A9] opacity-70" />
@@ -533,6 +555,7 @@ const PetDetailPage = memo(function PetDetailPage() {
           </View>
         </View>
       </View>
+      )}
     </BasicLayout>
   );
 });

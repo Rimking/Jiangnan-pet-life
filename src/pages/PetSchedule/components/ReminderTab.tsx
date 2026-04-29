@@ -7,6 +7,8 @@ interface Props {
   reminders: PetReminderModel[];
   onAdd: () => void;
   onToggle: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 const reminderTypeMap = {
@@ -23,7 +25,7 @@ const cardStyle = {
   backgroundColor: PET_UI.panelBackground,
 };
 
-const ReminderTab = memo(function ReminderTab({ reminders, onAdd, onToggle }: Props) {
+const ReminderTab = memo(function ReminderTab({ reminders, onAdd, onToggle, onEdit, onDelete }: Props) {
   return (
     <View className="w-full mb-30">
       <View className="mt-2 mb-4 flex justify-between flex-wrap gap-y-2">
@@ -63,15 +65,31 @@ const ReminderTab = memo(function ReminderTab({ reminders, onAdd, onToggle }: Pr
               <Text className="font-medium mb-1 block" style={{ fontSize: PET_UI_TEXT.body }}>{item.title}</Text>
               <Text className="text-[#7a7a7a]" style={{ fontSize: PET_UI_TEXT.caption }}>{item.time} · {item.repeat}</Text>
             </View>
-            <View
-              className="w-[30rpx] h-[30rpx]"
-              style={{
-                borderRadius: PET_UI_RADIUS.pill,
-                border: `2px solid ${item.enabled ? '#33b36b' : '#8a8a8a'}`,
-                backgroundColor: item.enabled ? '#33b36b' : 'transparent',
-              }}
-              onClick={() => onToggle(item.id)}
-            />
+            <View className="flex items-center gap-3">
+              <View
+                className="px-[12rpx] py-[8rpx] bg-white"
+                style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.pill }}
+                onClick={() => onEdit(item.id)}
+              >
+                <Text className="text-[#466481]" style={{ fontSize: PET_UI_TEXT.caption }}>编辑</Text>
+              </View>
+              <View
+                className="px-[12rpx] py-[8rpx] bg-white"
+                style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.pill }}
+                onClick={() => onDelete(item.id)}
+              >
+                <Text className="text-[#b36439]" style={{ fontSize: PET_UI_TEXT.caption }}>删除</Text>
+              </View>
+              <View
+                className="w-[30rpx] h-[30rpx]"
+                style={{
+                  borderRadius: PET_UI_RADIUS.pill,
+                  border: `2px solid ${item.enabled ? '#33b36b' : '#8a8a8a'}`,
+                  backgroundColor: item.enabled ? '#33b36b' : 'transparent',
+                }}
+                onClick={() => onToggle(item.id)}
+              />
+            </View>
           </View>
         );
       })}
@@ -88,4 +106,3 @@ const ReminderTab = memo(function ReminderTab({ reminders, onAdd, onToggle }: Pr
 });
 
 export default ReminderTab;
-

@@ -1,14 +1,22 @@
-﻿import BasicLayout from '@/layout/basicLayout';
+import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import {
   createCareRecordData,
   createExpenseData,
   createRecordData,
   createScheduleData,
+  formatDateKey,
+  formatTimeKey,
+  getCareRecordDetailData,
+  getExpenseDetailData,
+  getRecordDetailData,
   toIsoDateTime,
+  updateCareRecordData,
+  updateExpenseData,
+  updateRecordData,
 } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
 import { setStoredActivePetId } from '@/utils/activePetState';
@@ -45,29 +53,85 @@ const addDays = (baseDate: string, days: number) => {
 
 const AddPetRecord = memo(function AddPetRecord() {
   const { params } = useRouter();
-  const petId = params.petId || '';
-  const { pets } = usePetApiPets(petId);
-
-  const defaultDate = useMemo(() => {
-    return params.date || toDateInput(new Date());
-  }, [params.date]);
-
+  const initialPetId = params.petId || '';
+  const sourceId = params.sourceId || '';
+  const defaultDate = useMemo(() => params.date || toDateInput(new Date()), [params.date]);
   const initialMode = (params.mode as RecordMode) || 'record';
-  const currentPet = pets.find((item) => item.id === petId) || null;
-
+  const pageMode = sourceId ? 'edit' : 'create';
+  const [selectedPetId, setSelectedPetId] = useState(initialPetId);
   const [mode, setMode] = useState<RecordMode>(initialMode);
+  const [loading, setLoading] = useState(pageMode === 'edit');
+  const [saving, setSaving] = useState(false);
+  const { pets } = usePetApiPets();
+  const currentPet = pets.find((item) => item.id === selectedPetId) || null;
+  const canSave = Boolean(currentPet) && !loading && !saving;
 
-  const [category, setCategory] = useState('喂食');
+  const [category, setCategory] = useState(initialMode === 'expense' ? '猫粮' : '喂食');
   const [value, setValue] = useState('');
   const [note, setNote] = useState('');
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState('09:00');
-
   const [amount, setAmount] = useState('');
-
   const [careType, setCareType] = useState('驱虫');
   const [careResult, setCareResult] = useState('已完成');
   const [nextDate, setNextDate] = useState('');
+
+  const pageTitle = pageMode === 'edit' ? '编辑记录' : '新增记录';
+
+  useEffect(() => {
+    if (pageMode !== 'edit' || !sourceId) {
+      return;
+    }
+
+    setLoading(true);
+    const loadDetail = async () => {
+      if (initialMode === 'record') {
+        const record = await getRecordDetailData(sourceId);
+        setSelectedPetId(record.petId);
+        setStoredActivePetId(record.petId);
+        setMode('record');
+        setCategory(record.category || '喂食');
+        setValue(record.value || '');
+        setNote(record.notes || '');
+        setDate(formatDateKey(record.recordedAt) || defaultDate);
+        setTime(formatTimeKey(record.recordedAt) || '09:00');
+        return;
+      }
+
+      if (initialMode === 'expense') {
+        const expense = await getExpenseDetailData(sourceId);
+        setSelectedPetId(expense.petId);
+        setStoredActivePetId(expense.petId);
+        setMode('expense');
+        setCategory(expense.category || '猫粮');
+        setAmount(String(expense.amount || ''));
+        setNote(expense.notes || expense.merchant || '');
+        setDate(formatDateKey(expense.spentAt) || defaultDate);
+        setTime(formatTimeKey(expense.spentAt) || '09:00');
+        return;
+      }
+
+      const care = await getCareRecordDetailData(sourceId);
+      setSelectedPetId(care.petId);
+      setStoredActivePetId(care.petId);
+      setMode('care');
+      setCareType(care.category || '驱虫');
+      setCareResult(care.result || '已完成');
+      setNote(care.notes || care.doctorAdvice || '');
+      setDate(formatDateKey(care.occurredAt) || defaultDate);
+      setTime(formatTimeKey(care.occurredAt) || '09:00');
+      setNextDate(formatDateKey(care.nextReminderAt));
+    };
+
+    loadDetail()
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : '记录详情加载失败';
+        Taro.showToast({ title: message, icon: 'none' });
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [defaultDate, initialMode, pageMode, sourceId]);
 
   const handleSelectCareTemplate = (name: string) => {
     const target = CARE_TEMPLATE.find((item) => item.name === name);
@@ -80,12 +144,18 @@ const AddPetRecord = memo(function AddPetRecord() {
   };
 
   const handleSave = async () => {
-    if (!ensureLoggedIn(`/pages/AddPetRecord/index?petId=${petId}&date=${date}&mode=${mode}`)) {
+    const loginUrl = `/pages/AddPetRecord/index?petId=${selectedPetId}&date=${date}&mode=${mode}${sourceId ? `&sourceId=${sourceId}` : ''}`;
+    if (!ensureLoggedIn(loginUrl)) {
       return;
     }
 
     if (!date.trim() || !time.trim()) {
       Taro.showToast({ title: '请填写日期和时间', icon: 'none' });
+      return;
+    }
+
+    if (!selectedPetId || !currentPet) {
+      Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
       return;
     }
 
@@ -97,76 +167,94 @@ const AddPetRecord = memo(function AddPetRecord() {
       }
     }
 
-    if (mode === 'care') {
-      if (!careType.trim()) {
-        Taro.showToast({ title: '请填写护理类型', icon: 'none' });
-        return;
-      }
-    }
-
-    if (!petId || !currentPet) {
-      Taro.showToast({ title: '缺少宠物信息', icon: 'none' });
+    if (mode === 'care' && !careType.trim()) {
+      Taro.showToast({ title: '请填写护理类型', icon: 'none' });
       return;
     }
 
     try {
+      setSaving(true);
+
       if (mode === 'record') {
         if (!category.trim()) {
           Taro.showToast({ title: '请填写记录分类', icon: 'none' });
           return;
         }
 
-        await createRecordData({
-          petId,
-          category,
-          value,
-          recordedAt: toIsoDateTime(date, time),
-          notes: note,
-        });
-      }
+        const payload = {
+          petId: selectedPetId,
+          category: category.trim(),
+          value: value.trim(),
+          recordedAt: toIsoDateTime(date.trim(), time.trim()),
+          notes: note.trim(),
+        };
 
-      if (mode === 'expense') {
-        await createExpenseData({
-          petId,
-          category,
-          amount: Number(amount),
-          spentAt: toIsoDateTime(date, time),
-          notes: note,
-        });
-      }
-
-      if (mode === 'care') {
-        await createCareRecordData({
-          petId,
-          category: careType,
-          occurredAt: toIsoDateTime(date, time),
-          result: careResult,
-          nextReminderAt: nextDate ? toIsoDateTime(nextDate, '09:00') : undefined,
-          notes: note,
-        });
-
-        if (nextDate) {
-          await createScheduleData({
-            petId,
-            title: `${careType}复查提醒`,
-            category: 'care',
-            type: careType,
-            status: 'pending',
-            repeatRule: '单次',
-            remindAt: toIsoDateTime(nextDate, '09:00'),
-            notes: note || `${careType}后续跟进`,
-          });
+        if (pageMode === 'edit' && sourceId) {
+          await updateRecordData(sourceId, payload);
+        } else {
+          await createRecordData(payload);
         }
       }
 
-      setStoredActivePetId(petId);
-      Taro.showToast({ title: '记录已保存', icon: 'success' });
+      if (mode === 'expense') {
+        const payload = {
+          petId: selectedPetId,
+          category: category.trim(),
+          amount: Number(amount),
+          spentAt: toIsoDateTime(date.trim(), time.trim()),
+          notes: note.trim(),
+        };
+
+        if (pageMode === 'edit' && sourceId) {
+          await updateExpenseData(sourceId, payload);
+        } else {
+          await createExpenseData(payload);
+        }
+      }
+
+      if (mode === 'care') {
+        const payload = {
+          petId: selectedPetId,
+          category: careType.trim(),
+          occurredAt: toIsoDateTime(date.trim(), time.trim()),
+          result: careResult.trim(),
+          nextReminderAt: nextDate ? toIsoDateTime(nextDate.trim(), '09:00') : undefined,
+          notes: note.trim(),
+        };
+
+        if (pageMode === 'edit' && sourceId) {
+          await updateCareRecordData(sourceId, payload);
+        } else {
+          await createCareRecordData(payload);
+
+          if (nextDate) {
+            await createScheduleData({
+              petId: selectedPetId,
+              title: `${careType}复查提醒`,
+              category: 'care',
+              type: careType,
+              status: 'pending',
+              repeatRule: '单次',
+              remindAt: toIsoDateTime(nextDate.trim(), '09:00'),
+              notes: note.trim() || `${careType}后续跟进`,
+            });
+          }
+        }
+      }
+
+      setStoredActivePetId(selectedPetId);
+      Taro.showToast({
+        title: pageMode === 'edit' ? '记录已更新' : '记录已保存',
+        icon: 'success',
+      });
       setTimeout(() => {
-        Taro.redirectTo({ url: `/pages/PetTimeline/index?petId=${petId}` });
+        Taro.redirectTo({ url: `/pages/PetTimeline/index?petId=${selectedPetId}` });
       }, 300);
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存失败';
       Taro.showToast({ title: message, icon: 'none' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -178,11 +266,17 @@ const AddPetRecord = memo(function AddPetRecord() {
         minHeight: '100vh',
       }}
       navOptions={{
-        navTitle: '新增记录',
+        navTitle: pageTitle,
         needBack: true,
       }}
     >
       <View className="p-8 pb-[120rpx]">
+        {loading ? (
+          <View className="mb-6">
+            <Text className="text-[#666] text-[24rpx]">记录信息加载中...</Text>
+          </View>
+        ) : null}
+
         {pets.length ? (
           <View className="mb-5">
             <Text className="text-[22rpx] text-[#666] block mb-2">选择宠物</Text>
@@ -191,12 +285,10 @@ const AddPetRecord = memo(function AddPetRecord() {
                 <View
                   key={pet.id}
                   className="px-4 py-2 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
-                  style={{ backgroundColor: pet.id === petId ? '#FFD93B' : '#f4f4f4' }}
+                  style={{ backgroundColor: pet.id === selectedPetId ? '#FFD93B' : '#f4f4f4' }}
                   onClick={() => {
+                    setSelectedPetId(pet.id);
                     setStoredActivePetId(pet.id);
-                    Taro.redirectTo({
-                      url: `/pages/AddPetRecord/index?petId=${pet.id}&date=${date}&mode=${mode}`,
-                    });
                   }}
                 >
                   <Text className="text-[24rpx]">{pet.name}</Text>
@@ -237,32 +329,66 @@ const AddPetRecord = memo(function AddPetRecord() {
             <Text className="text-[22rpx] text-[#666] mt-2 block">
               这个记录入口没有绑定到有效宠物，请先重新选择一只宠物再继续。
             </Text>
+            <View className="flex flex-wrap gap-2 mt-4">
+              {pets.map((pet) => (
+                <View
+                  key={pet.id}
+                  className="px-4 py-2 rounded-[999rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626]"
+                  onClick={() => {
+                    setSelectedPetId(pet.id);
+                    setStoredActivePetId(pet.id);
+                  }}
+                >
+                  <Text className="text-[24rpx] font-semibold">改为 {pet.name}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         ) : null}
 
         <View className="flex gap-2 mb-5">
           <View
             className="flex-1 h-[64rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-            style={{ backgroundColor: mode === 'record' ? '#ffd93b' : '#f4f4f4' }}
-            onClick={() => setMode('record')}
+            style={{ backgroundColor: mode === 'record' ? '#ffd93b' : '#f4f4f4', opacity: pageMode === 'edit' && mode !== 'record' ? 0.7 : 1 }}
+            onClick={() => {
+              if (pageMode === 'create') {
+                setMode('record');
+              }
+            }}
           >
             <Text className="text-[24rpx]">日常</Text>
           </View>
           <View
             className="flex-1 h-[64rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-            style={{ backgroundColor: mode === 'expense' ? '#ffc6a1' : '#f4f4f4' }}
-            onClick={() => setMode('expense')}
+            style={{ backgroundColor: mode === 'expense' ? '#ffc6a1' : '#f4f4f4', opacity: pageMode === 'edit' && mode !== 'expense' ? 0.7 : 1 }}
+            onClick={() => {
+              if (pageMode === 'create') {
+                setMode('expense');
+              }
+            }}
           >
             <Text className="text-[24rpx]">花销</Text>
           </View>
           <View
             className="flex-1 h-[64rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-            style={{ backgroundColor: mode === 'care' ? '#bdeeff' : '#f4f4f4' }}
-            onClick={() => setMode('care')}
+            style={{ backgroundColor: mode === 'care' ? '#bdeeff' : '#f4f4f4', opacity: pageMode === 'edit' && mode !== 'care' ? 0.7 : 1 }}
+            onClick={() => {
+              if (pageMode === 'create') {
+                setMode('care');
+              }
+            }}
           >
             <Text className="text-[24rpx]">护理</Text>
           </View>
         </View>
+
+        {pageMode === 'edit' ? (
+          <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#fff9e8] p-4">
+            <Text className="text-[22rpx] text-[#8a6d1f]">
+              当前正在编辑已有记录，记录类型已锁定，保存后会直接回到这只宠物的时间线。
+            </Text>
+          </View>
+        ) : null}
 
         <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-[#f4f4f4] p-4">
           <Text className="text-[22rpx] text-[#666]">日期</Text>
@@ -417,7 +543,7 @@ const AddPetRecord = memo(function AddPetRecord() {
                 className="h-[72rpx] text-[28rpx] mt-2"
                 value={nextDate}
                 onInput={(event) => setNextDate(event.detail.value)}
-                placeholder="YYYY-MM-DD，填写后自动生成提醒"
+                placeholder={pageMode === 'edit' ? 'YYYY-MM-DD，可更新下次护理日期' : 'YYYY-MM-DD，填写后自动生成提醒'}
               />
             </View>
           </>
@@ -434,10 +560,19 @@ const AddPetRecord = memo(function AddPetRecord() {
         </View>
 
         <View
-          className="w-full h-[96rpx] border-[3rpx] border-black border-solid bg-[#FFD93B] rounded-[50rpx] flex items-center justify-center"
-          onClick={handleSave}
+          className="w-full h-[96rpx] border-[3rpx] border-black border-solid rounded-[50rpx] flex items-center justify-center"
+          style={{ backgroundColor: canSave ? '#FFD93B' : '#E5E5E5', opacity: canSave ? 1 : 0.7 }}
+          onClick={() => {
+            if (!canSave) {
+              Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
+              return;
+            }
+            handleSave();
+          }}
         >
-          <Text className="text-[32rpx] font-bold">保存记录</Text>
+          <Text className="text-[32rpx] font-bold">
+            {saving ? '保存中...' : pageMode === 'edit' ? '保存修改' : '保存记录'}
+          </Text>
         </View>
       </View>
     </BasicLayout>

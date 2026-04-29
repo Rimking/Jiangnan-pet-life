@@ -131,7 +131,10 @@ const PetArticleDetail = memo(function PetArticleDetail() {
               opacity: prevArticle ? 1 : 0.6,
             }}
             onClick={() =>
-              prevArticle && Taro.redirectTo({ url: `/pages/PetArticleDetail/index?id=${prevArticle.id}` })
+              prevArticle &&
+              Taro.redirectTo({
+                url: `/pages/PetArticleDetail/index?id=${prevArticle.id}`,
+              })
             }
           >
             <Text className="text-[24rpx] text-[#333]">上一篇</Text>
@@ -145,7 +148,10 @@ const PetArticleDetail = memo(function PetArticleDetail() {
               opacity: nextArticle ? 1 : 0.6,
             }}
             onClick={() =>
-              nextArticle && Taro.redirectTo({ url: `/pages/PetArticleDetail/index?id=${nextArticle.id}` })
+              nextArticle &&
+              Taro.redirectTo({
+                url: `/pages/PetArticleDetail/index?id=${nextArticle.id}`,
+              })
             }
           >
             <Text className="text-[24rpx] text-[#333]">下一篇</Text>
@@ -154,7 +160,7 @@ const PetArticleDetail = memo(function PetArticleDetail() {
 
         <View
           className="h-[88rpx] rounded-[44rpx] bg-[#FFD93B] border-[3rpx] border-solid border-[#262626] flex items-center justify-center"
-          onClick={() => Taro.navigateBack()}
+          onClick={() => Taro.switchTab({ url: '/pages/PetKnowledge/index' })}
         >
           <Text className="text-[28rpx] font-semibold">返回知识库</Text>
         </View>

@@ -41,6 +41,8 @@ const PetMilestones = memo(function PetMilestones() {
   const [editingId, setEditingId] = useState('');
   const [saving, setSaving] = useState(false);
   const loggedIn = isLoggedIn();
+  const hasActivePet = Boolean(activePetId && activePet);
+  const canSubmit = hasActivePet;
 
   const refreshMilestones = useCallback(() => {
     if (!loggedIn) {
@@ -48,7 +50,7 @@ const PetMilestones = memo(function PetMilestones() {
       return Promise.resolve();
     }
 
-    if (!activePetId) {
+    if (!activePetId || !activePet) {
       setMilestones([]);
       return Promise.resolve();
     }
@@ -56,7 +58,7 @@ const PetMilestones = memo(function PetMilestones() {
     return getMilestoneListData({ petId: activePetId })
       .then((list) => setMilestones(list))
       .catch(() => setMilestones([]));
-  }, [activePetId, loggedIn]);
+  }, [activePet, activePetId, loggedIn]);
 
   useEffect(() => {
     if (activePetId) {
@@ -99,8 +101,8 @@ const PetMilestones = memo(function PetMilestones() {
       return;
     }
 
-    if (!activePetId) {
-      Taro.showToast({ title: '请先添加宠物', icon: 'none' });
+    if (!activePetId || !activePet) {
+      Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
       return;
     }
 
@@ -239,6 +241,15 @@ const PetMilestones = memo(function PetMilestones() {
           ))}
         </View>
 
+        {loggedIn && pets.length > 0 && !hasActivePet ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.08)]">
+            <Text className="text-[24rpx] font-semibold text-[#2b2b2b] block">请先重新选择宠物</Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
+              当前成长节点页面没有绑定到有效宠物，你可以直接从上方切换到一只现有宠物继续整理里程碑。
+            </Text>
+          </View>
+        ) : null}
+
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.08)]">
           <Text className="text-[30rpx] font-semibold text-[#2b2b2b] block">
             {activePet?.name || '暂无宠物'}的成长节点
@@ -248,7 +259,7 @@ const PetMilestones = memo(function PetMilestones() {
           </Text>
         </View>
 
-        {activePetId ? (
+        {hasActivePet ? (
           <View className="rounded-[24rpx] bg-[#FFF7D5] p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.05)]">
             <Text className="text-[28rpx] font-semibold text-[#2b2b2b] block">
               围绕{activePet?.name || '当前宠物'}继续整理成长轨迹
@@ -324,8 +335,15 @@ const PetMilestones = memo(function PetMilestones() {
             />
           </View>
           <View
-            className="mt-4 h-[88rpx] rounded-[999rpx] bg-[#FFD93B] flex items-center justify-center"
-            onClick={handleSubmit}
+            className="mt-4 h-[88rpx] rounded-[999rpx] flex items-center justify-center"
+            style={{ backgroundColor: canSubmit ? '#FFD93B' : '#E5E5E5', opacity: canSubmit ? 1 : 0.7 }}
+            onClick={() => {
+              if (!canSubmit) {
+                Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
+                return;
+              }
+              handleSubmit();
+            }}
           >
             <Text className="text-[30rpx] font-semibold">
               {saving ? '保存中...' : editingId ? '更新里程碑' : '保存里程碑'}
@@ -379,7 +397,7 @@ const PetMilestones = memo(function PetMilestones() {
               <Text className="text-[24rpx] text-[#8a8a8a]">
                 {activePet?.name || '当前宠物'}还没有成长里程碑，可以先记录第一次到家、第一次出门或疫苗完成这类节点。
               </Text>
-              {activePetId ? (
+              {hasActivePet ? (
                 <View className="flex gap-3 mt-4">
                   <View
                     className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#FFD93B] flex items-center justify-center"

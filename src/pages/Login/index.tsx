@@ -29,8 +29,9 @@ const Login = memo(function Login() {
 
   const goNext = () => {
     if (redirectUrl) {
-      if (TAB_PAGES.has(redirectUrl)) {
-        Taro.switchTab({ url: redirectUrl });
+      const tabPath = redirectUrl.split('?')[0] || redirectUrl;
+      if (TAB_PAGES.has(tabPath)) {
+        Taro.switchTab({ url: tabPath });
         return;
       }
 

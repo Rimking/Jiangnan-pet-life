@@ -10,12 +10,9 @@ import {
   KnowledgeArticleItem,
   KnowledgeCategoryItem,
 } from '@/api/data';
-import { usePetApiPets } from '@/hooks/usePetApiPets';
-import { switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn } from '@/utils/authState';
 
 const PetKnowledge = memo(function PetKnowledge() {
-  const { activePet, activePetId } = usePetApiPets();
   const [keyword, setKeyword] = useState('');
   const [activeCategory, setActiveCategory] = useState('feed');
   const [onlyFavorite, setOnlyFavorite] = useState(false);
@@ -114,31 +111,6 @@ const PetKnowledge = memo(function PetKnowledge() {
       navOptions={{ navTitle: '知识库', needBack: false }}
     >
       <View className="px-[24rpx] pt-[16rpx] pb-[120rpx]">
-        {activePetId ? (
-          <View className="bg-[#FFF9E7] rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[12rpx] mb-[14rpx]">
-            <Text className="text-[24rpx] font-semibold text-[#262626] block">
-              当前宠物：{activePet?.name || '已选宠物'}
-            </Text>
-            <Text className="text-[20rpx] text-[#666] mt-[4rpx] block">
-              看完知识内容后，可以直接回到这只宠物的首页或日程继续操作。
-            </Text>
-            <View className="flex gap-[10rpx] mt-[10rpx]">
-              <View
-                className="flex-1 h-[60rpx] rounded-[30rpx] bg-white border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-                onClick={() => switchTabWithActivePet('/pages/PetProfile/index', activePetId)}
-              >
-                <Text className="text-[22rpx] text-[#333]">回到首页</Text>
-              </View>
-              <View
-                className="flex-1 h-[60rpx] rounded-[30rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-                onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', activePetId)}
-              >
-                <Text className="text-[22rpx] text-[#333] font-semibold">查看日程</Text>
-              </View>
-            </View>
-          </View>
-        ) : null}
-
         <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] px-[14rpx] py-[10rpx] mb-[14rpx]">
           <Input
             placeholder="搜索：如 软便、挑食、驱虫"
@@ -185,7 +157,17 @@ const PetKnowledge = memo(function PetKnowledge() {
           {loading ? (
             <Text className="text-[22rpx] text-[#888] py-[10rpx] block">正在加载文章...</Text>
           ) : !filteredArticles.length ? (
-            <Text className="text-[22rpx] text-[#888] py-[10rpx] block">当前条件下暂无文章</Text>
+            <View className="py-[10rpx]">
+              <Text className="text-[22rpx] text-[#888] block">当前条件下暂无文章</Text>
+              <View className="flex gap-[10rpx] mt-[10rpx]">
+                <View
+                  className="flex-1 h-[56rpx] rounded-[28rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                  onClick={() => Taro.navigateTo({ url: '/pages/PetQa/index' })}
+                >
+                  <Text className="text-[20rpx] font-semibold text-[#333]">去问答</Text>
+                </View>
+              </View>
+            </View>
           ) : (
             filteredArticles.map((item) => (
               <View
@@ -213,11 +195,7 @@ const PetKnowledge = memo(function PetKnowledge() {
 
         <View
           className="bg-[#2B8BFF] rounded-[20rpx] p-[12rpx]"
-          onClick={() =>
-            Taro.navigateTo({
-              url: `/pages/PetQa/index${activePetId ? `?petId=${activePetId}` : ''}`,
-            })
-          }
+          onClick={() => Taro.navigateTo({ url: '/pages/PetQa/index' })}
         >
           <Text className="text-[24rpx] text-white font-semibold block">知识问答</Text>
           <Text className="text-[20rpx] text-[#dbeaff] mt-[4rpx] block">

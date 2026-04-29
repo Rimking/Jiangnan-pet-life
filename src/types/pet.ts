@@ -59,6 +59,8 @@ export interface PetCareLogModel {
 
 export interface ScheduleRecordItem {
   id: string;
+  sourceId: string;
+  sourceType: 'record' | 'expense' | 'care';
   category: string;
   value: string;
   note: string;

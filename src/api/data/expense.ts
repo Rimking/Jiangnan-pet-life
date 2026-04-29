@@ -45,6 +45,18 @@ export const getExpenseListData = (params: ExpenseListParams = {}) => {
   ).then((res) => res.data);
 };
 
+export const getExpenseDetailData = (id: string) => {
+  return apiGet<{
+    data: ExpenseItem;
+    success: boolean;
+  }>(
+    {
+      url: `/api/expenses/${id}`,
+    },
+    true
+  ).then((res) => res.data);
+};
+
 export const createExpenseData = (params: CreateExpenseParams) => {
   return apiPost<{
     data: ExpenseItem;

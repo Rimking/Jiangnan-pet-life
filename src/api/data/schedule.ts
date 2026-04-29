@@ -56,6 +56,19 @@ export const getScheduleListData = (params: ScheduleListParams = {}) => {
   ).then((res) => res.data);
 };
 
+export const getScheduleDetailData = (id: string) => {
+  return apiGet<{
+    code: number;
+    data: ScheduleItem;
+    message: string;
+  }>(
+    {
+      url: `/api/schedules/${id}`,
+    },
+    true
+  ).then((res) => res.data);
+};
+
 export const createScheduleData = (params: CreateScheduleParams) => {
   return apiPost<{
     code: number;

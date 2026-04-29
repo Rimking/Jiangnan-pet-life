@@ -39,14 +39,34 @@ const SendPetSchedule = memo(function SendPetSchedule() {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
   const loggedIn = isLoggedIn();
+  const hasActivePet = Boolean(activePetId && activePet);
+  const nextScheduleActions = hasActivePet
+    ? [
+        {
+          title: '看日程',
+          subtitle: '创建后回到当前宠物日程确认待办',
+          onClick: () => switchTabWithActivePet('/pages/PetSchedule/index', activePetId),
+        },
+        {
+          title: '看报告',
+          subtitle: '回到报告页查看提醒是否沉淀进摘要',
+          onClick: () => Taro.navigateTo({ url: `/pages/PetReport/index?petId=${activePetId}` }),
+        },
+        {
+          title: '补记录',
+          subtitle: '继续补日常、花销或护理记录',
+          onClick: () => Taro.navigateTo({ url: `/pages/AddPetRecord/index?petId=${activePetId}&mode=record` }),
+        },
+      ]
+    : [];
 
   const handleSubmit = async () => {
     if (!ensureLoggedIn(`/pages/SendPetSchedule/index${activePetId ? `?petId=${activePetId}` : ''}`)) {
       return;
     }
 
-    if (!activePetId) {
-      Taro.showToast({ title: '请先添加宠物', icon: 'none' });
+    if (!activePetId || !activePet) {
+      Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
       return;
     }
 
@@ -129,6 +149,15 @@ const SendPetSchedule = memo(function SendPetSchedule() {
           </View>
         ) : null}
 
+        {loggedIn && pets.length > 0 && !hasActivePet ? (
+          <View className="mb-4 border-[2rpx] border-solid border-[#262626] rounded-[16rpx] bg-white p-4">
+            <Text className="text-[26rpx] font-semibold text-[#303030] block">先选择一只宠物</Text>
+            <Text className="text-[22rpx] text-[#666] mt-2 block">
+              快捷提醒必须归属到具体宠物。先选中宠物，再继续创建提醒。
+            </Text>
+          </View>
+        ) : null}
+
         <View className="mb-4 flex gap-2 flex-wrap">
           {pets.map((pet) => (
             <View
@@ -157,6 +186,27 @@ const SendPetSchedule = memo(function SendPetSchedule() {
           </Text>
         </View>
 
+        {hasActivePet ? (
+          <View className="mb-4 border-[2rpx] border-solid border-[#262626] rounded-[16rpx] bg-[#FFF9E7] p-4">
+            <Text className="text-[24rpx] font-semibold text-[#303030] block">快捷提醒后的下一步</Text>
+            <Text className="text-[20rpx] text-[#666] mt-2 block">
+              快捷提醒适合补一个当下要做的事情。创建完以后，最适合回日程确认待办，或者继续补记录和报告摘要。
+            </Text>
+            <View className="grid grid-cols-3 gap-[10rpx] mt-4">
+              {nextScheduleActions.map((item) => (
+                <View
+                  key={item.title}
+                  className="rounded-[14rpx] border border-[#d7d7d7] p-3 bg-white"
+                  onClick={item.onClick}
+                >
+                  <Text className="text-[22rpx] font-semibold text-[#303030] block">{item.title}</Text>
+                  <Text className="text-[18rpx] text-[#6f6f6f] mt-1 block">{item.subtitle}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         <View className="mb-4 border-[2rpx] border-solid border-[#262626] rounded-[16rpx] bg-white p-4">
           <Text className="text-[22rpx] text-[#666]">日程标题</Text>
           <Input value={title} onInput={(e) => setTitle(e.detail.value)} placeholder="例如：给火火洗护" className="h-[64rpx] text-[26rpx] mt-2" />
@@ -178,8 +228,15 @@ const SendPetSchedule = memo(function SendPetSchedule() {
         </View>
 
         <View
-          className="h-[92rpx] rounded-[48rpx] bg-[#FFD93B] border-[3rpx] border-solid border-[#262626] flex items-center justify-center"
-          onClick={handleSubmit}
+          className="h-[92rpx] rounded-[48rpx] border-[3rpx] border-solid border-[#262626] flex items-center justify-center"
+          style={{ backgroundColor: hasActivePet ? '#FFD93B' : '#E5E5E5', opacity: hasActivePet ? 1 : 0.7 }}
+          onClick={() => {
+            if (!hasActivePet) {
+              Taro.showToast({ title: '请先选择宠物', icon: 'none' });
+              return;
+            }
+            handleSubmit();
+          }}
         >
           <Text className="text-[30rpx] font-bold">{saving ? '创建中...' : '创建提醒'}</Text>
         </View>

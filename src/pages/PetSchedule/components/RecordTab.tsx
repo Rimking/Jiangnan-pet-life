@@ -8,6 +8,8 @@ interface Props {
   onAddRecord: () => void;
   onAddExpense: () => void;
   onAddCare: () => void;
+  onEdit: (item: ScheduleRecordItem) => void;
+  onDelete: (item: ScheduleRecordItem) => void;
 }
 
 const actionBtnStyle = {
@@ -21,7 +23,7 @@ const cardStyle = {
   backgroundColor: PET_UI.panelBackground,
 };
 
-const RecordTab = memo(function RecordTab({ records, onAddRecord, onAddExpense, onAddCare }: Props) {
+const RecordTab = memo(function RecordTab({ records, onAddRecord, onAddExpense, onAddCare, onEdit, onDelete }: Props) {
   return (
     <View className="w-full flex flex-col gap-3">
       <View className="grid grid-cols-3 gap-2">
@@ -52,6 +54,20 @@ const RecordTab = memo(function RecordTab({ records, onAddRecord, onAddExpense, 
           <View className="items-end max-w-[260rpx]">
             <Text className="text-[#6b6b6b] block" style={{ fontSize: PET_UI_TEXT.body }}>{item.value || '已记录'}</Text>
             {item.note ? <Text className="text-[#9a9a9a]" style={{ fontSize: PET_UI_TEXT.caption }}>{item.note}</Text> : null}
+            <View
+              className="mt-2 px-[12rpx] py-[8rpx] bg-white"
+              style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.pill }}
+              onClick={() => onEdit(item)}
+            >
+              <Text className="text-[#466481]" style={{ fontSize: PET_UI_TEXT.caption }}>编辑</Text>
+            </View>
+            <View
+              className="mt-2 px-[12rpx] py-[8rpx] bg-white"
+              style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.pill }}
+              onClick={() => onDelete(item)}
+            >
+              <Text className="text-[#b36439]" style={{ fontSize: PET_UI_TEXT.caption }}>删除</Text>
+            </View>
           </View>
         </View>
       ))}
@@ -60,4 +76,3 @@ const RecordTab = memo(function RecordTab({ records, onAddRecord, onAddExpense, 
 });
 
 export default RecordTab;
-

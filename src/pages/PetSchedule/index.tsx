@@ -16,6 +16,10 @@ import RecordTab from './components/RecordTab';
 import ReminderTab from './components/ReminderTab';
 import Calendar from './components/calendar';
 import {
+  deleteCareRecordData,
+  deleteExpenseData,
+  deleteRecordData,
+  deleteScheduleData,
   getCareRecordListData,
   getExpenseListData,
   getRecordListData,
@@ -27,7 +31,7 @@ import {
   updateScheduleData,
 } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
-import { switchTabWithActivePet } from '@/utils/activePetState';
+import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const enum TabType {
@@ -44,6 +48,7 @@ const PetSchedule = memo(function PetSchedule() {
   const [records, setRecords] = useState<PetRecordModel[]>([]);
   const { pets, activePet, activePetId, loading, error, setActivePetId } = usePetApiPets();
   const loggedIn = isLoggedIn();
+  const currentPetId = activePet?.id || activePetId || '';
 
   const refreshPageData = useCallback(async () => {
     if (!loggedIn) {
@@ -54,7 +59,7 @@ const PetSchedule = memo(function PetSchedule() {
       return;
     }
 
-    if (!activePetId) {
+    if (!activePetId || !activePet) {
       setReminders([]);
       setExpenses([]);
       setCareLogs([]);
@@ -73,7 +78,7 @@ const PetSchedule = memo(function PetSchedule() {
     setExpenses(expenseList.map(mapExpenseToExpenseModel));
     setCareLogs(careRecordList.map(mapCareRecordToCareLogModel));
     setRecords(recordList.map(mapRecordToRecordModel));
-  }, [activePetId, loggedIn]);
+  }, [activePet, activePetId, loggedIn]);
 
   useEffect(() => {
     refreshPageData().catch(() => {
@@ -109,6 +114,8 @@ const PetSchedule = memo(function PetSchedule() {
       .filter((item) => item.petId === activePet.id && item.date === selectedDate)
       .map((item) => ({
         id: item.id,
+        sourceId: item.id,
+        sourceType: 'expense',
         category: `花销 · ${item.category}`,
         value: `¥${item.amount.toFixed(2)}`,
         note: item.note,
@@ -120,6 +127,8 @@ const PetSchedule = memo(function PetSchedule() {
       .filter((item) => item.petId === activePet.id && item.date === selectedDate)
       .map((item) => ({
         id: item.id,
+        sourceId: item.id,
+        sourceType: 'care',
         category: `护理 · ${item.careType}`,
         value: item.result,
         note: item.note,
@@ -131,6 +140,8 @@ const PetSchedule = memo(function PetSchedule() {
       .filter((item) => item.petId === activePet.id && item.date === selectedDate)
       .map((item) => ({
         id: item.id,
+        sourceId: item.id,
+        sourceType: 'record',
         category: `日常 · ${item.category}`,
         value: item.value,
         note: item.note,
@@ -163,6 +174,54 @@ const PetSchedule = memo(function PetSchedule() {
     }
   };
 
+  const deleteReminder = async (id: string) => {
+    const result = await Taro.showModal({
+      title: '确认删除',
+      content: '是否删除这条提醒？',
+      confirmText: '删除',
+      confirmColor: '#d65a31',
+    });
+
+    if (!result.confirm) {
+      return;
+    }
+
+    try {
+      await deleteScheduleData(id);
+      await refreshPageData();
+      Taro.showToast({ title: '提醒已删除', icon: 'success' });
+    } catch (error) {
+      Taro.showToast({ title: '删除提醒失败', icon: 'none' });
+    }
+  };
+
+  const deleteRecordItem = async (item: ScheduleRecordItem) => {
+    const result = await Taro.showModal({
+      title: '确认删除',
+      content: '是否删除这条记录？',
+      confirmText: '删除',
+      confirmColor: '#d65a31',
+    });
+
+    if (!result.confirm) {
+      return;
+    }
+
+    try {
+      if (item.sourceType === 'record') {
+        await deleteRecordData(item.sourceId);
+      } else if (item.sourceType === 'expense') {
+        await deleteExpenseData(item.sourceId);
+      } else if (item.sourceType === 'care') {
+        await deleteCareRecordData(item.sourceId);
+      }
+      await refreshPageData();
+      Taro.showToast({ title: '记录已删除', icon: 'success' });
+    } catch (error) {
+      Taro.showToast({ title: '删除记录失败', icon: 'none' });
+    }
+  };
+
   const tabStyle = {
     border: PET_UI_BORDER.strong,
     borderRadius: PET_UI_RADIUS.pill,
@@ -171,7 +230,8 @@ const PetSchedule = memo(function PetSchedule() {
   const hasDayRecords = mergedRecords.length > 0;
   const hasDayReminders = petReminders.length > 0;
   const showLoginState = !loggedIn && !activePet && !loading;
-  const showNoPetState = loggedIn && !activePet && !loading;
+  const showNoPetState = loggedIn && !pets.length && !activePet && !loading;
+  const showInvalidPetState = loggedIn && pets.length > 0 && !activePet && !loading;
   const showEmptyDataState = activePet && !loading && (
     (activeTab === TabType.Record && !hasDayRecords) ||
     (activeTab === TabType.Reminder && !hasDayReminders)
@@ -200,7 +260,10 @@ const PetSchedule = memo(function PetSchedule() {
                   backgroundColor: activePetId === pet.id ? '#FFD93B' : '#f4f4f4',
                   border: '2rpx solid #262626',
                 }}
-                onClick={() => setActivePetId(pet.id)}
+                onClick={() => {
+                  setActivePetId(pet.id);
+                  setStoredActivePetId(pet.id);
+                }}
               >
                 <Text style={{ fontSize: PET_UI_TEXT.body }}>{pet.name}</Text>
               </View>
@@ -210,7 +273,7 @@ const PetSchedule = memo(function PetSchedule() {
 
         <View className="mb-2 px-1">
           <Text className="text-[#5f5f5f]" style={{ fontSize: PET_UI_TEXT.caption }}>
-            当前宠物：{activePet?.name || '暂无'}
+            当前宠物：{activePet?.name || (loggedIn && pets.length > 0 ? '未选择有效宠物' : '暂无')}
           </Text>
         </View>
 
@@ -291,30 +354,32 @@ const PetSchedule = memo(function PetSchedule() {
               <RecordTab
                 records={mergedRecords}
                 onAddRecord={() =>
-                  Taro.navigateTo({
-                    url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${selectedDate}&mode=record`,
+                    Taro.navigateTo({
+                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=record`,
                   })
                 }
                 onAddExpense={() =>
                   Taro.navigateTo({
-                    url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${selectedDate}&mode=expense`,
+                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=expense`,
                   })
                 }
                 onAddCare={() =>
                   Taro.navigateTo({
-                    url: `/pages/AddPetRecord/index?petId=${activePetId}&date=${selectedDate}&mode=care`,
+                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=care`,
                   })
                 }
+                onDelete={deleteRecordItem}
               />
             ) : (
               <ReminderTab
                 reminders={petReminders}
                 onAdd={() =>
                   Taro.navigateTo({
-                    url: `/pages/AddPetReminder/index?petId=${activePetId}&date=${selectedDate}`,
+                    url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${selectedDate}`,
                   })
                 }
                 onToggle={switchReminder}
+                onDelete={deleteReminder}
               />
             )}
           </View>
@@ -353,6 +418,17 @@ const PetSchedule = memo(function PetSchedule() {
             >
               <Text style={{ fontSize: PET_UI_TEXT.body }}>去添加宠物</Text>
             </View>
+          </View>
+        ) : null}
+
+        {showInvalidPetState ? (
+          <View className="mt-4 rounded-[28rpx] bg-white px-[28rpx] py-[32rpx] shadow-[0_18rpx_36rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[#2c2c2c] font-semibold" style={{ fontSize: PET_UI_TEXT.title }}>
+              请先重新选择宠物
+            </Text>
+            <Text className="text-[#7a7a7a] mt-[12rpx] block" style={{ fontSize: PET_UI_TEXT.body }}>
+              当前日程页没有绑定到有效宠物。你可以直接点上方宠物标签，切回某一只宠物后再继续看提醒和记录。
+            </Text>
           </View>
         ) : null}
 

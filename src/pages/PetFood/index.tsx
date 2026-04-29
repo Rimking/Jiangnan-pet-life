@@ -35,6 +35,8 @@ const PetFood = memo(function PetFood() {
   const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState(defaultForm);
   const loggedIn = isLoggedIn();
+  const hasActivePet = Boolean(activePetId && activePet);
+  const canSubmit = hasActivePet;
 
   const refreshFoods = useCallback(() => {
     if (!loggedIn) {
@@ -42,7 +44,7 @@ const PetFood = memo(function PetFood() {
       return Promise.resolve();
     }
 
-    if (!activePetId) {
+    if (!activePetId || !activePet) {
       setFoods([]);
       return Promise.resolve();
     }
@@ -50,7 +52,7 @@ const PetFood = memo(function PetFood() {
     return getFoodListData({ petId: activePetId })
       .then((list) => setFoods(list))
       .catch(() => setFoods([]));
-  }, [activePetId, loggedIn]);
+  }, [activePet, activePetId, loggedIn]);
 
   useEffect(() => {
     if (activePetId) {
@@ -116,8 +118,8 @@ const PetFood = memo(function PetFood() {
       return;
     }
 
-    if (!activePetId) {
-      Taro.showToast({ title: '请先创建宠物', icon: 'none' });
+    if (!activePetId || !activePet) {
+      Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
       return;
     }
 
@@ -241,7 +243,7 @@ const PetFood = memo(function PetFood() {
           </View>
         ) : null}
 
-        {loggedIn && !activePetId ? (
+        {loggedIn && !pets.length ? (
           <View className="mb-5 rounded-[20rpx] bg-white p-4 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.08)]">
             <Text className="text-[24rpx] text-[#2b2b2b] font-semibold block">先添加宠物档案</Text>
             <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
@@ -256,9 +258,18 @@ const PetFood = memo(function PetFood() {
           </View>
         ) : null}
 
+        {loggedIn && pets.length > 0 && !hasActivePet ? (
+          <View className="mb-5 rounded-[20rpx] bg-white p-4 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.08)]">
+            <Text className="text-[24rpx] text-[#2b2b2b] font-semibold block">请先重新选择宠物</Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
+              当前食物页面没有绑定到有效宠物，你可以直接从上方切换到一只现有宠物继续管理。
+            </Text>
+          </View>
+        ) : null}
+
         <View className="mb-5 rounded-[24rpx] bg-white p-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.08)]">
           <Text className="text-[30rpx] font-semibold text-[#2b2b2b] block">
-            {activePet?.name || '暂无宠物'}的食物档案
+            {activePet?.name || (loggedIn && pets.length > 0 ? '未选择有效宠物' : '暂无宠物')}的食物档案
           </Text>
           <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
             共 {foods.length} 条食物记录，低库存提醒 {lowInventoryCount} 条
@@ -268,7 +279,7 @@ const PetFood = memo(function PetFood() {
           </Text>
         </View>
 
-        {activePetId ? (
+        {hasActivePet ? (
           <View className="mb-5 rounded-[24rpx] bg-[#FFF9E4] p-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.05)]">
             <Text className="text-[28rpx] font-semibold text-[#2b2b2b] block">
               围绕{activePet?.name || '当前宠物'}继续管理
@@ -375,8 +386,15 @@ const PetFood = memo(function PetFood() {
           </View>
 
           <View
-            className="mt-4 h-[88rpx] rounded-[999rpx] bg-[#FFD93B] flex items-center justify-center"
-            onClick={handleSubmit}
+            className="mt-4 h-[88rpx] rounded-[999rpx] flex items-center justify-center"
+            style={{ backgroundColor: canSubmit ? '#FFD93B' : '#E5E5E5', opacity: canSubmit ? 1 : 0.7 }}
+            onClick={() => {
+              if (!canSubmit) {
+                Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
+                return;
+              }
+              handleSubmit();
+            }}
           >
             <Text className="text-[30rpx] font-semibold">
               {saving ? '保存中...' : editingId ? '更新食物' : '保存食物'}
@@ -443,7 +461,7 @@ const PetFood = memo(function PetFood() {
               <Text className="text-[24rpx] text-[#8a8a8a]">
                 {activePet?.name || '当前宠物'}还没有食物记录，先补一条主粮、零食或罐头档案吧。
               </Text>
-              {activePetId ? (
+              {hasActivePet ? (
                 <View className="flex gap-3 mt-4">
                   <View
                     className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#FFD93B] flex items-center justify-center"

@@ -22,6 +22,25 @@ const PetCareStats = memo(function PetCareStats() {
 
   const petId = preferredPetId || activePetId || activePet?.id || '';
   const pet = pets.find((item) => item.id === petId) || activePet;
+  const hasValidPetContext = Boolean(petId && pet);
+  const ensureActivePetContext = () => {
+    if (!ensureLoggedIn(`/pages/PetCareStats/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)) {
+      return false;
+    }
+
+    if (petId && pet) {
+      return true;
+    }
+
+    Taro.showToast({ title: pets.length ? '请先选择有效宠物' : '请先选择或创建宠物', icon: 'none' });
+    return false;
+  };
+  const openPetPage = (url: string) => {
+    if (!ensureActivePetContext()) {
+      return;
+    }
+    Taro.navigateTo({ url });
+  };
 
   const refreshCareData = useCallback(() => {
     if (!loggedIn) {
@@ -30,7 +49,7 @@ const PetCareStats = memo(function PetCareStats() {
       return Promise.resolve();
     }
 
-    if (!petId) {
+    if (!petId || !pet) {
       setCareLogs([]);
       setReminders([]);
       return Promise.resolve();
@@ -45,7 +64,7 @@ const PetCareStats = memo(function PetCareStats() {
         setCareLogs([]);
         setReminders([]);
       });
-  }, [loggedIn, petId]);
+  }, [loggedIn, pet, petId]);
 
   useEffect(() => {
     if (petId) {
@@ -158,7 +177,7 @@ const PetCareStats = memo(function PetCareStats() {
           </View>
         ) : null}
 
-        {loggedIn && !petId ? (
+        {loggedIn && !pets.length ? (
           <View
             className="mb-4 p-5 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white"
             style={{ boxShadow: PET_UI_SHADOW }}
@@ -176,11 +195,25 @@ const PetCareStats = memo(function PetCareStats() {
           </View>
         ) : null}
 
+        {loggedIn && pets.length > 0 && !hasValidPetContext ? (
+          <View
+            className="mb-4 p-5 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white"
+            style={{ boxShadow: PET_UI_SHADOW }}
+          >
+            <Text className="text-[30rpx] font-bold block">请先重新选择宠物</Text>
+            <Text className="text-[22rpx] text-[#666] mt-2 block">
+              当前护理页面没有绑定到有效宠物，你可以直接从上方切换到一只现有宠物继续查看护理档案。
+            </Text>
+          </View>
+        ) : null}
+
         <View
           className="mb-4 p-4 rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-[#f4f4f4]"
           style={{ boxShadow: PET_UI_SHADOW }}
         >
-          <Text className="text-[30rpx] font-bold block">{pet?.name || '暂无'}的护理档案</Text>
+          <Text className="text-[30rpx] font-bold block">
+            {pet?.name || (loggedIn && pets.length > 0 ? '未选择有效宠物' : '暂无')}的护理档案
+          </Text>
           <Text className="text-[24rpx] text-[#666] mt-1 block">本月护理次数：{monthCount}</Text>
           <Text className="text-[24rpx] text-[#666]">累计护理记录：{careList.length}</Text>
           {recentCare ? (
@@ -190,16 +223,12 @@ const PetCareStats = memo(function PetCareStats() {
           ) : null}
         </View>
 
-        {petId ? (
+        {hasValidPetContext ? (
           <View className="grid grid-cols-2 gap-3 mb-4">
             <View
               className="rounded-[16rpx] border-[3rpx] border-solid border-[#262626] bg-white p-4"
               style={{ boxShadow: PET_UI_SHADOW }}
-              onClick={() =>
-                Taro.navigateTo({
-                  url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=care`,
-                })
-              }
+              onClick={() => openPetPage(`/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=care`)}
             >
               <Text className="text-[26rpx] font-bold text-[#2c2c2c]">新增护理</Text>
               <Text className="text-[20rpx] text-[#7a7a7a] mt-2 block">
@@ -315,15 +344,11 @@ const PetCareStats = memo(function PetCareStats() {
               <Text className="text-[24rpx] text-[#8a8a8a]">
                 {pet?.name || '当前宠物'}还没有护理记录，可以先补一条洗护、驱虫、疫苗或体检记录。
               </Text>
-              {petId ? (
+              {hasValidPetContext ? (
                 <View className="flex gap-3 mt-4">
                   <View
                     className="flex-1 px-4 py-3 rounded-[16rpx] bg-[#BDEEFF] flex items-center justify-center"
-                    onClick={() =>
-                      Taro.navigateTo({
-                        url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=care`,
-                      })
-                    }
+                    onClick={() => openPetPage(`/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=care`)}
                   >
                     <Text className="text-[22rpx] font-semibold text-[#2c5f7a]">新增护理记录</Text>
                   </View>
