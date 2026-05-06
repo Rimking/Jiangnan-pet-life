@@ -34,8 +34,7 @@ const PetKnowledge = memo(function PetKnowledge() {
       .then(async (result) => {
         const categoryList = result.categories || [];
         const resolvedCategory = result.activeCategory || '';
-        const categoryCount =
-          categoryList.find((item) => item.key === resolvedCategory)?.count || 0;
+        const categoryCount = categoryList.find((item) => item.key === resolvedCategory)?.count || 0;
         const articleList =
           !result.articles?.length && resolvedCategory && categoryCount > 0
             ? await getKnowledgeArticlesData({
@@ -75,7 +74,6 @@ const PetKnowledge = memo(function PetKnowledge() {
 
   const filteredArticles = useMemo(() => {
     const favorites = new Set(favoriteIds);
-
     return articles.filter((item) => {
       if (onlyFavorite && !favorites.has(item.id)) {
         return false;
@@ -110,7 +108,10 @@ const PetKnowledge = memo(function PetKnowledge() {
   return (
     <BasicLayout
       wrapClassName="w-full h-full"
-      wrapStyle={{ background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)', minHeight: '100vh' }}
+      wrapStyle={{
+        background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)',
+        minHeight: '100vh',
+      }}
       navOptions={{ navTitle: '知识库', needBack: false }}
     >
       <View className="px-[24rpx] pt-[16rpx] pb-[120rpx]">
@@ -119,18 +120,18 @@ const PetKnowledge = memo(function PetKnowledge() {
             <Text className="text-[24rpx] font-semibold text-[#262626] block">
               当前宠物：{activePet?.name || '已选宠物'}
             </Text>
-            <Text className="text-[20rpx] text-[#666] mt-[4rpx] block">
+            <Text className="text-[20rpx] text-[#666] mt-[4rpx] block leading-[1.6]">
               看完知识内容后，可以直接回到这只宠物的首页或日程继续操作。
             </Text>
             <View className="flex gap-[10rpx] mt-[10rpx]">
               <View
-                className="flex-1 h-[60rpx] rounded-[30rpx] bg-white border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                className="flex-1 h-[68rpx] rounded-[30rpx] bg-white border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
                 onClick={() => switchTabWithActivePet('/pages/PetProfile/index', activePetId)}
               >
                 <Text className="text-[22rpx] text-[#333]">回到首页</Text>
               </View>
               <View
-                className="flex-1 h-[60rpx] rounded-[30rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                className="flex-1 h-[68rpx] rounded-[30rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
                 onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', activePetId)}
               >
                 <Text className="text-[22rpx] text-[#333] font-semibold">查看日程</Text>
@@ -139,7 +140,7 @@ const PetKnowledge = memo(function PetKnowledge() {
           </View>
         ) : null}
 
-        <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] px-[14rpx] py-[10rpx] mb-[14rpx]">
+        <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] px-[14rpx] py-[12rpx] mb-[14rpx]">
           <Input
             placeholder="搜索：如 软便、挑食、驱虫"
             value={keyword}
@@ -157,9 +158,7 @@ const PetKnowledge = memo(function PetKnowledge() {
               onClick={() => handleCategoryChange(item.key)}
             >
               <Text className="text-[24rpx] font-semibold text-[#303030]">{item.label}</Text>
-              <Text className="text-[18rpx] text-[#666] mt-[4rpx] block">
-                {item.count || 0} 篇
-              </Text>
+              <Text className="text-[18rpx] text-[#666] mt-[4rpx] block">{item.count || 0} 篇</Text>
             </View>
           ))}
         </View>
@@ -185,7 +184,7 @@ const PetKnowledge = memo(function PetKnowledge() {
           {loading ? (
             <Text className="text-[22rpx] text-[#888] py-[10rpx] block">正在加载文章...</Text>
           ) : !filteredArticles.length ? (
-            <Text className="text-[22rpx] text-[#888] py-[10rpx] block">当前条件下暂无文章</Text>
+            <Text className="text-[22rpx] text-[#888] py-[10rpx] block">当前条件下暂时没有文章</Text>
           ) : (
             filteredArticles.map((item) => (
               <View
@@ -195,16 +194,19 @@ const PetKnowledge = memo(function PetKnowledge() {
               >
                 <View className="flex items-center justify-between">
                   <Text className="text-[24rpx] text-[#222] block">{item.title}</Text>
-                  <Text className="text-[22rpx]" onClick={(event) => {
-                    event.stopPropagation();
-                    handleToggleFavorite(item.id);
-                  }}>{favoriteIds.includes(item.id) ? '★' : '☆'}</Text>
-                </View>
-                <Text className="text-[20rpx] text-[#777] mt-[4rpx] block">{item.desc}</Text>
-                {item.sourceName ? (
-                  <Text className="text-[18rpx] text-[#9a9a9a] mt-[4rpx] block">
-                    来源：{item.sourceName}
+                  <Text
+                    className="text-[22rpx]"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleToggleFavorite(item.id);
+                    }}
+                  >
+                    {favoriteIds.includes(item.id) ? '★' : '☆'}
                   </Text>
+                </View>
+                <Text className="text-[20rpx] text-[#777] mt-[4rpx] block leading-[1.6]">{item.desc}</Text>
+                {item.sourceName ? (
+                  <Text className="text-[18rpx] text-[#9a9a9a] mt-[4rpx] block">来源：{item.sourceName}</Text>
                 ) : null}
               </View>
             ))
@@ -212,7 +214,7 @@ const PetKnowledge = memo(function PetKnowledge() {
         </View>
 
         <View
-          className="bg-[#2B8BFF] rounded-[20rpx] p-[12rpx]"
+          className="bg-[#2B8BFF] rounded-[20rpx] p-[14rpx]"
           onClick={() =>
             Taro.navigateTo({
               url: `/pages/PetQa/index${activePetId ? `?petId=${activePetId}` : ''}`,
@@ -220,7 +222,7 @@ const PetKnowledge = memo(function PetKnowledge() {
           }
         >
           <Text className="text-[24rpx] text-white font-semibold block">知识问答</Text>
-          <Text className="text-[20rpx] text-[#dbeaff] mt-[4rpx] block">
+          <Text className="text-[20rpx] text-[#dbeaff] mt-[4rpx] block leading-[1.6]">
             可以直接输入常见养护问题，系统会基于当前知识库内容给出建议。
           </Text>
         </View>

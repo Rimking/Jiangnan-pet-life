@@ -45,7 +45,7 @@ const RecordTab = memo(function RecordTab({ records, onAddRecord, onAddExpense, 
       {records.map((item) => (
         <View key={item.id} className="min-h-[110rpx] px-4 py-3 mb-[2rpx] flex items-center justify-between" style={cardStyle}>
           <View className="flex-1">
-            <Text className="font-[500] block" style={{ fontSize: '' }}>{item.category}</Text>
+            <Text className="font-[500] block" style={{ fontSize: PET_UI_TEXT.body }}>{item.category}</Text>
             <Text className="text-[#7a7a7a]" style={{ fontSize: PET_UI_TEXT.caption }}>{item.time}</Text>
           </View>
 
@@ -60,4 +60,5 @@ const RecordTab = memo(function RecordTab({ records, onAddRecord, onAddExpense, 
 });
 
 export default RecordTab;
+
 

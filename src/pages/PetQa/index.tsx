@@ -48,7 +48,7 @@ const answerByKeyword = (question: string) => {
   }
 
   if (text.includes('软便') || text.includes('拉稀')) {
-    return '先观察精神食欲，暂停新零食，连续 2-3 天单一饮食并补水；若伴随呕吐或便血，请尽快就医。';
+    return '先观察精神和食欲，暂停新零食，连续 2-3 天单一饮食并补水；若伴随呕吐或便血，请尽快就医。';
   }
   if (text.includes('挑食')) {
     return '建议固定喂食时段并减少零食干扰，单餐 15-20 分钟，超时收走，连续执行 1-2 周观察。';
@@ -143,7 +143,7 @@ const PetQa = memo(function PetQa() {
       const qaResult = await getKnowledgeQaData(text);
       result = qaResult.answer;
       category = (qaResult.category || category) as 'health' | 'behavior' | 'feed' | 'general';
-    } catch (error) {
+    } catch {
       result = answerByKeyword(text);
     }
 
@@ -181,7 +181,10 @@ const PetQa = memo(function PetQa() {
   return (
     <BasicLayout
       wrapClassName="w-full h-full"
-      wrapStyle={{ background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)', minHeight: '100vh' }}
+      wrapStyle={{
+        background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)',
+        minHeight: '100vh',
+      }}
       navOptions={{ navTitle: '知识问答', needBack: true }}
     >
       <View className="px-[24rpx] pt-[16rpx] pb-[120rpx]">
@@ -190,18 +193,18 @@ const PetQa = memo(function PetQa() {
             <Text className="text-[24rpx] font-semibold text-[#222] block">
               当前宠物：{activePet?.name || '已选宠物'}
             </Text>
-            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.6]">
               问完问题后，可以直接回到这只宠物的首页或日程继续记录和安排。
             </Text>
             <View className="flex gap-[10rpx] mt-[10rpx]">
               <View
-                className="flex-1 h-[60rpx] rounded-[30rpx] bg-white border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                className="flex-1 h-[68rpx] rounded-[30rpx] bg-white border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
                 onClick={() => switchTabWithActivePet('/pages/PetProfile/index', activePetId)}
               >
                 <Text className="text-[22rpx] text-[#333]">回到首页</Text>
               </View>
               <View
-                className="flex-1 h-[60rpx] rounded-[30rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                className="flex-1 h-[68rpx] rounded-[30rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
                 onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', activePetId)}
               >
                 <Text className="text-[22rpx] text-[#333] font-semibold">查看日程</Text>
@@ -310,7 +313,7 @@ const PetQa = memo(function PetQa() {
         <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[18rpx]">
           <Text className="text-[24rpx] font-semibold text-[#222] block mb-[8rpx]">历史问答</Text>
           {!history.length ? (
-            <Text className="text-[22rpx] text-[#777]">暂无历史记录</Text>
+            <Text className="text-[22rpx] text-[#777]">暂时没有历史记录</Text>
           ) : (
             history.map((item, index) => (
               <View key={`${item.question}-${index}`} className="py-[10rpx] border-b border-[#ededed] last:border-b-0">

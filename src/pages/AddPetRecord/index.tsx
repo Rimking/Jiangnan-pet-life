@@ -1,7 +1,4 @@
 ﻿import BasicLayout from '@/layout/basicLayout';
-import { View, Text, Input } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
-import { memo, useMemo, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import {
   createCareRecordData,
@@ -10,13 +7,22 @@ import {
   createScheduleData,
   toIsoDateTime,
 } from '@/api/data';
-import { usePetApiPets } from '@/hooks/usePetApiPets';
 import { setStoredActivePetId } from '@/utils/activePetState';
 import { ensureLoggedIn } from '@/utils/authState';
+import { usePetApiPets } from '@/hooks/usePetApiPets';
+import { Input, Text, View } from '@tarojs/components';
+import Taro, { useRouter } from '@tarojs/taro';
+import { memo, useMemo, useState } from 'react';
 
 type RecordMode = 'record' | 'expense' | 'care';
 
-const CARE_TEMPLATE = [
+type CareTemplateItem = {
+  name: string;
+  result: string;
+  nextAfterDays: number;
+};
+
+const CARE_TEMPLATE: CareTemplateItem[] = [
   { name: '驱虫', result: '已完成', nextAfterDays: 30 },
   { name: '疫苗', result: '已接种', nextAfterDays: 365 },
   { name: '体检', result: '已完成', nextAfterDays: 180 },
@@ -48,23 +54,17 @@ const AddPetRecord = memo(function AddPetRecord() {
   const petId = params.petId || '';
   const { pets } = usePetApiPets(petId);
 
-  const defaultDate = useMemo(() => {
-    return params.date || toDateInput(new Date());
-  }, [params.date]);
-
+  const defaultDate = useMemo(() => params.date || toDateInput(new Date()), [params.date]);
   const initialMode = (params.mode as RecordMode) || 'record';
   const currentPet = pets.find((item) => item.id === petId) || null;
 
   const [mode, setMode] = useState<RecordMode>(initialMode);
-
   const [category, setCategory] = useState('喂食');
   const [value, setValue] = useState('');
   const [note, setNote] = useState('');
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState('09:00');
-
   const [amount, setAmount] = useState('');
-
   const [careType, setCareType] = useState('驱虫');
   const [careResult, setCareResult] = useState('已完成');
   const [nextDate, setNextDate] = useState('');
@@ -92,16 +92,14 @@ const AddPetRecord = memo(function AddPetRecord() {
     if (mode === 'expense') {
       const amountNumber = Number(amount);
       if (!category.trim() || Number.isNaN(amountNumber) || amountNumber <= 0) {
-        Taro.showToast({ title: '请填写正确花销', icon: 'none' });
+        Taro.showToast({ title: '请填写正确的花销金额', icon: 'none' });
         return;
       }
     }
 
-    if (mode === 'care') {
-      if (!careType.trim()) {
-        Taro.showToast({ title: '请填写护理类型', icon: 'none' });
-        return;
-      }
+    if (mode === 'care' && !careType.trim()) {
+      Taro.showToast({ title: '请填写护理类型', icon: 'none' });
+      return;
     }
 
     if (!petId || !currentPet) {
@@ -208,19 +206,17 @@ const AddPetRecord = memo(function AddPetRecord() {
 
         <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
           <Text className="text-[22rpx] text-[#666]">当前宠物</Text>
-          <Text className="text-[28rpx] font-semibold mt-2 block">
-            {currentPet?.name || '未选择宠物'}
-          </Text>
+          <Text className="text-[28rpx] font-semibold mt-2 block">{currentPet?.name || '未选择宠物'}</Text>
           <Text className="text-[22rpx] text-[#888] mt-2 block">
-            当前新增的日常、花销和护理记录都只会归属到这只宠物。
+            当前新增的日常、花销和护理记录都会只归属到这只宠物。
           </Text>
         </View>
 
         {!pets.length ? (
           <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
             <Text className="text-[26rpx] font-semibold block">先添加宠物档案</Text>
-            <Text className="text-[22rpx] text-[#666] mt-2 block">
-              所有记录都必须和具体宠物绑定，后面时间线、报告和统计才能按宠物区分。
+            <Text className="text-[22rpx] text-[#666] mt-2 block leading-[1.7]">
+              所有记录都需要和具体宠物绑定，后面的时间线、报告和统计才能按宠物区分。
             </Text>
             <View
               className="mt-3 inline-flex px-4 py-2 rounded-[999rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626]"
@@ -234,7 +230,7 @@ const AddPetRecord = memo(function AddPetRecord() {
         {pets.length > 0 && !currentPet ? (
           <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
             <Text className="text-[26rpx] font-semibold block">没有找到对应宠物</Text>
-            <Text className="text-[22rpx] text-[#666] mt-2 block">
+            <Text className="text-[22rpx] text-[#666] mt-2 block leading-[1.7]">
               这个记录入口没有绑定到有效宠物，请先重新选择一只宠物再继续。
             </Text>
           </View>
@@ -321,7 +317,7 @@ const AddPetRecord = memo(function AddPetRecord() {
               className="h-[72rpx] text-[28rpx] mt-2"
               value={category}
               onInput={(event) => setCategory(event.detail.value)}
-              placeholder="如：喝水、猫粮、玩具"
+              placeholder="例如：喝水、猫粮、玩具"
             />
           </View>
         ) : null}
@@ -333,7 +329,7 @@ const AddPetRecord = memo(function AddPetRecord() {
               className="h-[72rpx] text-[28rpx] mt-2"
               value={value}
               onInput={(event) => setValue(event.detail.value)}
-              placeholder="如：250ml / 1次"
+              placeholder="例如：250ml / 1次"
             />
           </View>
         ) : null}
@@ -345,7 +341,7 @@ const AddPetRecord = memo(function AddPetRecord() {
               className="h-[72rpx] text-[28rpx] mt-2"
               value={amount}
               onInput={(event) => setAmount(event.detail.value)}
-              placeholder="如：89"
+              placeholder="例如：89"
               type="digit"
             />
           </View>
@@ -372,7 +368,7 @@ const AddPetRecord = memo(function AddPetRecord() {
                 className="h-[72rpx] text-[28rpx] mt-2"
                 value={careType}
                 onInput={(event) => setCareType(event.detail.value)}
-                placeholder="如：驱虫、洗护、体检"
+                placeholder="例如：驱虫、洗护、体检"
               />
             </View>
 
@@ -395,7 +391,7 @@ const AddPetRecord = memo(function AddPetRecord() {
                 className="h-[72rpx] text-[28rpx] mt-2"
                 value={careResult}
                 onInput={(event) => setCareResult(event.detail.value)}
-                placeholder="如：已完成 / 异常观察"
+                placeholder="例如：已完成 / 异常观察"
               />
             </View>
 
@@ -429,7 +425,7 @@ const AddPetRecord = memo(function AddPetRecord() {
             className="h-[72rpx] text-[28rpx] mt-2"
             value={note}
             onInput={(event) => setNote(event.detail.value)}
-            placeholder="可选"
+            placeholder="可以填写状态说明、花销原因或护理观察"
           />
         </View>
 

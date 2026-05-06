@@ -9,28 +9,29 @@ import PetInfoCard from './components/PetInfoCard';
 import FunctionGrid from './components/FunctionGrid';
 import DailyTip from './components/DailyTip';
 import ExpenseInsight from './components/ExpenseInsight';
-import {
-  getProfileOverviewData,
-  mapPetToProfileModel,
-} from '@/api/data';
+import { getProfileOverviewData } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
 import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
+const emptyStats = {
+  reminders: 0,
+  records: 0,
+  care: 0,
+  monthExpense: 0,
+  milestones: 0,
+};
+
+const emptyExpenseInsight = {
+  monthTotal: 0,
+  categoryTop: [] as Array<{ name: string; amount: number }>,
+  weekSeries: [] as number[],
+};
+
 const PetProfile = memo(function PetProfile() {
   const { pets, activePet, activePetId, loading, error, setActivePetId } = usePetApiPets();
-  const [stats, setStats] = useState({
-    reminders: 0,
-    records: 0,
-    care: 0,
-    monthExpense: 0,
-    milestones: 0,
-  });
-  const [expenseInsight, setExpenseInsight] = useState({
-    monthTotal: 0,
-    categoryTop: [] as Array<{ name: string; amount: number }>,
-    weekSeries: [] as number[],
-  });
+  const [stats, setStats] = useState(emptyStats);
+  const [expenseInsight, setExpenseInsight] = useState(emptyExpenseInsight);
   const [recentMilestone, setRecentMilestone] = useState<{
     id: string;
     title: string;
@@ -40,6 +41,7 @@ const PetProfile = memo(function PetProfile() {
 
   const today = formatLocalDateKey(new Date());
   const loggedIn = isLoggedIn();
+
   const nextProfileActions = activePet
     ? [
         {
@@ -50,7 +52,7 @@ const PetProfile = memo(function PetProfile() {
         },
         {
           title: '服务概览',
-          subtitle: '回到会员中心继续处理提醒、库存和疗程',
+          subtitle: '回到服务中心继续处理提醒、库存和疗程',
           accent: '#5a78d4',
           onClick: () =>
             Taro.navigateTo({ url: `/pages/PetServiceCenter/index?mode=member&petId=${activePet.id}` }),
@@ -71,36 +73,9 @@ const PetProfile = memo(function PetProfile() {
     : [];
 
   const refreshProfileData = useCallback(async () => {
-    if (!loggedIn) {
-      setStats({
-        reminders: 0,
-        records: 0,
-        care: 0,
-        monthExpense: 0,
-        milestones: 0,
-      });
-      setExpenseInsight({
-        monthTotal: 0,
-        categoryTop: [],
-        weekSeries: [],
-      });
-      setRecentMilestone(null);
-      return;
-    }
-
-    if (!activePetId) {
-      setStats({
-        reminders: 0,
-        records: 0,
-        care: 0,
-        monthExpense: 0,
-        milestones: 0,
-      });
-      setExpenseInsight({
-        monthTotal: 0,
-        categoryTop: [],
-        weekSeries: [],
-      });
+    if (!loggedIn || !activePetId) {
+      setStats(emptyStats);
+      setExpenseInsight(emptyExpenseInsight);
       setRecentMilestone(null);
       return;
     }
@@ -110,19 +85,9 @@ const PetProfile = memo(function PetProfile() {
       setStats(profileData.stats);
       setExpenseInsight(profileData.expenseInsight);
       setRecentMilestone(profileData.recentMilestone);
-    } catch (requestError) {
-      setStats({
-        reminders: 0,
-        records: 0,
-        care: 0,
-        monthExpense: 0,
-        milestones: 0,
-      });
-      setExpenseInsight({
-        monthTotal: 0,
-        categoryTop: [],
-        weekSeries: [],
-      });
+    } catch {
+      setStats(emptyStats);
+      setExpenseInsight(emptyExpenseInsight);
       setRecentMilestone(null);
     }
   }, [activePetId, loggedIn]);
@@ -154,13 +119,13 @@ const PetProfile = memo(function PetProfile() {
           </View>
         ) : null}
 
-        <View className="px-[28rpx] flex gap-[12rpx] mb-[16rpx]">
+        <View className="px-[28rpx] flex gap-[12rpx] mb-[16rpx] flex-wrap">
           {pets.map((pet) => {
             const active = pet.id === activePet?.id;
             return (
               <View
                 key={pet.id}
-                className="px-4 py-2 border-solid"
+                className="px-[22rpx] py-[12rpx] border-solid"
                 style={{
                   border: PET_UI_BORDER.regular,
                   borderRadius: PET_UI_RADIUS.pill,
@@ -177,7 +142,7 @@ const PetProfile = memo(function PetProfile() {
         {!activePet && !loading ? (
           <View className="px-[28rpx]">
             <Text style={{ fontSize: PET_UI_TEXT.body }}>
-              {loggedIn ? '暂无宠物档案' : '登录后可创建并同步你的宠物档案'}
+              {loggedIn ? '暂时还没有宠物档案' : '登录后可创建并同步你的宠物档案'}
             </Text>
             {!loggedIn ? (
               <View
@@ -208,15 +173,9 @@ const PetProfile = memo(function PetProfile() {
               petName={activePet.name}
               stats={stats}
               onOpenSchedule={() => switchTabWithActivePet('/pages/PetSchedule/index', activePet.id)}
-              onOpenExpense={() =>
-                Taro.navigateTo({ url: `/pages/PetExpenseStats/index?petId=${activePet.id}` })
-              }
-              onOpenCare={() =>
-                Taro.navigateTo({ url: `/pages/PetCareStats/index?petId=${activePet.id}` })
-              }
-              onOpenMilestones={() =>
-                Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${activePet.id}` })
-              }
+              onOpenExpense={() => Taro.navigateTo({ url: `/pages/PetExpenseStats/index?petId=${activePet.id}` })}
+              onOpenCare={() => Taro.navigateTo({ url: `/pages/PetCareStats/index?petId=${activePet.id}` })}
+              onOpenMilestones={() => Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${activePet.id}` })}
               onAddReminder={() =>
                 Taro.navigateTo({
                   url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${today}`,
@@ -232,13 +191,12 @@ const PetProfile = memo(function PetProfile() {
               monthTotal={expenseInsight.monthTotal}
               categoryTop={expenseInsight.categoryTop}
               weekSeries={expenseInsight.weekSeries}
-              onOpenDetail={() =>
-                Taro.navigateTo({ url: `/pages/PetExpenseStats/index?petId=${activePet.id}` })
-              }
+              onOpenDetail={() => Taro.navigateTo({ url: `/pages/PetExpenseStats/index?petId=${activePet.id}` })}
             />
+
             <View className="px-[28rpx] mt-[4rpx]">
               <View
-                className="px-[22rpx] py-[20rpx] border-solid mb-[14rpx]"
+                className="px-[22rpx] py-[22rpx] border-solid mb-[14rpx]"
                 style={{
                   border: PET_UI_BORDER.regular,
                   borderRadius: PET_UI_RADIUS.md,
@@ -248,29 +206,30 @@ const PetProfile = memo(function PetProfile() {
                 <Text className="text-[#466481] font-semibold block" style={{ fontSize: PET_UI_TEXT.caption }}>
                   当前宠物下一步
                 </Text>
-                <Text className="text-[#2B2B2B] mt-[8rpx] block" style={{ fontSize: PET_UI_TEXT.body }}>
+                <Text className="text-[#2B2B2B] mt-[8rpx] block leading-[1.6]" style={{ fontSize: PET_UI_TEXT.body }}>
                   {stats.reminders > 0
                     ? `${activePet.name} 还有 ${stats.reminders} 条提醒待处理，建议先回日程页确认今天安排。`
                     : stats.records === 0
                       ? `${activePet.name} 还缺少日常记录，补一条之后时间线和报告会更完整。`
-                      : `这只宠物的基础数据已经有了，可以继续去报告、服务中心或详情页回看整体状态。`}
+                      : '这只宠物的基础数据已经有了，可以继续去报告、服务中心或详情页回看整体状态。'}
                 </Text>
-                <View className="grid grid-cols-3 gap-[12rpx] mt-[14rpx]">
+                <View className="grid grid-cols-3 gap-[12rpx] mt-[16rpx]">
                   {nextProfileActions.map((item) => (
                     <View
                       key={item.title}
-                      className="px-[14rpx] py-[16rpx] border-solid"
+                      className="px-[14rpx] py-[18rpx] border-solid"
                       style={{
                         border: PET_UI_BORDER.regular,
                         borderRadius: PET_UI_RADIUS.md,
                         backgroundColor: '#ffffff',
+                        minHeight: '142rpx',
                       }}
                       onClick={item.onClick}
                     >
                       <Text className="font-semibold block" style={{ fontSize: PET_UI_TEXT.body, color: item.accent }}>
                         {item.title}
                       </Text>
-                      <Text className="text-[#6f6f6f] mt-[8rpx] block" style={{ fontSize: PET_UI_TEXT.caption }}>
+                      <Text className="text-[#6f6f6f] mt-[8rpx] block leading-[1.5]" style={{ fontSize: PET_UI_TEXT.caption }}>
                         {item.subtitle}
                       </Text>
                     </View>
@@ -279,15 +238,13 @@ const PetProfile = memo(function PetProfile() {
               </View>
 
               <View
-                className="px-[22rpx] py-[20rpx] border-solid"
+                className="px-[22rpx] py-[22rpx] border-solid"
                 style={{
                   border: PET_UI_BORDER.regular,
                   borderRadius: PET_UI_RADIUS.md,
                   backgroundColor: '#FFF5FA',
                 }}
-                onClick={() =>
-                  Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${activePet.id}` })
-                }
+                onClick={() => Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${activePet.id}` })}
               >
                 <Text className="text-[#B25E8B]" style={{ fontSize: PET_UI_TEXT.caption }}>
                   最近成长里程碑
@@ -309,33 +266,31 @@ const PetProfile = memo(function PetProfile() {
 
               <View className="grid grid-cols-3 gap-[12rpx] mt-[14rpx]">
                 <View
-                  className="px-[14rpx] py-[16rpx] border-solid"
+                  className="px-[14rpx] py-[18rpx] border-solid"
                   style={{
                     border: PET_UI_BORDER.regular,
                     borderRadius: PET_UI_RADIUS.md,
                     backgroundColor: '#FFF8E6',
+                    minHeight: '126rpx',
                   }}
-                  onClick={() =>
-                    Taro.navigateTo({ url: `/pages/PetFood/index?petId=${activePet.id}` })
-                  }
+                  onClick={() => Taro.navigateTo({ url: `/pages/PetFood/index?petId=${activePet.id}` })}
                 >
                   <Text className="text-[#8C6C2D] font-semibold block" style={{ fontSize: PET_UI_TEXT.body }}>
                     食物管理
                   </Text>
                   <Text className="text-[#7A6A3D] mt-[8rpx] block" style={{ fontSize: PET_UI_TEXT.caption }}>
-                    库存和喂食
+                    库存和喂养
                   </Text>
                 </View>
                 <View
-                  className="px-[14rpx] py-[16rpx] border-solid"
+                  className="px-[14rpx] py-[18rpx] border-solid"
                   style={{
                     border: PET_UI_BORDER.regular,
                     borderRadius: PET_UI_RADIUS.md,
                     backgroundColor: '#F6F0FF',
+                    minHeight: '126rpx',
                   }}
-                  onClick={() =>
-                    Taro.navigateTo({ url: `/pages/PetMedicine/index?petId=${activePet.id}` })
-                  }
+                  onClick={() => Taro.navigateTo({ url: `/pages/PetMedicine/index?petId=${activePet.id}` })}
                 >
                   <Text className="text-[#6C5C90] font-semibold block" style={{ fontSize: PET_UI_TEXT.body }}>
                     用药管理
@@ -345,18 +300,17 @@ const PetProfile = memo(function PetProfile() {
                   </Text>
                 </View>
                 <View
-                  className="px-[14rpx] py-[16rpx] border-solid"
+                  className="px-[14rpx] py-[18rpx] border-solid"
                   style={{
                     border: PET_UI_BORDER.regular,
                     borderRadius: PET_UI_RADIUS.md,
                     backgroundColor: '#EEF8FF',
+                    minHeight: '126rpx',
                   }}
-                  onClick={() =>
-                    Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${activePet.id}` })
-                  }
+                  onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${activePet.id}` })}
                 >
                   <Text className="text-[#4B6A77] font-semibold block" style={{ fontSize: PET_UI_TEXT.body }}>
-                    成长时光轴
+                    成长时间线
                   </Text>
                   <Text className="text-[#5E7680] mt-[8rpx] block" style={{ fontSize: PET_UI_TEXT.caption }}>
                     回看全部记录
@@ -369,9 +323,7 @@ const PetProfile = memo(function PetProfile() {
 
         <DailyTip
           onOpenKnowledge={() => switchTabWithActivePet('/pages/PetKnowledge/index', activePetId)}
-          onOpenQa={() =>
-            Taro.navigateTo({ url: `/pages/PetQa/index${activePetId ? `?petId=${activePetId}` : ''}` })
-          }
+          onOpenQa={() => Taro.navigateTo({ url: `/pages/PetQa/index${activePetId ? `?petId=${activePetId}` : ''}` })}
         />
       </View>
     </BasicLayout>

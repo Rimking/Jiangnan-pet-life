@@ -1,11 +1,35 @@
-import BasicLayout from '@/layout/basicLayout';
+﻿import BasicLayout from '@/layout/basicLayout';
+import { getReportData, ReportData } from '@/api/data';
+import { PET_UI } from '@/constants/petUi';
+import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
+import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { View, Text } from '@tarojs/components';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import { memo, useEffect, useMemo, useState } from 'react';
-import { PET_UI } from '@/constants/petUi';
-import { getReportData, ReportData } from '@/api/data';
-import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
-import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
+
+type QuickLink = {
+  title: string;
+  subtitle: string;
+  accent: string;
+  url: string;
+};
+
+type SummaryCard = {
+  title: string;
+  value: string;
+  url: string;
+  fullWidth?: boolean;
+};
+
+const typeLabelMap: Record<string, string> = {
+  milestone: '里程碑',
+  expense: '花销',
+  care: '护理',
+  food: '食物',
+  medicine: '用药',
+  record: '日常',
+  schedule: '提醒',
+};
 
 const PetReport = memo(function PetReport() {
   const { params } = useRouter();
@@ -42,39 +66,41 @@ const PetReport = memo(function PetReport() {
 
   const expenseList = Object.entries(report?.expenseByCategory || {}).sort((a, b) => b[1] - a[1]);
   const careList = Object.entries(report?.careByCategory || {}).sort((a, b) => b[1] - a[1]);
-  const quickLinks = useMemo(
+
+  const quickLinks = useMemo<QuickLink[]>(
     () => [
       {
-        title: '成长时光轴',
-        subtitle: '回看提醒、护理和里程碑',
-        accent: '#5a78d4',
+        title: '成长时间线',
+        subtitle: '回看提醒、护理和里程碑的变化。',
+        accent: '#5A78D4',
         url: `/pages/PetTimeline/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
       },
       {
         title: '花销统计',
-        subtitle: '查看预算和分类构成',
+        subtitle: '查看预算、分类占比和月度趋势。',
         accent: '#8A6A2C',
         url: `/pages/PetExpenseStats/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
       },
       {
         title: '护理记录',
-        subtitle: '检查近期护理和复查安排',
+        subtitle: '检查近期护理和后续跟进安排。',
         accent: '#7A61A7',
         url: `/pages/PetCareStats/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
       },
       {
         title: '成长里程碑',
-        subtitle: '继续补充关键成长节点',
+        subtitle: '继续补充关键节点，丰富成长档案。',
         accent: '#B25E8B',
         url: `/pages/PetMilestones/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
       },
     ],
     [currentPetId]
   );
-  const summaryCards = [
+
+  const summaryCards: SummaryCard[] = [
     {
-      title: '最近 30 天花销',
-      value: `¥${Number(report?.summary.recentExpense || 0).toFixed(2)}`,
+      title: '近 30 天花销',
+      value: `￥${Number(report?.summary.recentExpense || 0).toFixed(2)}`,
       url: `/pages/PetExpenseStats/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
     },
     {
@@ -98,8 +124,18 @@ const PetReport = memo(function PetReport() {
       url: `/pages/PetFood/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
     },
     {
+      title: '低库存预警',
+      value: `${report?.summary.lowInventoryFoods || 0}`,
+      url: `/pages/PetFood/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+    },
+    {
       title: '用药档案',
       value: `${report?.summary.totalMedicines || 0}`,
+      url: `/pages/PetMedicine/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
+    },
+    {
+      title: '临期用药',
+      value: `${report?.summary.dueMedicines || 0}`,
       url: `/pages/PetMedicine/index${currentPetId ? `?petId=${currentPetId}` : ''}`,
     },
     {
@@ -109,6 +145,7 @@ const PetReport = memo(function PetReport() {
       fullWidth: true,
     },
   ];
+
   const handleRecentMomentClick = (type: string) => {
     if (!currentPetId) {
       return;
@@ -118,22 +155,18 @@ const PetReport = memo(function PetReport() {
       Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${currentPetId}` });
       return;
     }
-
     if (type === 'expense') {
       Taro.navigateTo({ url: `/pages/PetExpenseStats/index?petId=${currentPetId}` });
       return;
     }
-
     if (type === 'care') {
       Taro.navigateTo({ url: `/pages/PetCareStats/index?petId=${currentPetId}` });
       return;
     }
-
     if (type === 'food') {
       Taro.navigateTo({ url: `/pages/PetFood/index?petId=${currentPetId}` });
       return;
     }
-
     if (type === 'medicine') {
       Taro.navigateTo({ url: `/pages/PetMedicine/index?petId=${currentPetId}` });
       return;
@@ -141,6 +174,7 @@ const PetReport = memo(function PetReport() {
 
     Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${currentPetId}` });
   };
+
   const missingActions = [
     {
       title: '补提醒',
@@ -202,7 +236,7 @@ const PetReport = memo(function PetReport() {
           <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
             <Text className="text-[30rpx] font-semibold text-[#2c2c2c] block">登录后查看专属宠物报告</Text>
             <Text className="text-[22rpx] text-[#666] mt-[10rpx] block leading-[1.7]">
-              花销、护理、提醒和日常记录会汇总成阶段报告，方便你回顾最近的照护情况。
+              花销、护理、提醒和日常记录会汇总成阶段报告，方便回看最近的照护情况。
             </Text>
             <View
               className="mt-[20rpx] inline-flex px-[24rpx] py-[14rpx] rounded-[999rpx] bg-[#FFD93B]"
@@ -220,7 +254,7 @@ const PetReport = memo(function PetReport() {
           <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
             <Text className="text-[30rpx] font-semibold text-[#2c2c2c] block">还没有宠物档案</Text>
             <Text className="text-[22rpx] text-[#666] mt-[10rpx] block leading-[1.7]">
-              先添加一只宠物，后面这里会自动生成属于它的报告和阶段总结。
+              先添加一只宠物，后面这里会自动生成属于它的阶段报告和照护总结。
             </Text>
             <View
               className="mt-[20rpx] inline-flex px-[24rpx] py-[14rpx] rounded-[999rpx] bg-[#FFD93B]"
@@ -239,20 +273,20 @@ const PetReport = memo(function PetReport() {
           <Text className="text-[22rpx] text-[#7D6532] leading-[1.7] mt-[10rpx] block">
             {loading
               ? '正在整理报告...'
-              : `一起生活 ${report?.summary.activeDays || 0} 天，累计记录花销 ¥${Number(report?.summary.totalExpense || 0).toFixed(2)}。`}
+              : `已经一起生活 ${report?.summary.activeDays || 0} 天，累计记录花销 ￥${Number(report?.summary.totalExpense || 0).toFixed(2)}。`}
           </Text>
           {report?.activePet ? (
             <Text className="text-[22rpx] text-[#8A6A2C] mt-[10rpx] block">
-              当前报告只统计 {report.activePet.name} 的专属数据，不和其他宠物混合。
+              当前报告只统计 {report.activePet.name} 的专属数据，不会和其他宠物混在一起。
             </Text>
           ) : null}
         </View>
 
         {currentPetId ? (
           <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
-            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">报告下一步建议</Text>
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">报告后的下一步</Text>
             <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.7]">
-              报告已经是当前宠物的单独视角了。看完摘要后，最适合继续补齐缺失数据，或者直接回到时间线和日程里处理当天事项。
+              看完摘要后，最适合继续补齐缺失数据，或者直接回到时间线和日程里处理今天的事情。
             </Text>
             {missingActions.length ? (
               <View className="grid grid-cols-3 gap-3 mt-4">
@@ -274,7 +308,7 @@ const PetReport = memo(function PetReport() {
                   onClick={() => switchTabWithActivePet('/pages/PetSchedule/index', currentPetId)}
                 >
                   <Text className="text-[24rpx] font-semibold text-[#466481]">回到日程</Text>
-                  <Text className="text-[20rpx] text-[#6D8092] mt-[6rpx] block">继续处理待办</Text>
+                  <Text className="text-[20rpx] text-[#6D8092] mt-[6rpx] block">继续处理待办提醒</Text>
                 </View>
                 <View
                   className="rounded-[18rpx] bg-[#F8FAFF] p-4"
@@ -329,7 +363,7 @@ const PetReport = memo(function PetReport() {
         </View>
 
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">最近 30 天</Text>
+          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">近 30 天数据量</Text>
           <View className="grid grid-cols-2 gap-3">
             <View className="rounded-[18rpx] bg-[#EEF4FF] p-4">
               <Text className="text-[22rpx] text-[#6a7ca8]">提醒</Text>
@@ -353,6 +387,18 @@ const PetReport = memo(function PetReport() {
               <Text className="text-[22rpx] text-[#56836a]">日常</Text>
               <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
                 {report?.recent30Days.records || 0}
+              </Text>
+            </View>
+            <View className="rounded-[18rpx] bg-[#FFF8E6] p-4">
+              <Text className="text-[22rpx] text-[#8A6A2C]">食物</Text>
+              <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
+                {report?.recent30Days.foods || 0}
+              </Text>
+            </View>
+            <View className="rounded-[18rpx] bg-[#F4EEFF] p-4">
+              <Text className="text-[22rpx] text-[#7A61A7]">用药</Text>
+              <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
+                {report?.recent30Days.medicines || 0}
               </Text>
             </View>
             <View className="rounded-[18rpx] bg-[#FFF0F6] p-4 col-span-2">
@@ -388,7 +434,7 @@ const PetReport = memo(function PetReport() {
               <View key={item.date} className="rounded-[18rpx] bg-[#FFF9E8] p-4 mb-3">
                 <View className="flex items-center justify-between">
                   <Text className="text-[22rpx] text-[#53411c]">{item.label}</Text>
-                  <Text className="text-[20rpx] text-[#8a7442]">花销 ¥{Number(item.expense || 0).toFixed(2)}</Text>
+                  <Text className="text-[20rpx] text-[#8a7442]">花销 ￥{Number(item.expense || 0).toFixed(2)}</Text>
                 </View>
                 <Text className="text-[20rpx] text-[#766238] mt-[6rpx] block">
                   日常 {item.recordCount} 条 · 护理 {item.careCount} 条
@@ -396,21 +442,21 @@ const PetReport = memo(function PetReport() {
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">最近 7 天还没有可统计的趋势数据</Text>
+            <Text className="text-[24rpx] text-[#8a8a8a]">最近 7 天还没有可统计的趋势数据。</Text>
           )}
         </View>
 
         <View className="rounded-[24rpx] bg-white p-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
           <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">花销构成</Text>
           <Text className="text-[22rpx] text-[#666] mb-4 block">
-            当前最高频花销分类：{report?.topExpenseCategory || '未分类'}
+            当前最高频的花销分类：{report?.topExpenseCategory || '未分类'}
           </Text>
           {expenseList.length ? (
             expenseList.map(([name, amount]) => (
               <View key={name} className="mb-3">
                 <View className="flex items-center justify-between mb-[6rpx]">
                   <Text className="text-[22rpx] text-[#444]">{name}</Text>
-                  <Text className="text-[22rpx] text-[#777]">¥{Number(amount).toFixed(2)}</Text>
+                  <Text className="text-[22rpx] text-[#777]">￥{Number(amount).toFixed(2)}</Text>
                 </View>
                 <View className="h-[14rpx] rounded-[999rpx] bg-[#F4F4F4] overflow-hidden">
                   <View
@@ -428,7 +474,7 @@ const PetReport = memo(function PetReport() {
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">当前还没有花销数据</Text>
+            <Text className="text-[24rpx] text-[#8a8a8a]">当前还没有花销数据。</Text>
           )}
         </View>
 
@@ -436,13 +482,16 @@ const PetReport = memo(function PetReport() {
           <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">护理分布</Text>
           {careList.length ? (
             careList.map(([name, count]) => (
-              <View key={name} className="flex items-center justify-between py-[10rpx] border-b border-[#efefef] last:border-b-0">
+              <View
+                key={name}
+                className="flex items-center justify-between py-[10rpx] border-b border-[#efefef] last:border-b-0"
+              >
                 <Text className="text-[22rpx] text-[#444]">{name}</Text>
                 <Text className="text-[22rpx] text-[#777]">{count} 次</Text>
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">当前还没有护理分类数据</Text>
+            <Text className="text-[24rpx] text-[#8a8a8a]">当前还没有护理分类数据。</Text>
           )}
         </View>
 
@@ -458,7 +507,7 @@ const PetReport = memo(function PetReport() {
                 <View className="flex items-center justify-between">
                   <Text className="text-[22rpx] text-[#333]">{item.title}</Text>
                   <Text className="text-[18rpx] text-[#8a8a8a]">
-                    {item.type === 'milestone' ? '里程碑' : item.type}
+                    {typeLabelMap[item.type] || item.type}
                   </Text>
                 </View>
                 <Text className="text-[20rpx] text-[#7b7b7b] mt-[6rpx] block">

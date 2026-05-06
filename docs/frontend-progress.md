@@ -1,253 +1,222 @@
-# 前端开发进度文档
-
-更新时间：2026-04-28
+﻿# 前端开发进度文档
+更新时间：2026-05-06  
 项目路径：`D:\A_self_pro\jiangnan-pet`
 
-## 1. 当前目标
+## 1. 当前阶段结论
 
-当前前端以“可正常演示的静态页面 + 基础交互链路”作为阶段目标，优先完成：
+当前项目已经不再处于“搭页面骨架”的早期阶段，而是进入了：
 
-- 主要页面可访问
-- 主导航链路可跑通
-- 页面具备基础展示和演示交互
-- 数据先允许使用本地态或演示接口
-- 暂不为纯演示效果强行引入复杂缓存或过度工程化实现
+1. `V1 基础可用版：基本完成`
+2. `V2 数据闭环版：大部分完成`
+3. `当前状态：前两阶段收尾统一阶段`
 
-## 2. 当前路由覆盖情况
+换句话说，当前最主要的工作不再是继续堆新页面，而是：
+1. 收尾主链路与辅助页
+2. 统一页面质量
+3. 继续核对真实接口驱动页面
+4. 为进入 `V3` 做准备
 
-项目已在应用配置中注册以下页面路由：
+## 2. 已完成页面与主链路
 
-- `pages/PetSchedule/index`
-- `pages/PetProfile/index`
-- `pages/PetOwner/index`
-- `pages/PetKnowledge/index`
-- `pages/PetArticleDetail/index`
-- `pages/PetQa/index`
-- `pages/SendPetSchedule/index`
-- `pages/ChooseSelectCmp/index`
-- `pages/Login/index`
-- `pages/PetDetailPage/index`
-- `pages/EditPetProfile/index`
-- `pages/PetFood/index`
-- `pages/PetMedicine/index`
-- `pages/PetTimeline/index`
-- `pages/PetReport/index`
-- `pages/PetServiceCenter/index`
-- `pages/PetFeedback/index`
-- `pages/PetMilestones/index`
-- `pages/AddPetReminder/index`
-- `pages/AddPetRecord/index`
-- `pages/PetExpenseStats/index`
-- `pages/PetCareStats/index`
+### 2.1 主入口页
 
-结论：页面骨架覆盖已经比较完整，当前重点不再是“补页面名”，而是“统一质量和把功能链路做顺”。
+以下主入口页已经完成一轮重构、乱码清理与尺寸统一：
 
-## 3. 已完成内容
+1. `PetProfile`
+2. `PetSchedule`
+3. `PetOwner`
 
-### 3.1 一级结构与导航
+对应文件：
+1. [PetProfile/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetProfile/index.tsx)
+2. [PetSchedule/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetSchedule/index.tsx)
+3. [PetOwner/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetOwner/index.tsx)
 
-- 已配置 4 个主 Tab：`宠物档案`、`日程`、`知识库`、`我的`
-- 页面路由已接入 `app.config.ts`
-- 项目存在统一布局组件 `BasicLayout`
-- 多个页面已具备跳转关系，能形成演示链路
+### 2.2 V1 基础可用版主链路
 
-### 3.2 宠物档案页 `PetProfile`
+当前已经基本具备：
 
-已完成：
+1. 登录能力
+2. 宠物档案新增、编辑、详情、切换
+3. 提醒新增与日程查看
+4. 日常、花销、护理记录录入
+5. 时间线、报告、聚合展示
+6. 知识库浏览、详情、收藏、搜索
+7. 用户页、反馈页、服务中心入口
 
-- 宠物档案首页基础布局
-- 宠物切换
-- 统计数据展示区域
-- 费用洞察模块
-- 最近里程碑展示
-- 功能入口宫格
-- 页面进入/回显时刷新数据
+关键页面包括：
+1. [Login/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/Login/index.tsx)
+2. [EditPetProfile/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/EditPetProfile/index.tsx)
+3. [PetDetailPage/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetDetailPage/index.tsx)
+4. [AddPetReminder/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/AddPetReminder/index.tsx)
+5. [AddPetRecord/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/AddPetRecord/index.tsx)
+6. [PetKnowledge/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetKnowledge/index.tsx)
+7. [PetArticleDetail/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetArticleDetail/index.tsx)
+8. [PetFeedback/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetFeedback/index.tsx)
 
-当前判断：
+### 2.3 V2 数据闭环版核心页
 
-- 功能链路已成型
-- 仍存在中文文案乱码
-- 字号、间距、局部卡片密度仍需统一
+以下页面已经进入“真实接口驱动 + 可演示”的状态：
 
-### 3.3 日程页 `PetSchedule`
+1. `PetExpenseStats`
+2. `PetCareStats`
+3. `PetFood`
+4. `PetMedicine`
+5. `PetMilestones`
+6. `PetTimeline`
+7. `PetReport`
+8. `PetServiceCenter`
 
-已完成：
+对应文件：
+1. [PetExpenseStats/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetExpenseStats/index.tsx)
+2. [PetCareStats/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetCareStats/index.tsx)
+3. [PetFood/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetFood/index.tsx)
+4. [PetMedicine/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetMedicine/index.tsx)
+5. [PetMilestones/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetMilestones/index.tsx)
+6. [PetTimeline/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetTimeline/index.tsx)
+7. [PetReport/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetReport/index.tsx)
+8. [PetServiceCenter/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetServiceCenter/index.tsx)
 
-- 日程页整体结构
-- `记录 / 提醒` 双 Tab 切换
-- 日历选择日期
-- 当日提醒列表
-- 当日记录聚合展示
-- 新增提醒、新增记录、费用、护理入口联动
-- 无宠物、未登录、空数据三种状态兜底
+## 3. 通用层已完成内容
 
-当前判断：
-
-- 页面主流程基本可演示
-- 数据聚合逻辑已接上
-- 仍有中文乱码
-- 视觉尺寸、信息层级仍需继续收敛
-
-### 3.4 我的页 `PetOwner`
+### 3.1 路由与基础结构
 
 已完成：
 
-- 整体布局已按新方向重构
-- 顶部用户信息区
-- 宠物切换与宠物列表卡片
-- 快捷入口区
-- 功能菜单区
-- 会员引导卡
-- 最近里程碑展示
-- 登录/退出逻辑入口
+1. 路由标题配置补齐
+2. 路由工具文件整理
+3. 基础布局、导航栏、底部 `TabBar` 清理与统一
 
-当前判断：
+对应文件：
+1. [routes/index.ts](D:/A_self_pro/jiangnan-pet/src/routes/index.ts)
+2. [routes/utils.ts](D:/A_self_pro/jiangnan-pet/src/routes/utils.ts)
+3. [components/navBar/index.tsx](D:/A_self_pro/jiangnan-pet/src/components/navBar/index.tsx)
+4. [components/tabBar/index.tsx](D:/A_self_pro/jiangnan-pet/src/components/tabBar/index.tsx)
+5. [utils/system.ts](D:/A_self_pro/jiangnan-pet/src/utils/system.ts)
 
-- 视觉风格已明显区别于默认模板
-- 页面结构完整，适合继续作为“我的”主展示页
-- 当前最大问题仍是文案乱码与部分尺寸控制不稳
-
-### 3.5 知识库链路
+### 3.2 样式统一工作
 
 已完成：
 
-- 知识库首页 `PetKnowledge`
-- 文章详情页 `PetArticleDetail`
-- 问答页 `PetQa`
-- 分类切换
-- 搜索输入
-- 收藏筛选
-- 文章收藏/取消收藏
-- 跳转文章详情
-- 跳转问答页
-- 问答历史记录
-- 问题分类统计
+1. 主入口页字号、按钮高度、卡片留白已统一一轮
+2. 多个页面的空态、无宠物态、未登录态文案已统一
+3. 多个页面的乱码已清理
 
-当前判断：
+## 4. 后端联动进度
 
-- “知识库 -> 文章详情 -> 问答”链路已经成型
-- 具备基础可演示性
-- 收藏、问答等交互已经落地
-- 仍需继续统一文案质量与页面尺寸
+前后端已经推进过的数据闭环内容包括：
 
-### 3.6 表单与补录页面
+1. 报告页聚合字段扩展
+2. 前端报告类型同步
+3. 报告页新数据接入
 
-已完成或已接入页面入口：
-
-- `AddPetReminder`
-- `AddPetRecord`
-- `EditPetProfile`
-- `ChooseSelectCmp`
-- `Login`
-
-当前判断：
-
-- 已具备基础业务补录能力
-- 还需要逐页核对视觉与字段完整性
-
-## 4. 部分完成内容
-
-以下模块从路由和页面结构上看已接入，但当前更可能处于“可打开/部分展示/待精修”状态：
-
-- `PetExpenseStats`
-- `PetCareStats`
-- `PetDetailPage`
-- `PetFood`
-- `PetMedicine`
-- `PetTimeline`
-- `PetReport`
-- `PetServiceCenter`
-- `PetFeedback`
-- `PetMilestones`
-- `SendPetSchedule`
-
-这部分模块建议归类为“二级完善区”，优先级低于首页主链路，但高于纯视觉微调。
-
-## 5. 当前已识别问题
-
-### 5.1 高优先级问题
-
-- 多个页面存在中文乱码
-- 部分页面字号偏大或偏挤
-- 卡片高度、内边距、按钮尺寸缺少统一标准
-- 相同类型的信息块在不同页面视觉规则不一致
-
-### 5.2 中优先级问题
-
-- 演示态与真实接口态混用，部分页面状态管理方式不统一
-- 某些页面已经开始接接口，某些页面仍偏本地演示逻辑
-- 页面之间的数据刷新策略还不完全统一
-
-### 5.3 低优先级问题
-
-- 某些视觉细节仍偏“堆组件”，还不够精致
-- 图标、标签、辅助文案风格不完全一致
-
-## 6. 当前总体评估
-
-以“前端静态演示版”的标准来看：
-
-- 路由覆盖：约 `80%+`
-- 主链路完成度：约 `70%~80%`
-- 页面视觉统一度：约 `45%~55%`
-- 文案质量可用度：约 `40%`，主要受乱码影响
-- 可用于演示的成熟度：约 `65%~75%`
+对应文件：
+1. [dashboard.service.ts](D:/A_self_pro/Jiangnan-pet-serve/src/dashboard/dashboard.service.ts)
+2. [dashboard.ts](D:/A_self_pro/jiangnan-pet/src/api/data/dashboard.ts)
+3. [PetReport/index.tsx](D:/A_self_pro/jiangnan-pet/src/pages/PetReport/index.tsx)
 
 说明：
+1. 当前主链路很多页面已经走真实接口
+2. 但全项目还不是 100% 全部接口化，仍存在少量演示态或过渡态逻辑
 
-- 以上为基于当前代码结构和已落地页面的工程判断，不是精确工时统计
-- 当前项目已经脱离“空壳期”，进入“统一质量 + 补齐细节”的阶段
+## 5. 当前完成度判断
 
-## 7. 后续开发计划
+按阶段判断：
 
-### 第一阶段：统一基础视觉规范
+1. `V1：约 90%+`
+2. `V2：约 80%~85%`
+3. `整体前端演示成熟度：约 88% 左右`
 
-目标：
+当前最真实的判断是：
+1. 前两阶段主体已基本完成
+2. 现在进入“全项目统一收尾”阶段
+3. 已经可以支撑主链路演示
 
-- 修复主要页面中文乱码
-- 统一全局字号层级
-- 统一卡片圆角、描边、阴影、按钮高度、模块间距
-- 优先处理主链路页面
+## 6. 当前剩余问题
 
-处理顺序建议：
+### 6.1 高优先级
 
-- `PetProfile`
-- `PetSchedule`
-- `PetOwner`
-- `PetKnowledge`
-- `PetArticleDetail`
-- `PetQa`
+1. 全项目仍可能残留少量乱码或旧文案
+2. 个别辅助页和边缘页的尺寸、间距、按钮高度仍可能不完全一致
+3. 某些页面仍需再次确认是否完全走接口驱动
 
-### 第二阶段：补齐二级业务页面可演示性
+### 6.2 中优先级
 
-目标：
+1. 聚合页字段命名和空值处理仍需要继续联调核对
+2. 部分二级页的说明文案仍可以继续提炼
+3. 局部视觉细节还可以继续打磨
 
-- 把统计、时间线、食物、药品、反馈、服务页逐个做到“能讲清楚功能”
-- 完善空态、列表态、详情态、入口跳转
+### 6.3 低优先级
 
-### 第三阶段：统一数据接入方式
+1. 个别组件的样式写法还可以进一步抽象
+2. 局部动效、细节提示和图标层次还可以继续优化
 
-目标：
+## 7. 当前开发策略
 
-- 逐步统一演示数据来源
-- 明确哪些页面先走演示接口，哪些先保留前端态
-- 为后端真实接口替换留出清晰边界
+我们已经确认采用以下策略：
 
-## 8. 下一步建议
+1. 先把 `V1 + V2` 完整收口
+2. 再进入 `V3`
+3. `AI 问答` 先延后，不作为 `V3` 第一优先级
 
-下一步最值得优先做的不是继续无序加页面，而是按下面顺序推进：
+原因：
+1. 当前前两阶段主体已具备，但仍需统一质量
+2. 如果过早切到 `V3`，容易再次分散精力
+3. 现阶段最有价值的是把已做能力稳定下来
 
-1. 先修复主链路页面中文乱码
-2. 再统一主链路页面字号和内容尺寸
-3. 然后逐个完善二级业务页面
-4. 最后再做全局状态和接口接入收口
+## 8. 接下来收尾计划
 
-## 9. 文档用途
+### 8.1 当前阶段收尾目标
+
+在进入 `V3` 之前，先完成以下事项：
+1. 全项目最后一轮乱码与旧文案扫描
+2. 全项目最后一轮尺寸、卡片、按钮统一
+3. 边缘页与共用组件一致性复核
+4. 主链路与聚合页接口字段边界再核对一轮
+
+### 8.2 V1 / V2 封口标准
+
+达到以下条件后，视为前两阶段可正式封口：
+
+1. 主链路页面无明显乱码
+2. 主链路演示流程完整可跑通
+3. 常用辅助页达到同一风格水位
+4. 构建稳定通过
+5. 真实接口页表达方式整体统一
+
+## 9. V3 计划方向
+
+在 `V1 / V2` 收尾完成后，进入 `V3` 的第一批能力建议为：
+1. 规则型预警
+2. 智能提醒推荐
+3. 报告增强
+4. 会员增值展示框架
+
+其中暂不优先：
+1. `AI 问答`
+
+### 9.1 V3 第一批建议顺序
+
+1. 规则型预警
+2. 智能提醒推荐
+3. 成长报告增强
+4. 会员分层展示
+
+### 9.2 为什么 AI 问答先延后
+
+1. 当前项目更需要先把基础记录与聚合能力跑稳
+2. AI 问答依赖更稳定的数据结构和更明确的用户问题场景
+3. 相比之下，规则型预警和推荐卡片更容易先落地，也更适合演示
+
+## 10. 下一步执行项
+
+下一步按以下顺序继续推进：
+1. 做最后一轮全项目扫尾
+2. 输出 `V1 / V2` 封口清单
+3. 再正式切入 `V3` 第一批非 AI 能力
+
+---
 
 这份文档用于：
-
-- 对齐当前前端已完成范围
-- 标记当前阶段真实问题
-- 作为后续迭代的检查清单
-- 避免后续开发只看“页面数量”，忽略“页面质量”
-
+1. 记录当前前端真实进度
+2. 对齐当前阶段判断
+3. 明确下一步不是继续无序加页面，而是先收尾，再升级阶段

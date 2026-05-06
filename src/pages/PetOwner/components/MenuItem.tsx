@@ -30,7 +30,7 @@ const MenuItem = memo(function MenuItem({
 
   return (
     <View
-      className="bg-white rounded-[24rpx] p-[24rpx] mb-[16rpx] border-[2rpx] border-[#262626] flex items-center justify-between"
+      className="bg-white rounded-[24rpx] px-[24rpx] py-[22rpx] mb-[16rpx] border-[2rpx] border-[#262626] flex items-center justify-between"
       style={{
         boxShadow: pressed ? '0 4rpx 0 rgba(0,0,0,0.2)' : '0 10rpx 0 rgba(0,0,0,0.18)',
         transform: pressed ? 'translateY(6rpx)' : 'translateY(0)',
@@ -46,8 +46,8 @@ const MenuItem = memo(function MenuItem({
           <Text className="text-[34rpx] leading-none">{icon}</Text>
         </View>
         <View className="flex-1">
-          <Text className="text-[30rpx] font-semibold mb-[6rpx] block text-[#1F1F1F]">{title}</Text>
-          {subtitle && <Text className="text-[24rpx] text-[#7A7A7A]">{subtitle}</Text>}
+          <Text className="text-[28rpx] font-semibold mb-[6rpx] block text-[#1F1F1F]">{title}</Text>
+          {subtitle && <Text className="text-[22rpx] leading-[1.5] text-[#7A7A7A]">{subtitle}</Text>}
         </View>
       </View>
       <View className="flex items-center gap-[12rpx]">

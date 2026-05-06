@@ -42,11 +42,11 @@ const FunctionGrid = memo(function FunctionGrid({
   onAddRecord,
 }: Props) {
   return (
-    <View className="w-full h-[340rpx] px-[28rpx] py-[12rpx] gap-[14rpx] flex justify-between">
+    <View className="w-full h-[356rpx] px-[28rpx] py-[12rpx] gap-[16rpx] flex justify-between">
       <View className="w-[324rpx] h-full border-solid" style={cardStyle}>
         <View className="w-full h-full flex flex-col justify-center items-center gap-[10rpx] px-[10rpx]">
           <View
-            className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]"
+            className="w-full h-[60rpx] bg-white border-solid flex items-center justify-between px-[16rpx]"
             style={metricRowStyle}
             onClick={onOpenSchedule}
           >
@@ -55,7 +55,7 @@ const FunctionGrid = memo(function FunctionGrid({
           </View>
 
           <View
-            className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]"
+            className="w-full h-[60rpx] bg-white border-solid flex items-center justify-between px-[16rpx]"
             style={metricRowStyle}
             onClick={onOpenCare}
           >
@@ -64,7 +64,7 @@ const FunctionGrid = memo(function FunctionGrid({
           </View>
 
           <View
-            className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]"
+            className="w-full h-[60rpx] bg-white border-solid flex items-center justify-between px-[16rpx]"
             style={metricRowStyle}
             onClick={onOpenExpense}
           >
@@ -75,7 +75,7 @@ const FunctionGrid = memo(function FunctionGrid({
           </View>
 
           <View
-            className="w-full h-[54rpx] bg-white border-solid flex items-center justify-between px-[12rpx]"
+            className="w-full h-[60rpx] bg-white border-solid flex items-center justify-between px-[16rpx]"
             style={metricRowStyle}
             onClick={onOpenMilestones}
           >
@@ -86,7 +86,7 @@ const FunctionGrid = memo(function FunctionGrid({
           </View>
 
           <View
-            className="w-full h-[54rpx] bg-[#ffd93b] border-solid flex items-center justify-center"
+            className="w-full h-[60rpx] bg-[#ffd93b] border-solid flex items-center justify-center px-[16rpx]"
             style={metricRowStyle}
             onClick={onAddReminder}
           >
@@ -96,11 +96,11 @@ const FunctionGrid = memo(function FunctionGrid({
       </View>
 
       <View className="w-[324rpx] h-full flex gap-[14rpx] flex-col justify-between">
-        <View className="w-[324rpx] h-[162rpx] border-solid flex items-center justify-center" style={cardStyle} onClick={onAddRecord}>
+        <View className="w-[324rpx] h-[170rpx] border-solid flex items-center justify-center" style={cardStyle} onClick={onAddRecord}>
           <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.heading }}>新增记录</Text>
         </View>
 
-        <View className="w-[324rpx] h-[162rpx] border-solid flex items-center justify-center" style={cardStyle} onClick={onOpenSchedule}>
+        <View className="w-[324rpx] h-[170rpx] border-solid flex items-center justify-center" style={cardStyle} onClick={onOpenSchedule}>
           <Text className="text-[#ff6b6b]" style={{ fontSize: PET_UI_TEXT.heading }}>查看完整日程</Text>
         </View>
       </View>

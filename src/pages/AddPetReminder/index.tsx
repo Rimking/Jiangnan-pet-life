@@ -1,4 +1,4 @@
-﻿import BasicLayout from '@/layout/basicLayout';
+import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input, Picker } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { memo, useMemo, useState } from 'react';
@@ -109,10 +109,8 @@ const AddPetReminder = memo(function AddPetReminder() {
 
         <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
           <Text className="text-[22rpx] text-[#666]">当前宠物</Text>
-          <Text className="text-[28rpx] font-semibold mt-2 block">
-            {currentPet?.name || '未选择宠物'}
-          </Text>
-          <Text className="text-[22rpx] text-[#888] mt-2 block">
+          <Text className="text-[28rpx] font-semibold mt-2 block">{currentPet?.name || '未选择宠物'}</Text>
+          <Text className="text-[22rpx] text-[#888] mt-2 block leading-[1.6]">
             提醒会只归属到这只宠物的日程、报告和时间线中。
           </Text>
         </View>
@@ -120,7 +118,7 @@ const AddPetReminder = memo(function AddPetReminder() {
         {!pets.length ? (
           <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
             <Text className="text-[26rpx] font-semibold block">先添加宠物档案</Text>
-            <Text className="text-[22rpx] text-[#666] mt-2 block">
+            <Text className="text-[22rpx] text-[#666] mt-2 block leading-[1.6]">
               提醒必须挂在具体宠物下面，创建后才会进入它自己的日程和统计。
             </Text>
             <View
@@ -135,7 +133,7 @@ const AddPetReminder = memo(function AddPetReminder() {
         {pets.length > 0 && !currentPet ? (
           <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
             <Text className="text-[26rpx] font-semibold block">没有找到对应宠物</Text>
-            <Text className="text-[22rpx] text-[#666] mt-2 block">
+            <Text className="text-[22rpx] text-[#666] mt-2 block leading-[1.6]">
               这个提醒入口没有绑定到有效宠物，请先重新选择一只宠物再创建。
             </Text>
           </View>

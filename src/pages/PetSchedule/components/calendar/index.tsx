@@ -139,7 +139,7 @@ const CalendarCmp = ({ selectedDate, onSelectDate }: Props) => {
       </View>
 
       <View className="flex mb-1">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((week) => (
+        {['一', '二', '三', '四', '五', '六', '日'].map((week) => (
           <View key={week} className="flex-1 text-center py-[10rpx] text-[#868686]" style={{ fontSize: PET_UI_TEXT.caption }}>
             {week}
           </View>
@@ -175,3 +175,4 @@ const CalendarCmp = ({ selectedDate, onSelectDate }: Props) => {
 };
 
 export default CalendarCmp;
+

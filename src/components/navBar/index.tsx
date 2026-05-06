@@ -5,23 +5,23 @@ import Back from '@/assets/back.png';
 import clsx from 'clsx';
 
 export interface CustomNavOption {
-  /** 是否需要左侧返回 */
+  /** 是否需要左侧返回按钮 */
   needBack?: boolean;
   /** 左侧自定义内容 */
   leftCustomNode?: React.ReactNode;
-  /** 导航栏标题 */
+  /** 导航标题 */
   navTitle?: string;
-  /** 背景色 */
+  /** 导航背景色 */
   background?: string;
   /** 中间自定义节点 */
   centerCustomNode?: React.ReactNode;
-  /** 标题自定义颜色 */
+  /** 标题样式 */
   customTitleColor?: React.CSSProperties;
-
-  backClick?: () => void; // 右侧标题点击事件
+  /** 自定义返回事件 */
+  backClick?: () => void;
 }
 
-/** 自定义navBar*/
+/** 自定义导航栏 */
 function NavTab(props: CustomNavOption) {
   const {
     leftCustomNode,
@@ -33,55 +33,46 @@ function NavTab(props: CustomNavOption) {
     backClick,
   } = props;
 
-  // 获取当前设备系统栏高度
   const statusHeight = Math.floor(getStatusBarHeight());
-
-  // 获取当前设备胶囊出的高度。
   const titleBarHeight = Math.floor(getTitleBarHeight());
-
-  // 获取当前设备胶囊按钮的大小。
   const topButtonSize = getMenuButtonSize().w;
-
-  // 计算当前设备手机导航栏加上胶囊出的总高度。
   const navHeight = statusHeight + titleBarHeight;
+
   const bodyStyle = {
-    height: navHeight + 'rpx',
+    height: `${navHeight}rpx`,
     backgroundColor: background,
   };
 
-  // 回退
-  const BACK = () => {
-    return (
-      <View
-        className="w-[80px] flex justify-center items-center "
-        onClick={() => {
-          if (backClick) {
-            backClick();
-          } else {
-            Taro.navigateBack();
-          }
-        }}
-      >
-        <Image src={Back} className="w-[40px] h-[40px]"></Image>
-      </View>
-    );
-  };
+  const renderBack = () => (
+    <View
+      className="w-[80px] flex justify-center items-center"
+      onClick={() => {
+        if (backClick) {
+          backClick();
+          return;
+        }
+        Taro.navigateBack();
+      }}
+    >
+      <Image src={Back} className="w-[40px] h-[40px]" />
+    </View>
+  );
 
   return (
-    <View className="navTab box-border " style={bodyStyle}>
-      <View style={{ height: statusHeight + 'rpx' }} className="w-screen"></View>
+    <View className="navTab box-border" style={bodyStyle}>
+      <View style={{ height: `${statusHeight}rpx` }} className="w-screen" />
       <View
         style={{
-          height: titleBarHeight + 'rpx',
-          paddingRight: topButtonSize + 'rpx',
-          top: statusHeight + 'rpx',
+          height: `${titleBarHeight}rpx`,
+          paddingRight: `${topButtonSize}rpx`,
+          top: `${statusHeight}rpx`,
         }}
         className="flex absolute z-50 w-full"
       >
-        {needBack && (leftCustomNode ? leftCustomNode : BACK())}
+        {needBack ? (leftCustomNode || renderBack()) : null}
 
         {centerCustomNode ? (
-          <View className="flex-1 text-center flex justify-center items-center" style={{}}>
+          <View className="flex-1 text-center flex justify-center items-center">
             {centerCustomNode}
           </View>
         ) : (

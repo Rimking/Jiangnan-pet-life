@@ -71,12 +71,7 @@ const PetMedicine = memo(function PetMedicine() {
   const loggedIn = isLoggedIn();
 
   const refreshMedicines = useCallback(() => {
-    if (!loggedIn) {
-      setMedicines([]);
-      return Promise.resolve();
-    }
-
-    if (!activePetId) {
+    if (!loggedIn || !activePetId) {
       setMedicines([]);
       return Promise.resolve();
     }
@@ -104,8 +99,12 @@ const PetMedicine = memo(function PetMedicine() {
   }, [editingId, medicines]);
 
   const dueSoonCount = useMemo(() => {
-    return medicines.filter((item) => Number(item.remainingDays || 0) > 0 && Number(item.remainingDays || 0) <= 3).length;
+    return medicines.filter((item) => {
+      const remainingDays = Number(item.remainingDays || 0);
+      return remainingDays > 0 && remainingDays <= 3;
+    }).length;
   }, [medicines]);
+
   const expiredCount = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     return medicines.filter((item) => item.expiresAt && item.expiresAt < today).length;
@@ -301,9 +300,7 @@ const PetMedicine = memo(function PetMedicine() {
             <View
               className="mt-3 inline-flex px-4 py-2 rounded-[999rpx] bg-[#E9D8FF]"
               onClick={() =>
-                ensureLoggedIn(
-                  `/pages/PetMedicine/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`
-                )
+                ensureLoggedIn(`/pages/PetMedicine/index${preferredPetId ? `?petId=${preferredPetId}` : ''}`)
               }
             >
               <Text className="text-[22rpx] text-[#6C4DA0] font-semibold">去微信登录</Text>
@@ -341,7 +338,7 @@ const PetMedicine = memo(function PetMedicine() {
         {activePetId ? (
           <View className="mb-5 rounded-[24rpx] bg-[#F6F0FF] p-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.05)]">
             <Text className="text-[28rpx] font-semibold text-[#2b2b2b] block">
-              围绕{activePet?.name || '当前宠物'}继续安排
+              围绕 {activePet?.name || '当前宠物'}继续安排
             </Text>
             <Text className="text-[22rpx] text-[#6C5C90] mt-[8rpx] block">
               维护完用药后，可以直接去看日程提醒、时间线回流，或者查看这只宠物的整体报告。
@@ -375,10 +372,7 @@ const PetMedicine = memo(function PetMedicine() {
               {editingId ? '编辑用药' : '新增用药'}
             </Text>
             {editingId ? (
-              <View
-                className="px-4 py-2 rounded-[999rpx] bg-[#F2E8FF]"
-                onClick={resetForm}
-              >
+              <View className="px-4 py-2 rounded-[999rpx] bg-[#F2E8FF]" onClick={resetForm}>
                 <Text className="text-[22rpx] text-[#7c57b0]">取消编辑</Text>
               </View>
             ) : null}
@@ -390,10 +384,7 @@ const PetMedicine = memo(function PetMedicine() {
             </View>
             <View className="rounded-[16rpx] bg-[#F7F7F7] p-4">
               <Text className="text-[22rpx] text-[#666]">规格</Text>
-              <Input
-                value={form.specification}
-                onInput={(e) => updateField('specification', e.detail.value)}
-              />
+              <Input value={form.specification} onInput={(e) => updateField('specification', e.detail.value)} />
             </View>
             <View className="rounded-[16rpx] bg-[#F7F7F7] p-4">
               <Text className="text-[22rpx] text-[#666]">剂量</Text>
@@ -412,33 +403,20 @@ const PetMedicine = memo(function PetMedicine() {
               />
             </View>
             <View className="rounded-[16rpx] bg-[#F7F7F7] p-4">
-              <Text className="text-[22rpx] text-[#666]">饭前/饭后</Text>
-              <Input
-                value={form.mealTiming}
-                onInput={(e) => updateField('mealTiming', e.detail.value)}
-              />
+              <Text className="text-[22rpx] text-[#666]">饭前 / 饭后</Text>
+              <Input value={form.mealTiming} onInput={(e) => updateField('mealTiming', e.detail.value)} />
             </View>
             <View className="rounded-[16rpx] bg-[#F7F7F7] p-4">
               <Text className="text-[22rpx] text-[#666]">年龄限制</Text>
-              <Input
-                value={form.ageLimit}
-                onInput={(e) => updateField('ageLimit', e.detail.value)}
-              />
+              <Input value={form.ageLimit} onInput={(e) => updateField('ageLimit', e.detail.value)} />
             </View>
             <View className="rounded-[16rpx] bg-[#F7F7F7] p-4">
               <Text className="text-[22rpx] text-[#666]">体重限制</Text>
-              <Input
-                value={form.weightLimit}
-                onInput={(e) => updateField('weightLimit', e.detail.value)}
-              />
+              <Input value={form.weightLimit} onInput={(e) => updateField('weightLimit', e.detail.value)} />
             </View>
             <View className="rounded-[16rpx] bg-[#F7F7F7] p-4">
               <Text className="text-[22rpx] text-[#666]">剩余天数</Text>
-              <Input
-                type="number"
-                value={form.remainingDays}
-                onInput={(e) => updateField('remainingDays', e.detail.value)}
-              />
+              <Input type="number" value={form.remainingDays} onInput={(e) => updateField('remainingDays', e.detail.value)} />
             </View>
             <View className="col-span-2 rounded-[16rpx] bg-[#F7F7F7] p-4">
               <Text className="text-[22rpx] text-[#666]">备注</Text>
@@ -494,12 +472,13 @@ const PetMedicine = memo(function PetMedicine() {
                       {item.specification || '未填规格'} · {item.dosage || '未填剂量'}
                     </Text>
                     <Text className="text-[22rpx] text-[#666] block mt-[4rpx]">
-                      {item.usage || '未填用法'} {item.mealTiming ? `· ${item.mealTiming}` : ''}
+                      {item.usage || '未填用法'}
+                      {item.mealTiming ? ` · ${item.mealTiming}` : ''}
                     </Text>
                     <Text className="text-[22rpx] text-[#666] block mt-[4rpx]">
                       过期：{item.expiresAt || '未填'}，剩余天数：{Number(item.remainingDays || 0)}
                     </Text>
-                    {(item.ageLimit || item.weightLimit) ? (
+                    {item.ageLimit || item.weightLimit ? (
                       <Text className="text-[21rpx] text-[#7a7a7a] block mt-[4rpx]">
                         限制：{item.ageLimit || '不限年龄'} / {item.weightLimit || '不限体重'}
                       </Text>

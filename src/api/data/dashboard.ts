@@ -133,7 +133,9 @@ export interface ReportData {
     totalRecords: number;
     totalCareRecords: number;
     totalFoods: number;
+    lowInventoryFoods: number;
     totalMedicines: number;
+    dueMedicines: number;
     totalMilestones: number;
   };
   recent30Days: {
@@ -141,6 +143,8 @@ export interface ReportData {
     expenses: number;
     careRecords: number;
     records: number;
+    foods: number;
+    medicines: number;
     milestones: number;
   };
   recent7Days: Array<{

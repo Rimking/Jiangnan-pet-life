@@ -13,7 +13,7 @@ const routeConfigList = [
   },
   {
     path: '/pages/SendPetSchedule/index',
-    title: '快速发布',
+    title: '快捷提醒',
     isTabBar: true,
   },
   {
@@ -59,6 +59,51 @@ const routeConfigList = [
   {
     path: '/pages/PetCareStats/index',
     title: '护理记录',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/EditPetProfile/index',
+    title: '宠物资料',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/PetFood/index',
+    title: '食物管理',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/PetMedicine/index',
+    title: '用药管理',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/PetTimeline/index',
+    title: '成长时间线',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/PetReport/index',
+    title: '数据报告',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/PetMilestones/index',
+    title: '成长里程碑',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/PetFeedback/index',
+    title: '帮助反馈',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/PetServiceCenter/index',
+    title: '服务中心',
+    isTabBar: false,
+  },
+  {
+    path: '/pages/ChooseSelectCmp/index',
+    title: '常用入口',
     isTabBar: false,
   },
 ];

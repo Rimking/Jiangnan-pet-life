@@ -4,12 +4,13 @@ import Taro, { pxTransform } from '@tarojs/taro';
 const systemInfo = Taro.getSystemInfoSync();
 
 export const getNavHeightInfo = () => {
-  // 状态栏高度(电池等信息的状态栏)
-  let statusBarHeight = (systemInfo.statusBarHeight! * 750) / systemInfo.screenWidth;
-  let rect = Taro.getMenuButtonBoundingClientRect();
-  let titleBarHeight =
-    (((rect.top - systemInfo.statusBarHeight!) * 2 + rect.height) * 750) /
+  // 状态栏高度，包含电量、信号等系统信息区域。
+  const statusBarHeight = ((systemInfo.statusBarHeight || 0) * 750) / systemInfo.screenWidth;
+  const rect = Taro.getMenuButtonBoundingClientRect();
+  const titleBarHeight =
+    (((rect.top - (systemInfo.statusBarHeight || 0)) * 2 + rect.height) * 750) /
     systemInfo.screenWidth;
+
   return [statusBarHeight, titleBarHeight];
 };
 
@@ -17,24 +18,25 @@ export const getNavHeightInfo = () => {
 export const getStatusBarHeight = () =>
   ((systemInfo.statusBarHeight || 0) * 750) / systemInfo.screenWidth;
 
-// 获取标题栏高度
+// 标题栏高度
 export const getTitleBarHeight = () => {
   const rect = Taro.getMenuButtonBoundingClientRect();
-  const titleBarHeight =
+  return (
     (((rect.top - (systemInfo.statusBarHeight || 0)) * 2 + rect.height) * 750) /
-    systemInfo.screenWidth;
-  return titleBarHeight;
+    systemInfo.screenWidth
+  );
 };
 
-// 胶囊宽度
+// 胶囊按钮尺寸
 export const getMenuButtonSize = () => {
+  const rect = Taro.getMenuButtonBoundingClientRect();
   return {
-    w: Taro.getMenuButtonBoundingClientRect().width,
-    h: Taro.getMenuButtonBoundingClientRect().height,
+    w: rect.width,
+    h: rect.height,
   };
 };
 
-/** 获取手机底部tabBar高度(安全区高度) */
+/** 获取底部安全区高度 */
 export const getSystemTabBarHeight = () => {
   if (systemInfo.safeArea) {
     return systemInfo.screenHeight - systemInfo.safeArea.bottom;
@@ -43,10 +45,9 @@ export const getSystemTabBarHeight = () => {
   return 0;
 };
 
-// tabbar页面预留高度
-// 预留一下地步滑动区域，确保看完,安全区+tabar 128 + 50
+// 为底部 TabBar 和系统手势区预留滚动空间。
 export const savedBottomPx = pxTransform(getSystemTabBarHeight() + TAB_BAR_HEIGHT + 50);
 
-// 返回一个状态栏+胶囊的高度函数
+// 状态栏 + 标题栏总高度
 export const getStatusNavHeight =
   Math.floor(getStatusBarHeight()) + Math.floor(getTitleBarHeight());

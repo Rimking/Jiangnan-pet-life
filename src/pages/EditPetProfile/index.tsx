@@ -1,16 +1,11 @@
-import BasicLayout from '@/layout/basicLayout';
-import { View, Text, Input, Textarea } from '@tarojs/components';
+﻿import BasicLayout from '@/layout/basicLayout';
+import { createPetData, CreatePetParams, getPetDetailData, updatePetData } from '@/api/data';
+import { PET_UI } from '@/constants/petUi';
+import { setStoredActivePetId } from '@/utils/activePetState';
+import { ensureLoggedIn } from '@/utils/authState';
+import { Input, Text, Textarea, View } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { memo, useEffect, useMemo, useState } from 'react';
-import { PET_UI } from '@/constants/petUi';
-import {
-  createPetData,
-  CreatePetParams,
-  getPetDetailData,
-  updatePetData,
-} from '@/api/data';
-import { ensureLoggedIn } from '@/utils/authState';
-import { setStoredActivePetId } from '@/utils/activePetState';
 
 type PetProfileExtras = {
   personality?: string;
@@ -148,7 +143,7 @@ const EditPetProfile = memo(function EditPetProfile() {
       notes: form.notes?.trim() || undefined,
       weight: form.weight && form.weight > 0 ? Number(form.weight) : undefined,
       allergies: allergyText
-        .split(/[、,，\n]/)
+        .split(/[、，,\n]/)
         .map((item) => item.trim())
         .filter(Boolean),
       profileExtras: {
@@ -286,7 +281,7 @@ const EditPetProfile = memo(function EditPetProfile() {
               className="h-[72rpx] text-[28rpx]"
               value={form.weight ? String(form.weight) : ''}
               type="digit"
-              placeholder="例如：4.5"
+              placeholder="例如：3.5"
               onInput={(event) => updateField('weight', Number(event.detail.value || 0))}
             />
           </View>
@@ -374,7 +369,7 @@ const EditPetProfile = memo(function EditPetProfile() {
               value={form.notes}
               maxlength={200}
               autoHeight
-              placeholder="例如：胆小、对某些食物过敏"
+              placeholder="例如：胆小，对某些食物过敏"
               onInput={(event) => updateField('notes', event.detail.value)}
             />
           </View>

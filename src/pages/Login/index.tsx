@@ -1,10 +1,10 @@
-import BasicLayout from '@/layout/basicLayout';
+﻿import BasicLayout from '@/layout/basicLayout';
 import { wechatLoginData } from '@/api/data';
+import LogoSvg from '@/assets/logoIcon/login-icon.svg';
 import { setLoginSession } from '@/utils/authState';
 import { Image, Text, View } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { memo, useMemo, useState } from 'react';
-import LogoSvg from '@/assets/logoIcon/login-icon.svg';
 
 const TAB_PAGES = new Set([
   '/pages/PetProfile/index',
@@ -69,8 +69,7 @@ const Login = memo(function Login() {
         code: loginResult.code,
         nickname: profile.nickName,
         avatarUrl: profile.avatarUrl,
-        gender:
-          profile.gender === 1 ? 'male' : profile.gender === 2 ? 'female' : undefined,
+        gender: profile.gender === 1 ? 'male' : profile.gender === 2 ? 'female' : undefined,
         country: profile.country,
         province: profile.province,
         city: profile.city,
@@ -101,11 +100,11 @@ const Login = memo(function Login() {
       </View>
 
       <Text className="text-[34rpx] font-semibold text-[#333] mb-2">微信登录</Text>
-      <Text className="text-[24rpx] text-[#6a6a6a] mb-3">
-        登录后可同步宠物档案、收藏、里程碑、反馈和个人记录
+      <Text className="text-[24rpx] text-[#6a6a6a] mb-3 text-center">
+        登录后可以同步宠物档案、收藏、里程碑、反馈和个人记录。
       </Text>
-      <Text className="text-[22rpx] text-[#8a8a8a] mb-8">
-        浏览知识库、查看文章和基础页面不受影响，涉及写入和个人数据同步时再登录即可
+      <Text className="text-[22rpx] text-[#8a8a8a] mb-8 text-center leading-[1.7]">
+        浏览知识库、查看文章和基础页面不受影响，涉及写入和个人数据同步时再登录即可。
       </Text>
 
       <View

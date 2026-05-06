@@ -49,6 +49,12 @@ const PetFeedback = memo(function PetFeedback() {
     return mode === 'contact' ? '联系我们' : '帮助与反馈';
   }, [mode]);
 
+  const heroTitle = mode === 'contact' ? '联系支持团队' : '提交问题与建议';
+  const heroDesc =
+    mode === 'contact'
+      ? '这里适合留下联系方式、合作沟通和使用问题，方便后续继续跟进。'
+      : '这里承接功能建议、问题反馈和演示过程中的异常记录，提交后会保存在当前账号下。';
+
   const handleSubmit = () => {
     if (!ensureLoggedIn(`/pages/PetFeedback/index?mode=${mode}`)) {
       return;
@@ -87,9 +93,9 @@ const PetFeedback = memo(function PetFeedback() {
   };
 
   const faqList = [
-    '宠物档案、提醒、花销、护理都已经接入真实数据，可以优先从这几块开始体验。',
-    '食物管理和用药管理已经支持新增、编辑、删除，用药还能顺手创建提醒。',
-    '成长里程碑、时间线和报告页已经联通，记录关键节点后会同步出现在多个页面里。',
+    '宠物档案、提醒、花销、护理等主链路已经接入真实接口，适合先沿这条链路联调。',
+    '食物管理和用药管理支持新增、编辑、删除，其中用药还支持顺手创建提醒。',
+    '成长里程碑、时间线和报告页已经联动，记录关键节点后会同步出现在多个页面里。',
   ];
 
   return (
@@ -103,29 +109,25 @@ const PetFeedback = memo(function PetFeedback() {
     >
       <View className="px-6 pt-4 pb-[110rpx]">
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[30rpx] font-semibold text-[#2c2c2c] block">
-            {mode === 'contact' ? '联系支持团队' : '提交问题与建议'}
-          </Text>
-          <Text className="text-[22rpx] text-[#666] leading-[1.7] mt-[10rpx] block">
-            {mode === 'contact'
-              ? '你可以把问题、期望功能或联调信息留在这里，登录后会同步到当前微信账号下。'
-              : '这里承接问题反馈和使用建议，登录后会保存到你的账号下，方便持续跟进。'}
-          </Text>
+          <Text className="text-[30rpx] font-semibold text-[#2C2C2C] block">{heroTitle}</Text>
+          <Text className="text-[22rpx] text-[#666] leading-[1.7] mt-[10rpx] block">{heroDesc}</Text>
+
           {!loggedIn ? (
             <View className="mt-4 rounded-[18rpx] bg-[#FFF7D5] p-4">
-              <Text className="text-[22rpx] text-[#6E5A2C] block">
+              <Text className="text-[22rpx] text-[#6E5A2C] block leading-[1.6]">
                 登录后才能提交反馈并查看自己的历史记录，未登录时你仍然可以先浏览常见说明。
               </Text>
               <View
-                className="mt-3 inline-flex px-4 py-2 rounded-[999rpx] bg-[#FFD93B]"
+                className="mt-3 inline-flex h-[74rpx] px-4 rounded-[999rpx] bg-[#FFD93B] items-center"
                 onClick={() => ensureLoggedIn(`/pages/PetFeedback/index?mode=${mode}`)}
               >
                 <Text className="text-[22rpx] text-[#5D4510] font-semibold">去微信登录</Text>
               </View>
             </View>
           ) : null}
+
           <View className="mt-4 rounded-[18rpx] bg-[#F8F8F8] p-4">
-            <Text className="text-[22rpx] text-[#666] block">建议留下联系方式</Text>
+            <Text className="text-[22rpx] text-[#666] block">联系方式</Text>
             <Input
               className="mt-2"
               placeholder="微信 / 手机 / 邮箱，选填"
@@ -134,6 +136,7 @@ const PetFeedback = memo(function PetFeedback() {
               onInput={(e) => setContact(e.detail.value)}
             />
           </View>
+
           <View className="mt-3 rounded-[18rpx] bg-[#F8F8F8] p-4">
             <Text className="text-[22rpx] text-[#666] block">反馈内容</Text>
             <Textarea
@@ -145,44 +148,47 @@ const PetFeedback = memo(function PetFeedback() {
               onInput={(e) => setContent(e.detail.value)}
             />
           </View>
+
           <View
             className="mt-4 h-[88rpx] rounded-[999rpx] bg-[#FFD93B] flex items-center justify-center"
             onClick={handleSubmit}
           >
-            <Text className="text-[30rpx] font-semibold">{saving ? '提交中...' : '提交反馈'}</Text>
+            <Text className="text-[30rpx] font-semibold text-[#5D4510]">
+              {saving ? '提交中...' : '提交反馈'}
+            </Text>
           </View>
         </View>
 
         <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">常见说明</Text>
+          <Text className="text-[28rpx] font-semibold text-[#2C2C2C] mb-4 block">常见说明</Text>
           {faqList.map((item) => (
             <View key={item} className="rounded-[16rpx] bg-[#FFF9E8] p-4 mb-3">
-              <Text className="text-[22rpx] text-[#6f5a2b] leading-[1.7]">{item}</Text>
+              <Text className="text-[22rpx] text-[#6F5A2B] leading-[1.7]">{item}</Text>
             </View>
           ))}
         </View>
 
         <View className="rounded-[24rpx] bg-white p-5 shadow-[0_14rpx_30rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">最近反馈</Text>
+          <Text className="text-[28rpx] font-semibold text-[#2C2C2C] mb-4 block">最近反馈</Text>
           {loading ? (
-            <Text className="text-[24rpx] text-[#8a8a8a]">正在加载反馈记录...</Text>
+            <Text className="text-[24rpx] text-[#8A8A8A]">正在加载反馈记录...</Text>
           ) : history.length ? (
             history.map((item) => (
               <View key={item.id} className="rounded-[16rpx] bg-[#F8F8F8] p-4 mb-3">
-                <Text className="text-[24rpx] text-[#2c2c2c] leading-[1.7]">{item.content}</Text>
+                <Text className="text-[24rpx] text-[#2C2C2C] leading-[1.7]">{item.content}</Text>
                 {item.contact ? (
-                  <Text className="text-[20rpx] text-[#7a7a7a] mt-[8rpx] block">
+                  <Text className="text-[20rpx] text-[#7A7A7A] mt-[8rpx] block">
                     联系方式：{item.contact}
                   </Text>
                 ) : null}
-                <Text className="text-[20rpx] text-[#9a9a9a] mt-[6rpx] block">
+                <Text className="text-[20rpx] text-[#9A9A9A] mt-[6rpx] block">
                   {item.createdAt.slice(0, 10)} {item.createdAt.slice(11, 16)}
                 </Text>
               </View>
             ))
           ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">
-              {loggedIn ? '还没有反馈记录' : '登录后可查看你的反馈记录'}
+            <Text className="text-[24rpx] text-[#8A8A8A]">
+              {loggedIn ? '还没有反馈记录。' : '登录后可查看你的反馈记录。'}
             </Text>
           )}
         </View>
