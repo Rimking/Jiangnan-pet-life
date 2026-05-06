@@ -29,7 +29,7 @@ const PET_SCHEDULE_BAR: TabBarItem = {
 };
 
 const SEND_PET_SCHEDULE_BAR: TabBarItem = {
-  name: '快速发布',
+  name: '快捷提醒',
   icon: PetFastSendIcon,
   activeIcon: PetFastSendIcon,
   isAdd: true,

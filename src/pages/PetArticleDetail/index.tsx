@@ -52,12 +52,15 @@ const PetArticleDetail = memo(function PetArticleDetail() {
     return (
       <BasicLayout
         wrapClassName="w-full h-full"
-        wrapStyle={{ background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)', minHeight: '100vh' }}
+        wrapStyle={{
+          background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)',
+          minHeight: '100vh',
+        }}
         navOptions={{ navTitle: '文章详情', needBack: true }}
       >
         <View className="px-[24rpx] pt-[16rpx]">
           <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[20rpx]">
-            <Text className="text-[24rpx] text-[#666]">未找到文章内容</Text>
+            <Text className="text-[24rpx] text-[#666]">未找到文章内容。</Text>
           </View>
         </View>
       </BasicLayout>
@@ -69,13 +72,18 @@ const PetArticleDetail = memo(function PetArticleDetail() {
   return (
     <BasicLayout
       wrapClassName="w-full h-full"
-      wrapStyle={{ background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)', minHeight: '100vh' }}
+      wrapStyle={{
+        background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)',
+        minHeight: '100vh',
+      }}
       navOptions={{ navTitle: '文章详情', needBack: true }}
     >
       <View className="px-[24rpx] pt-[16rpx] pb-[120rpx]">
         <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[18rpx] mb-[14rpx]">
           <Text className="text-[30rpx] font-bold text-[#222] block">{article.title}</Text>
-          <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">{article.desc}</Text>
+          <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.6]">
+            {article.desc}
+          </Text>
           {article.sourceName ? (
             <Text className="text-[20rpx] text-[#8a8a8a] mt-[8rpx] block">
               来源：{article.sourceName}
@@ -85,7 +93,7 @@ const PetArticleDetail = memo(function PetArticleDetail() {
 
         <View className="mb-[14rpx] flex justify-end">
           <View
-            className="px-[14rpx] py-[8rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626]"
+            className="px-[14rpx] py-[10rpx] rounded-[14rpx] border-[2rpx] border-solid border-[#262626]"
             style={{ backgroundColor: favorite ? '#FFD93B' : '#F4F4F4' }}
             onClick={async () => {
               if (!ensureLoggedIn(`/pages/PetArticleDetail/index?id=${article.id}`)) {
@@ -107,18 +115,25 @@ const PetArticleDetail = memo(function PetArticleDetail() {
               }
             }}
           >
-            <Text className="text-[22rpx] text-[#333]">{favorite ? '已收藏 ★' : '加入收藏 ☆'}</Text>
+            <Text className="text-[22rpx] text-[#333]">
+              {favorite ? '已收藏 ★' : '加入收藏 ☆'}
+            </Text>
           </View>
         </View>
 
         <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[18rpx] mb-[14rpx]">
           {article.content.map((line) => (
-            <Text key={line} className="text-[24rpx] leading-[38rpx] text-[#444] block mb-[10rpx]">
+            <Text
+              key={line}
+              className="text-[24rpx] leading-[38rpx] text-[#444] block mb-[10rpx]"
+            >
               {line}
             </Text>
           ))}
           {article.sourceUrl ? (
-            <Text className="text-[20rpx] text-[#6b7fd3] mt-[6rpx] block">参考链接：{article.sourceUrl}</Text>
+            <Text className="text-[20rpx] text-[#6b7fd3] mt-[6rpx] block">
+              参考链接：{article.sourceUrl}
+            </Text>
           ) : null}
         </View>
 

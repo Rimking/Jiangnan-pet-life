@@ -23,50 +23,89 @@ const cardStyle = {
   backgroundColor: PET_UI.panelBackground,
 };
 
-const RecordTab = memo(function RecordTab({ records, onAddRecord, onAddExpense, onAddCare, onEdit, onDelete }: Props) {
+const RecordTab = memo(function RecordTab({
+  records,
+  onAddRecord,
+  onAddExpense,
+  onAddCare,
+  onEdit,
+  onDelete,
+}: Props) {
   return (
     <View className="w-full flex flex-col gap-3">
       <View className="grid grid-cols-3 gap-2">
-        <View className="h-[72rpx] bg-[#ffd93b] flex items-center justify-center" style={actionBtnStyle} onClick={onAddRecord}>
+        <View
+          className="h-[72rpx] bg-[#ffd93b] flex items-center justify-center"
+          style={actionBtnStyle}
+          onClick={onAddRecord}
+        >
           <Text style={{ fontSize: PET_UI_TEXT.body }}>+ 日常记录</Text>
         </View>
-        <View className="h-[72rpx] bg-[#ffc6a1] flex items-center justify-center" style={actionBtnStyle} onClick={onAddExpense}>
+        <View
+          className="h-[72rpx] bg-[#ffc6a1] flex items-center justify-center"
+          style={actionBtnStyle}
+          onClick={onAddExpense}
+        >
           <Text style={{ fontSize: PET_UI_TEXT.body }}>+ 花销</Text>
         </View>
-        <View className="h-[72rpx] bg-[#bdeeff] flex items-center justify-center" style={actionBtnStyle} onClick={onAddCare}>
+        <View
+          className="h-[72rpx] bg-[#bdeeff] flex items-center justify-center"
+          style={actionBtnStyle}
+          onClick={onAddCare}
+        >
           <Text style={{ fontSize: PET_UI_TEXT.body }}>+ 护理</Text>
         </View>
       </View>
 
       {!records.length ? (
         <View className="w-full p-6 text-center" style={cardStyle}>
-          <Text className="text-[#757575]" style={{ fontSize: PET_UI_TEXT.body }}>当天还没有记录</Text>
+          <Text className="text-[#757575]" style={{ fontSize: PET_UI_TEXT.body }}>
+            当天还没有记录
+          </Text>
         </View>
       ) : null}
 
       {records.map((item) => (
-        <View key={item.id} className="min-h-[110rpx] px-4 py-3 mb-[2rpx] flex items-center justify-between" style={cardStyle}>
+        <View
+          key={item.id}
+          className="min-h-[110rpx] px-4 py-3 mb-[2rpx] flex items-center justify-between"
+          style={cardStyle}
+        >
           <View className="flex-1">
-            <Text className="font-[500] block" style={{ fontSize: '' }}>{item.category}</Text>
-            <Text className="text-[#7a7a7a]" style={{ fontSize: PET_UI_TEXT.caption }}>{item.time}</Text>
+            <Text className="font-[500] block" style={{ fontSize: PET_UI_TEXT.body }}>
+              {item.category}
+            </Text>
+            <Text className="text-[#7a7a7a]" style={{ fontSize: PET_UI_TEXT.caption }}>
+              {item.time}
+            </Text>
           </View>
 
           <View className="items-end max-w-[260rpx]">
-            <Text className="text-[#6b6b6b] block" style={{ fontSize: PET_UI_TEXT.body }}>{item.value || '已记录'}</Text>
-            {item.note ? <Text className="text-[#9a9a9a]" style={{ fontSize: PET_UI_TEXT.caption }}>{item.note}</Text> : null}
+            <Text className="text-[#6b6b6b] block" style={{ fontSize: PET_UI_TEXT.body }}>
+              {item.value || '已记录'}
+            </Text>
+            {item.note ? (
+              <Text className="text-[#9a9a9a]" style={{ fontSize: PET_UI_TEXT.caption }}>
+                {item.note}
+              </Text>
+            ) : null}
             <View
               className="mt-2 px-[12rpx] py-[8rpx] bg-white"
               style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.pill }}
               onClick={() => onEdit(item)}
             >
-              <Text className="text-[#466481]" style={{ fontSize: PET_UI_TEXT.caption }}>编辑</Text>
+              <Text className="text-[#466481]" style={{ fontSize: PET_UI_TEXT.caption }}>
+                编辑
+              </Text>
             </View>
             <View
               className="mt-2 px-[12rpx] py-[8rpx] bg-white"
               style={{ border: PET_UI_BORDER.regular, borderRadius: PET_UI_RADIUS.pill }}
               onClick={() => onDelete(item)}
             >
-              <Text className="text-[#b36439]" style={{ fontSize: PET_UI_TEXT.caption }}>删除</Text>
+              <Text className="text-[#b36439]" style={{ fontSize: PET_UI_TEXT.caption }}>
+                删除
+              </Text>
             </View>
           </View>
         </View>

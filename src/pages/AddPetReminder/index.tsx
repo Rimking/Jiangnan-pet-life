@@ -29,7 +29,10 @@ const AddPetReminder = memo(function AddPetReminder() {
   const initialPetId = params.petId || '';
   const scheduleId = params.scheduleId || '';
   const pageMode = scheduleId ? 'edit' : 'create';
-  const defaultDate = useMemo(() => params.date || formatLocalDateKey(new Date()), [params.date]);
+  const defaultDate = useMemo(
+    () => params.date || formatLocalDateKey(new Date()),
+    [params.date]
+  );
   const [selectedPetId, setSelectedPetId] = useState(initialPetId);
   const [loading, setLoading] = useState(pageMode === 'edit');
   const [saving, setSaving] = useState(false);
@@ -52,7 +55,9 @@ const AddPetReminder = memo(function AddPetReminder() {
     setLoading(true);
     getScheduleDetailData(scheduleId)
       .then((schedule) => {
-        const matchedTypeIndex = typeOptions.findIndex((item) => item.value === schedule.category);
+        const matchedTypeIndex = typeOptions.findIndex(
+          (item) => item.value === schedule.category
+        );
         setSelectedPetId(schedule.petId);
         setStoredActivePetId(schedule.petId);
         setTitle(schedule.title || '');
@@ -113,7 +118,10 @@ const AddPetReminder = memo(function AddPetReminder() {
         title: pageMode === 'edit' ? '提醒已更新' : '提醒已保存',
         icon: 'success',
       });
-      setTimeout(() => switchTabWithActivePet('/pages/PetSchedule/index', selectedPetId), 300);
+      setTimeout(
+        () => switchTabWithActivePet('/pages/PetSchedule/index', selectedPetId),
+        300
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存失败';
       Taro.showToast({ title: message, icon: 'none' });
@@ -149,7 +157,9 @@ const AddPetReminder = memo(function AddPetReminder() {
                 <View
                   key={pet.id}
                   className="px-4 py-2 rounded-[16rpx] border-[2rpx] border-solid border-[#262626]"
-                  style={{ backgroundColor: pet.id === selectedPetId ? '#FFD93B' : '#f4f4f4' }}
+                  style={{
+                    backgroundColor: pet.id === selectedPetId ? '#FFD93B' : '#f4f4f4',
+                  }}
                   onClick={() => {
                     setSelectedPetId(pet.id);
                     setStoredActivePetId(pet.id);
@@ -167,7 +177,7 @@ const AddPetReminder = memo(function AddPetReminder() {
           <Text className="text-[28rpx] font-semibold mt-2 block">
             {currentPet?.name || '未选择宠物'}
           </Text>
-          <Text className="text-[22rpx] text-[#888] mt-2 block">
+          <Text className="text-[22rpx] text-[#888] mt-2 block leading-[1.6]">
             提醒会只归属到这只宠物的日程、报告和时间线中。
           </Text>
         </View>
@@ -175,7 +185,7 @@ const AddPetReminder = memo(function AddPetReminder() {
         {!pets.length ? (
           <View className="mb-5 border-[3rpx] border-black border-solid rounded-[16rpx] bg-white p-4">
             <Text className="text-[26rpx] font-semibold block">先添加宠物档案</Text>
-            <Text className="text-[22rpx] text-[#666] mt-2 block">
+            <Text className="text-[22rpx] text-[#666] mt-2 block leading-[1.6]">
               提醒必须挂在具体宠物下面，创建后才会进入它自己的日程和统计。
             </Text>
             <View
@@ -264,7 +274,10 @@ const AddPetReminder = memo(function AddPetReminder() {
 
         <View
           className="w-full h-[96rpx] border-[3rpx] border-black border-solid rounded-[50rpx] flex items-center justify-center"
-          style={{ backgroundColor: canSave ? '#FFD93B' : '#E5E5E5', opacity: canSave ? 1 : 0.7 }}
+          style={{
+            backgroundColor: canSave ? '#FFD93B' : '#E5E5E5',
+            opacity: canSave ? 1 : 0.7,
+          }}
           onClick={() => {
             if (!canSave) {
               Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });

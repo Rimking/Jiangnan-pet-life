@@ -1,6 +1,6 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text } from '@tarojs/components';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import {
   deletePetData,
@@ -107,7 +107,7 @@ const PetDetailPage = memo(function PetDetailPage() {
 
     const result = await Taro.showModal({
       title: '确认删除',
-      content: '删除后该宠物的档案将不可恢复，是否继续？',
+      content: '删除后这只宠物的资料将无法恢复，确认继续吗？',
       confirmText: '删除',
       confirmColor: '#d65a31',
     });
@@ -137,32 +137,35 @@ const PetDetailPage = memo(function PetDetailPage() {
     }
   };
 
-  const ageLabel = (() => {
+  const ageLabel = useMemo(() => {
     if (!pet?.birthday) {
       return '未知';
     }
+
     const birth = new Date(pet.birthday);
     if (Number.isNaN(birth.getTime())) {
       return '未知';
     }
+
     const now = new Date();
     const months =
       (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+
     if (months < 1) {
       return '1个月内';
     }
+
     if (months < 12) {
       return `${months}个月`;
     }
+
     const years = Math.floor(months / 12);
     const remainMonths = months % 12;
     return remainMonths ? `${years}岁${remainMonths}个月` : `${years}岁`;
-  })();
+  }, [pet?.birthday]);
 
-  const vaccineText = careCount
-    ? `已记录 ${careCount} 条护理/疫苗相关记录`
-    : '暂未记录疫苗信息';
-  const extras = ((rawPet?.profileExtras || {}) as PetProfileExtras);
+  const extras = (rawPet?.profileExtras || {}) as PetProfileExtras;
+  const vaccineText = careCount ? `已记录 ${careCount} 条护理或疫苗相关记录` : '暂未记录疫苗信息';
   const personalityText =
     extras.personality || rawPet?.notes || '暂未填写性格描述，可以在编辑页补充。';
   const vaccineDetailText = extras.vaccineNotes || vaccineText;
@@ -172,15 +175,18 @@ const PetDetailPage = memo(function PetDetailPage() {
   const medicalNotesText = extras.medicalNotes || '暂未填写医疗补充信息';
   const sterilizedText = rawPet?.sterilized ? '已绝育' : '未绝育';
   const galleryBlocks = Array.from({ length: 4 });
-  const totalExpenseLabel = overview ? `累计花销 ¥${Number(overview.stats.totalExpense || 0).toFixed(2)}` : '';
+  const totalExpenseLabel = overview
+    ? `累计花销 ¥${Number(overview.stats.totalExpense || 0).toFixed(2)}`
+    : '';
   const latestMilestone = overview?.recent.latestMilestones?.[0];
   const today = formatLocalDateKey(new Date());
   const upcomingSchedules = overview?.recent.upcomingSchedules || [];
   const latestExpenses = overview?.recent.latestExpenses || [];
   const latestCareRecords = overview?.recent.latestCareRecords || [];
+
   const detailQuickLinks = [
     {
-      title: '去日程页',
+      title: '日程安排',
       subtitle: '查看提醒和当天记录',
       bg: '#FFF4C2',
       accent: '#6A5B2A',
@@ -188,21 +194,21 @@ const PetDetailPage = memo(function PetDetailPage() {
     },
     {
       title: '花销统计',
-      subtitle: '按这只宠物查看预算和分类',
+      subtitle: '查看预算、分类和月度明细',
       bg: '#FFF8E6',
       accent: '#8C6C2D',
       onClick: () => Taro.navigateTo({ url: `/pages/PetExpenseStats/index?petId=${petId}` }),
     },
     {
-      title: '成长时光轴',
-      subtitle: '回看记录、提醒和节点',
+      title: '成长时间线',
+      subtitle: '回看记录、提醒和成长节点',
       bg: '#EEF8FF',
       accent: '#4B6A77',
       onClick: () => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${petId}` }),
     },
     {
       title: '护理记录',
-      subtitle: '查看护理历史和复查安排',
+      subtitle: '查看护理历史和待跟进事项',
       bg: '#F7F0FF',
       accent: '#6A5B7D',
       onClick: () => Taro.navigateTo({ url: `/pages/PetCareStats/index?petId=${petId}` }),
@@ -247,55 +253,55 @@ const PetDetailPage = memo(function PetDetailPage() {
             <View className="flex">
               <View className="w-[220rpx] h-[220rpx] rounded-[22rpx] bg-[#FFF5D8] flex items-center justify-center overflow-hidden shadow-[inset_0_0_0_2rpx_rgba(255,255,255,0.85)]">
                 <View className="w-full h-full bg-[linear-gradient(135deg,#FFF3BF_0%,#FFE69A_100%)] flex items-center justify-center">
-                  <Text className="text-[104rpx]">{pet?.avatarEmoji || '🐾'}</Text>
+                  <Text className="text-[104rpx]">{pet?.avatarEmoji || '🐶'}</Text>
                 </View>
               </View>
 
               <View className="flex-1 pl-[24rpx]">
                 <Text className="text-[26rpx] text-[#2d2d2d] font-semibold mb-[16rpx]">
-                  姓名： {pet?.name || '暂无'}
+                  姓名：{pet?.name || '暂无'}
                 </Text>
                 <Text className="text-[26rpx] text-[#2d2d2d] font-semibold mb-[16rpx]">
-                  年龄： {ageLabel}
+                  年龄：{ageLabel}
                 </Text>
                 <Text className="text-[26rpx] text-[#2d2d2d] font-semibold mb-[16rpx]">
-                  体重： {pet?.weightKg || 0}kg
+                  体重：{pet?.weightKg || 0}kg
                 </Text>
                 <Text className="text-[26rpx] text-[#2d2d2d] font-semibold mb-[16rpx]">
-                  性别： {pet?.gender === 'female' ? '女生' : '男生'}
+                  性别：{pet?.gender === 'female' ? '女生' : '男生'}
                 </Text>
                 <Text className="text-[26rpx] text-[#2d2d2d] font-semibold">
-                  种类： {pet?.species || '未设置'}
+                  品种：{pet?.species || '未设置'}
                 </Text>
               </View>
             </View>
 
             <View className="mt-[22rpx] py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222]">是否绝育： {sterilizedText}</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222]">是否绝育：{sterilizedText}</Text>
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">接种疫苗：</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">疫苗记录</Text>
               <Text className="text-[24rpx] leading-[1.7] text-[#444]">{vaccineDetailText}</Text>
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">性格：</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">性格描述</Text>
               <Text className="text-[24rpx] leading-[1.7] text-[#444]">{personalityText}</Text>
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">过敏信息：</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">过敏信息</Text>
               <Text className="text-[24rpx] leading-[1.7] text-[#444]">{allergyText}</Text>
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">医疗补充：</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[8rpx]">医疗补充</Text>
               <Text className="text-[24rpx] leading-[1.7] text-[#444]">{medicalNotesText}</Text>
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222] mb-[16rpx]">日常照片：</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[16rpx]">日常照片</Text>
               <View className="rounded-[24rpx] bg-[#FFF8D9] p-[16rpx] shadow-[inset_0_0_0_2rpx_rgba(244,230,176,0.9)]">
                 <View className="flex mb-[10rpx]">
                   <View className="w-[48%] h-[240rpx] rounded-[16rpx] bg-[linear-gradient(135deg,#FFF2C5_0%,#FFE39B_100%)] flex items-center justify-center mr-[12rpx] shadow-[inset_0_0_0_2rpx_rgba(255,255,255,0.72)]">
@@ -307,19 +313,19 @@ const PetDetailPage = memo(function PetDetailPage() {
                         key={index}
                         className="w-[48%] h-[114rpx] rounded-[14rpx] border-[2rpx] border-dashed border-[#D9C77A] bg-white/70 flex items-center justify-center"
                       >
-                        <Text className="text-[22rpx] text-[#8C7A45]">预留</Text>
+                        <Text className="text-[22rpx] text-[#8C7A45]">预留位</Text>
                       </View>
                     ))}
                   </View>
                 </View>
                 <Text className="text-[21rpx] text-[#7A6A3D]">
-                  图片上传功能稍后接入，这里先预留展示区域。
+                  图片上传功能后续接入，这里先保留展示区域，方便演示资料页结构。
                 </Text>
               </View>
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222] mb-[10rpx]">记录概览：</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[10rpx]">记录总览</Text>
               <View className="grid grid-cols-3 gap-[12rpx]">
                 <View
                   className="rounded-[18rpx] bg-[#FFF4C2] p-[14rpx] shadow-[inset_0_0_0_2rpx_rgba(255,255,255,0.72)]"
@@ -346,6 +352,7 @@ const PetDetailPage = memo(function PetDetailPage() {
                   <Text className="text-[18rpx] text-[#7A6A8B] mt-[8rpx] block">去查看</Text>
                 </View>
               </View>
+
               <View className="grid grid-cols-2 gap-[12rpx] mt-[12rpx]">
                 <View
                   className="rounded-[18rpx] bg-[#FFF8E6] p-[14rpx] shadow-[inset_0_0_0_2rpx_rgba(255,255,255,0.72)]"
@@ -358,6 +365,7 @@ const PetDetailPage = memo(function PetDetailPage() {
                   </Text>
                   <Text className="text-[18rpx] text-[#8C6C2D] mt-[8rpx] block">去管理</Text>
                 </View>
+
                 <View
                   className="rounded-[18rpx] bg-[#F6F0FF] p-[14rpx] shadow-[inset_0_0_0_2rpx_rgba(255,255,255,0.72)]"
                   onClick={() => Taro.navigateTo({ url: `/pages/PetMedicine/index?petId=${petId}` })}
@@ -369,6 +377,7 @@ const PetDetailPage = memo(function PetDetailPage() {
                   </Text>
                   <Text className="text-[18rpx] text-[#6C5C90] mt-[8rpx] block">去跟进</Text>
                 </View>
+
                 <View className="rounded-[18rpx] bg-[#FFF0F6] p-[14rpx] shadow-[inset_0_0_0_2rpx_rgba(255,255,255,0.72)] col-span-2">
                   <View className="flex items-center justify-between">
                     <View>
@@ -387,10 +396,11 @@ const PetDetailPage = memo(function PetDetailPage() {
                   <Text className="text-[20rpx] text-[#7B6070] mt-[8rpx] block">
                     {latestMilestone
                       ? `最近节点：${latestMilestone.title} · ${latestMilestone.occurredAt.slice(0, 10)}`
-                      : '还没有成长节点，可以先记录第一次到家、第一次出门或疫苗完成。'}
+                      : '还没有成长节点，可以先记录第一次到家、第一次外出或疫苗完成等关键时刻。'}
                   </Text>
                 </View>
               </View>
+
               {totalExpenseLabel ? (
                 <Text
                   className="text-[21rpx] text-[#7A6A3D] mt-[12rpx] block"
@@ -402,7 +412,7 @@ const PetDetailPage = memo(function PetDetailPage() {
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222] mb-[12rpx]">快捷入口：</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[12rpx]">快捷入口</Text>
               <View className="grid grid-cols-2 gap-[12rpx]">
                 {detailQuickLinks.map((item) => (
                   <View
@@ -422,7 +432,7 @@ const PetDetailPage = memo(function PetDetailPage() {
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222] mb-[12rpx]">最近动态：</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[12rpx]">最近动态</Text>
               {upcomingSchedules.length || latestExpenses.length || latestCareRecords.length || latestMilestone ? (
                 <View className="grid grid-cols-1 gap-[12rpx]">
                   {upcomingSchedules[0] ? (
@@ -439,6 +449,7 @@ const PetDetailPage = memo(function PetDetailPage() {
                       </Text>
                     </View>
                   ) : null}
+
                   {latestExpenses[0] ? (
                     <View
                       className="rounded-[18rpx] bg-[#FFF8E6] p-[14rpx]"
@@ -453,6 +464,7 @@ const PetDetailPage = memo(function PetDetailPage() {
                       </Text>
                     </View>
                   ) : null}
+
                   {latestCareRecords[0] ? (
                     <View
                       className="rounded-[18rpx] bg-[#F7F0FF] p-[14rpx]"
@@ -472,35 +484,35 @@ const PetDetailPage = memo(function PetDetailPage() {
               ) : (
                 <View className="rounded-[18rpx] bg-[#FFFDF6] p-[14rpx]">
                   <Text className="text-[22rpx] text-[#7A6A3D] leading-[1.7]">
-                    这只宠物的最近动态还比较少，可以先新增提醒、补一条记录，或者记录一个成长节点，详情页摘要会更完整。
+                    这只宠物最近的动态还比较少，可以先新增提醒、补一条记录，或者记录一个成长节点，详情页会更完整。
                   </Text>
                 </View>
               )}
             </View>
 
             <View className="py-[18rpx] border-t-[2rpx] border-[#F0E3B5] border-solid">
-              <Text className="text-[26rpx] font-semibold text-[#222] mb-[12rpx]">下一步建议：</Text>
+              <Text className="text-[26rpx] font-semibold text-[#222] mb-[12rpx]">下一步建议</Text>
               <View className="grid grid-cols-3 gap-[12rpx]">
                 <View
                   className="rounded-[18rpx] bg-[#EEF8FF] p-[14rpx]"
                   onClick={() => Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${petId}` })}
                 >
                   <Text className="text-[22rpx] font-semibold text-[#2c5f7a]">时间线</Text>
-                  <Text className="text-[18rpx] text-[#5E7680] mt-[6rpx] block">回看所有回流数据</Text>
+                  <Text className="text-[18rpx] text-[#5E7680] mt-[6rpx] block">回看所有记录</Text>
                 </View>
                 <View
                   className="rounded-[18rpx] bg-[#FFF9E8] p-[14rpx]"
                   onClick={() => Taro.navigateTo({ url: `/pages/PetReport/index?petId=${petId}` })}
                 >
                   <Text className="text-[22rpx] font-semibold text-[#5D4510]">数据报告</Text>
-                  <Text className="text-[18rpx] text-[#7D6532] mt-[6rpx] block">查看当前宠物总结</Text>
+                  <Text className="text-[18rpx] text-[#7D6532] mt-[6rpx] block">查看当前总结</Text>
                 </View>
                 <View
                   className="rounded-[18rpx] bg-[#FFF0F6] p-[14rpx]"
                   onClick={() => Taro.navigateTo({ url: `/pages/PetMilestones/index?petId=${petId}` })}
                 >
                   <Text className="text-[22rpx] font-semibold text-[#8A5374]">成长节点</Text>
-                  <Text className="text-[18rpx] text-[#7B6070] mt-[6rpx] block">继续沉淀关键时刻</Text>
+                  <Text className="text-[18rpx] text-[#7B6070] mt-[6rpx] block">继续记录时刻</Text>
                 </View>
               </View>
             </View>
@@ -519,6 +531,7 @@ const PetDetailPage = memo(function PetDetailPage() {
           >
             <Text className="text-[28rpx] text-white font-semibold">新增提醒</Text>
           </View>
+
           <View
             className="flex-1 h-[86rpx] rounded-[43rpx] bg-[#FFB86B] flex items-center justify-center shadow-[0_12rpx_24rpx_rgba(255,184,107,0.24)]"
             onClick={() => {
@@ -544,14 +557,15 @@ const PetDetailPage = memo(function PetDetailPage() {
               Taro.navigateTo({ url: `/pages/EditPetProfile/index?mode=edit&petId=${petId}` });
             }}
           >
-            <Text className="text-[28rpx] font-semibold">编辑</Text>
+            <Text className="text-[28rpx] font-semibold">编辑资料</Text>
           </View>
+
           <View
             className="flex-1 h-[86rpx] rounded-[43rpx] bg-white flex items-center justify-center shadow-[0_12rpx_24rpx_rgba(0,0,0,0.06)]"
             style={{ border: '2rpx solid #F0E3B5' }}
             onClick={handleDelete}
           >
-            <Text className="text-[28rpx] text-[#666] font-semibold">删除</Text>
+            <Text className="text-[28rpx] text-[#666] font-semibold">删除宠物</Text>
           </View>
         </View>
       </View>

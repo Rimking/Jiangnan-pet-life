@@ -5,11 +5,7 @@ import Taro, { useDidShow } from '@tarojs/taro';
 import { formatLocalDateKey } from '@/utils/formatDate';
 import MenuItem from './components/MenuItem';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
-import {
-  getCurrentUserData,
-  getOwnerOverviewData,
-  logoutData,
-} from '@/api/data';
+import { getCurrentUserData, getOwnerOverviewData, logoutData } from '@/api/data';
 import {
   AuthUser,
   clearLoginSession,
@@ -45,6 +41,7 @@ const getAgeLabel = (birthday: string) => {
 };
 
 const PetOwner = memo(function PetOwner() {
+  const loggedIn = isLoggedIn();
   const { pets, activePet, activePetId, setActivePetId, resetPets } = usePetApiPets();
   const [user, setUser] = useState<AuthUser | null>(getCurrentUser());
   const [reminderCount, setReminderCount] = useState(0);
@@ -62,6 +59,7 @@ const PetOwner = memo(function PetOwner() {
   useDidShow(() => {
     const cachedUser = getCurrentUser();
     setUser(cachedUser);
+
     if (loggedIn && !cachedUser) {
       getCurrentUserData()
         .then((profile) => {
@@ -146,6 +144,7 @@ const PetOwner = memo(function PetOwner() {
     setUser(null);
     Taro.showToast({ title: '已退出登录', icon: 'success' });
   };
+
   const activeDays = useMemo(() => {
     if (!activePet?.birthday) {
       return 0;
@@ -158,48 +157,56 @@ const PetOwner = memo(function PetOwner() {
     const diff = now.getTime() - birth.getTime();
     return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
   }, [activePet?.birthday]);
-  const ownerNextActions = currentPetId && activePet
-    ? [
-        {
-          title: reminderCount > 0 ? '处理提醒' : '新增提醒',
-          subtitle:
-            reminderCount > 0
-              ? `还有 ${reminderCount} 条待办，先回日程页处理`
-              : '先给当前宠物补一个提醒安排',
-          accent: '#5a78d4',
-          onClick: () =>
-            reminderCount > 0
-              ? ensureActivePetContext()
-                ? switchTabWithActivePet('/pages/PetSchedule/index', currentPetId)
-                : undefined
-              : openPetPage(`/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`),
-        },
-        {
-          title: '查看报告',
-          subtitle: '回看最近趋势、亮点和摘要',
-          accent: '#466481',
-          onClick: () => openPetPage(`/pages/PetReport/index?petId=${currentPetId}`),
-        },
-        {
-          title: lowInventoryCount > 0 || dueMedicineCount > 0 ? '处理库存/疗程' : '继续补记录',
-          subtitle:
-            lowInventoryCount > 0 || dueMedicineCount > 0
-              ? `库存提醒 ${lowInventoryCount} 条，用药关注 ${dueMedicineCount} 条`
-              : '去补日常、花销或护理，让摘要更完整',
-          accent: '#8A6A2C',
-          onClick: () =>
-            lowInventoryCount > 0
-              ? openPetPage(`/pages/PetFood/index?petId=${currentPetId}`)
-              : dueMedicineCount > 0
-                ? openPetPage(`/pages/PetMedicine/index?petId=${currentPetId}`)
-                : openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`),
-        },
-      ]
-    : [];
+  const ownerNextActions =
+    currentPetId && activePet
+      ? [
+          {
+            title: reminderCount > 0 ? '处理提醒' : '新增提醒',
+            subtitle:
+              reminderCount > 0
+                ? `还有 ${reminderCount} 条待办，先回日程页处理`
+                : '先给当前宠物补一个提醒安排',
+            accent: '#5a78d4',
+            onClick: () =>
+              reminderCount > 0
+                ? ensureActivePetContext()
+                  ? switchTabWithActivePet('/pages/PetSchedule/index', currentPetId)
+                  : undefined
+                : openPetPage(
+                    `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`
+                  ),
+          },
+          {
+            title: '查看报告',
+            subtitle: '回看最近趋势、亮点和摘要',
+            accent: '#466481',
+            onClick: () => openPetPage(`/pages/PetReport/index?petId=${currentPetId}`),
+          },
+          {
+            title:
+              lowInventoryCount > 0 || dueMedicineCount > 0
+                ? '处理库存/疗程'
+                : '继续补记录',
+            subtitle:
+              lowInventoryCount > 0 || dueMedicineCount > 0
+                ? `库存提醒 ${lowInventoryCount} 条，用药关注 ${dueMedicineCount} 条`
+                : '去补日常、花销或护理，让摘要更完整',
+            accent: '#8A6A2C',
+            onClick: () =>
+              lowInventoryCount > 0
+                ? openPetPage(`/pages/PetFood/index?petId=${currentPetId}`)
+                : dueMedicineCount > 0
+                  ? openPetPage(`/pages/PetMedicine/index?petId=${currentPetId}`)
+                  : openPetPage(
+                      `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`
+                    ),
+          },
+        ]
+      : [];
 
   const quickMenus = [
     {
-      icon: '👑',
+      icon: '会员',
       title: '会员中心',
       bg: '#F6F3ED',
       onClick: () =>
@@ -208,7 +215,7 @@ const PetOwner = memo(function PetOwner() {
         }),
     },
     {
-      icon: '🧾',
+      icon: '订阅',
       title: '订阅中心',
       bg: '#EEF2F8',
       onClick: () =>
@@ -217,7 +224,7 @@ const PetOwner = memo(function PetOwner() {
         }),
     },
     {
-      icon: '📨',
+      icon: '联系',
       title: '联系我们',
       bg: '#F0EEF8',
       onClick: () => Taro.navigateTo({ url: '/pages/PetFeedback/index?mode=contact' }),
@@ -226,7 +233,7 @@ const PetOwner = memo(function PetOwner() {
 
   const menuItems = [
     {
-      icon: '📅',
+      icon: '日程',
       title: '日程管理',
       subtitle: '管理提醒和记录',
       hasBadge: reminderCount > 0,
@@ -239,27 +246,27 @@ const PetOwner = memo(function PetOwner() {
       },
     },
     {
-      icon: '📊',
+      icon: '统计',
       title: '数据统计',
       subtitle: '查看近期花销和护理趋势',
       onClick: () => openPetPage(`/pages/PetExpenseStats/index?petId=${currentPetId}`),
     },
     {
-      icon: '🍗',
+      icon: '食物',
       title: '食物管理',
-      subtitle: '喂食计划与库存提醒',
+      subtitle: '喂养计划与库存提醒',
       hasBadge: lowInventoryCount > 0,
       badgeText: `${lowInventoryCount}`,
       onClick: () => openPetPage(`/pages/PetFood/index?petId=${currentPetId}`),
     },
     {
-      icon: '🩺',
-      title: '医疗记录',
+      icon: '护理',
+      title: '医疗护理',
       subtitle: '门诊和检查留档',
       onClick: () => openPetPage(`/pages/PetCareStats/index?petId=${currentPetId}`),
     },
     {
-      icon: '💊',
+      icon: '用药',
       title: '用药管理',
       subtitle: '追踪药品和疗程',
       hasBadge: dueMedicineCount > 0,
@@ -267,13 +274,13 @@ const PetOwner = memo(function PetOwner() {
       onClick: () => openPetPage(`/pages/PetMedicine/index?petId=${currentPetId}`),
     },
     {
-      icon: '🕰️',
-      title: '成长时光轴',
+      icon: '时间线',
+      title: '成长时间线',
       subtitle: '按时间查看提醒与记录',
       onClick: () => openPetPage(`/pages/PetTimeline/index?petId=${currentPetId}`),
     },
     {
-      icon: '🌟',
+      icon: '里程碑',
       title: '成长里程碑',
       subtitle: '记录第一次出门和重要节点',
       hasBadge: milestoneCount > 0,
@@ -281,13 +288,16 @@ const PetOwner = memo(function PetOwner() {
       onClick: () => openPetPage(`/pages/PetMilestones/index?petId=${currentPetId}`),
     },
     {
-      icon: '💬',
+      icon: '记录',
       title: '日常记录',
       subtitle: '日常健康观察',
-      onClick: () => openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`),
+      onClick: () =>
+        openPetPage(
+          `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`
+        ),
     },
     {
-      icon: '❓',
+      icon: '反馈',
       title: '帮助与反馈',
       subtitle: '问题反馈与建议',
       onClick: () => Taro.navigateTo({ url: '/pages/PetFeedback/index?mode=feedback' }),
@@ -306,10 +316,10 @@ const PetOwner = memo(function PetOwner() {
       <View className="px-[22rpx] pt-[28rpx] pb-[42rpx]">
         <View className="flex justify-end gap-[12rpx] mb-[16rpx]">
           <View
-            className="w-[44rpx] h-[44rpx] rounded-full border border-[#8D97A6] flex items-center justify-center"
+            className="w-[56rpx] h-[56rpx] rounded-full border border-[#8D97A6] bg-white flex items-center justify-center"
             onClick={() => Taro.navigateTo({ url: '/pages/ChooseSelectCmp/index' })}
           >
-            <Text className="text-[22rpx] text-[#5C6675]">◌</Text>
+            <Text className="text-[20rpx] text-[#5C6675]">入口</Text>
           </View>
           <View
             className="w-[44rpx] h-[44rpx] rounded-full border border-[#8D97A6] flex items-center justify-center"
@@ -320,7 +330,7 @@ const PetOwner = memo(function PetOwner() {
               switchTabWithActivePet('/pages/PetSchedule/index', currentPetId);
             }}
           >
-            <Text className="text-[22rpx] text-[#5C6675]">◉</Text>
+            <Text className="text-[20rpx] text-[#5C6675]">日程</Text>
           </View>
         </View>
 
@@ -331,24 +341,36 @@ const PetOwner = memo(function PetOwner() {
           <View className="flex-1">
             <Text className="text-[40rpx] font-semibold text-[#2C3442]">
               {loggedIn
-                ? user?.nickname || activePet?.name || (pets.length > 0 ? '未选择宠物' : '微信用户')
+                ? user?.nickname ||
+                  activePet?.name ||
+                  (pets.length > 0 ? '未选择宠物' : '微信用户')
                 : activePet?.name || '未登录'}
             </Text>
-            <Text className="text-[22rpx] text-[#7B8594] mt-[8rpx]">
-              {loggedIn ? `当前有 ${pets.length} 只宠物档案` : '登录后可同步宠物档案、收藏和个性化记录'}
+            <Text className="text-[22rpx] text-[#7B8594] mt-[8rpx] leading-[1.5]">
+              {loggedIn
+                ? `当前共维护 ${pets.length} 只宠物档案`
+                : '登录后可同步宠物档案、收藏和个性化记录'}
             </Text>
           </View>
           <View
-            className="px-[14rpx] py-[8rpx] rounded-[999rpx] bg-white border-[2rpx] border-[#262626]"
-            onClick={() => (loggedIn ? handleLogout() : Taro.navigateTo({ url: '/pages/Login/index?redirect=%2Fpages%2FPetOwner%2Findex' }))}
+            className="px-[18rpx] h-[58rpx] rounded-[999rpx] bg-white border-[2rpx] border-[#262626] flex items-center justify-center"
+            onClick={() =>
+              loggedIn
+                ? handleLogout()
+                : Taro.navigateTo({
+                    url: '/pages/Login/index?redirect=%2Fpages%2FPetOwner%2Findex',
+                  })
+            }
           >
-            <Text className="text-[20rpx] text-[#333]">{loggedIn ? '退出' : '登录'}</Text>
+            <Text className="text-[22rpx] text-[#333]">{loggedIn ? '退出' : '登录'}</Text>
           </View>
         </View>
 
         {loggedIn && pets.length > 0 && !activePet ? (
           <View className="mb-[16rpx] rounded-[22rpx] bg-white border-[3rpx] border-[#262626] px-[18rpx] py-[16rpx] shadow-[0_8rpx_0_rgba(0,0,0,0.12)]">
-            <Text className="text-[26rpx] font-semibold text-[#2D3441]">请先重新选择宠物</Text>
+            <Text className="text-[26rpx] font-semibold text-[#2D3441]">
+              请先重新选择宠物
+            </Text>
             <Text className="text-[22rpx] text-[#6B7482] mt-[8rpx] block">
               当前我的页没有绑定到有效宠物，你可以在下方“我的宠物”里点选一只宠物，或者回首页重新切换。
             </Text>
@@ -357,61 +379,81 @@ const PetOwner = memo(function PetOwner() {
 
         <View className="bg-white rounded-[28rpx] border-[3rpx] border-[#262626] px-[22rpx] py-[18rpx] mb-[18rpx] shadow-[0_10rpx_0_rgba(0,0,0,0.14)]">
           <View className="flex justify-between items-center">
-          <View
-            className="flex-1"
-            onClick={() => {
-              if (!ensureActivePetContext()) {
-                return;
-              }
-              switchTabWithActivePet('/pages/PetSchedule/index', currentPetId);
-            }}
-          >
+            <View
+              className="flex-1"
+              onClick={() => {
+                if (!ensureActivePetContext()) {
+                  return;
+                }
+                switchTabWithActivePet('/pages/PetSchedule/index', currentPetId);
+              }}
+            >
               <Text className="text-[22rpx] text-[#8C95A2]">待处理提醒</Text>
-              <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">{reminderCount}</Text>
+              <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">
+                {reminderCount}
+              </Text>
             </View>
             <View className="w-[2rpx] h-[72rpx] bg-[#262626] opacity-20" />
             <View
               className="flex-1 pl-[24rpx]"
-              onClick={() => openPetPage(`/pages/PetMilestones/index?petId=${currentPetId}`)}
+              onClick={() =>
+                openPetPage(`/pages/PetMilestones/index?petId=${currentPetId}`)
+              }
             >
               <Text className="text-[22rpx] text-[#8C95A2]">我的成就</Text>
-              <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">{achievementCount}</Text>
+              <Text className="text-[38rpx] font-semibold text-[#2D3441] mt-[4rpx]">
+                {achievementCount}
+              </Text>
             </View>
           </View>
+
           <View className="mt-[18rpx] rounded-[999rpx] bg-[#FFF7D5] border-[3rpx] border-[#262626] px-[18rpx] py-[12rpx] flex items-center">
-            <Text className="text-[30rpx] mr-[12rpx]">🐾</Text>
+            <Text className="text-[24rpx] mr-[12rpx]">陪伴</Text>
             <Text className="text-[24rpx] text-[#2D3441] font-semibold">
-              与{activePet?.name || '它'}一起已经 {activeDays} 天了
+              和 {activePet?.name || '宠物'} 一起已经 {activeDays} 天了
             </Text>
           </View>
           {currentPetId && activePet ? (
             <View className="mt-[14rpx] flex gap-[12rpx]">
               <View
                 className="flex-1 rounded-[18rpx] bg-[#2B8BFF] border-[3rpx] border-[#262626] px-[16rpx] py-[14rpx] flex items-center justify-center"
-                onClick={() => openPetPage(`/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`)}
+                onClick={() =>
+                  openPetPage(
+                    `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`
+                  )
+                }
               >
-                <Text className="text-[22rpx] text-white font-semibold">新增提醒</Text>
+                <Text className="text-[24rpx] text-white font-semibold">新增提醒</Text>
               </View>
               <View
                 className="flex-1 rounded-[18rpx] bg-[#FFD93B] border-[3rpx] border-[#262626] px-[16rpx] py-[14rpx] flex items-center justify-center"
-                onClick={() => openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`)}
+                onClick={() =>
+                  openPetPage(
+                    `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`
+                  )
+                }
               >
-                <Text className="text-[22rpx] text-[#2D3441] font-semibold">新增记录</Text>
+                <Text className="text-[24rpx] text-[#2D3441] font-semibold">新增记录</Text>
               </View>
             </View>
           ) : null}
+
           <View
             className="mt-[14rpx] rounded-[22rpx] bg-[#FFF2F8] border-[3rpx] border-[#262626] px-[18rpx] py-[14rpx]"
             onClick={() => openPetPage(`/pages/PetMilestones/index?petId=${currentPetId}`)}
           >
             <View className="flex items-center justify-between">
-              <Text className="text-[24rpx] text-[#7D4764] font-semibold">最近成长节点</Text>
+              <Text className="text-[24rpx] text-[#7D4764] font-semibold">
+                最近成长节点
+              </Text>
               <Text className="text-[22rpx] text-[#A45D85]">{milestoneCount} 条</Text>
             </View>
             <Text className="text-[24rpx] text-[#2D3441] font-semibold mt-[8rpx] block">
-              {latestMilestone ? latestMilestone.title : '还没有成长节点，去记录第一次到家或第一次出门吧。'}
+              {latestMilestone
+                ? latestMilestone.title
+                : '还没有成长节点，去记录第一次到家或第一次出门吧。'}
             </Text>
-            <Text className="text-[20rpx] text-[#7E6C76] mt-[6rpx] block">
+            <Text className="text-[20rpx] text-[#7E6C76] mt-[6rpx] block leading-[1.5]">
               {latestMilestone
                 ? `${latestMilestone.occurredAt.slice(0, 10)}${latestMilestone.description ? ` · ${latestMilestone.description}` : ''}`
                 : '记录后会同步到时间线、报告和详情页。'}
@@ -419,8 +461,10 @@ const PetOwner = memo(function PetOwner() {
           </View>
           {currentPetId && activePet ? (
             <View className="mt-[14rpx] rounded-[22rpx] bg-[#F8FAFF] border-[3rpx] border-[#262626] px-[18rpx] py-[14rpx]">
-              <Text className="text-[24rpx] text-[#466481] font-semibold">当前宠物下一步</Text>
-              <Text className="text-[22rpx] text-[#4D5664] mt-[8rpx] block">
+              <Text className="text-[24rpx] text-[#466481] font-semibold">
+                当前宠物下一步
+              </Text>
+              <Text className="text-[22rpx] text-[#4D5664] mt-[8rpx] block leading-[1.6]">
                 {reminderCount > 0
                   ? `${activePet?.name || '当前宠物'} 还有 ${reminderCount} 条提醒待处理，建议先回到日程页确认。`
                   : lowInventoryCount > 0 || dueMedicineCount > 0
@@ -431,13 +475,17 @@ const PetOwner = memo(function PetOwner() {
                 {ownerNextActions.map((item) => (
                   <View
                     key={item.title}
-                    className="rounded-[18rpx] bg-white border-[2rpx] border-[#262626] px-[12rpx] py-[12rpx]"
+                    className="rounded-[18rpx] bg-white border-[2rpx] border-[#262626] px-[12rpx] py-[14rpx]"
+                    style={{ minHeight: '136rpx' }}
                     onClick={item.onClick}
                   >
-                    <Text className="text-[22rpx] font-semibold" style={{ color: item.accent }}>
+                    <Text
+                      className="text-[22rpx] font-semibold"
+                      style={{ color: item.accent }}
+                    >
                       {item.title}
                     </Text>
-                    <Text className="text-[18rpx] text-[#6b6b6b] mt-[6rpx] block">
+                    <Text className="text-[18rpx] leading-[1.5] text-[#6b6b6b] mt-[6rpx] block">
                       {item.subtitle}
                     </Text>
                   </View>
@@ -457,11 +505,15 @@ const PetOwner = memo(function PetOwner() {
           }
         >
           <View className="pr-[12rpx]">
-            <Text className="text-[26rpx] text-[#5F3E13] font-semibold">开通会员，解锁更多服务</Text>
-            <Text className="text-[20rpx] text-[#805D2A] mt-[6rpx]">当前待处理提醒 {reminderCount} 条，开通后可自动推送</Text>
+            <Text className="text-[26rpx] text-[#5F3E13] font-semibold">
+              开通会员，解锁更多服务
+            </Text>
+            <Text className="text-[20rpx] text-[#805D2A] mt-[6rpx] leading-[1.5]">
+              当前待处理提醒 {reminderCount} 条，开通后可继续集中管理。
+            </Text>
           </View>
           <View className="px-[14rpx] py-[8rpx] rounded-[20rpx] bg-[#2E220F]">
-            <Text className="text-[20rpx] text-[#F6DEAF]">查看权益 ›</Text>
+            <Text className="text-[20rpx] text-[#F6DEAF]">查看权益</Text>
           </View>
         </View>
 
@@ -470,11 +522,11 @@ const PetOwner = memo(function PetOwner() {
             {quickMenus.map((item) => (
               <View
                 key={item.title}
-                className="w-[31%] h-[170rpx] rounded-[16rpx] px-[10rpx] py-[14rpx] flex flex-col items-center justify-center"
+                className="w-[31%] h-[180rpx] rounded-[16rpx] px-[10rpx] py-[14rpx] flex flex-col items-center justify-center"
                 style={{ backgroundColor: item.bg }}
                 onClick={item.onClick}
               >
-                <Text className="text-[34rpx] mb-[10rpx]">{item.icon}</Text>
+                <Text className="text-[26rpx] mb-[10rpx] text-[#394150]">{item.icon}</Text>
                 <Text className="text-[24rpx] text-[#4D5664]">{item.title}</Text>
               </View>
             ))}
@@ -486,7 +538,9 @@ const PetOwner = memo(function PetOwner() {
           style={{ background: 'linear-gradient(90deg, #2B8BFF 0%, #1F66F0 100%)' }}
           onClick={() =>
             currentPetId && activePet
-              ? openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=care`)
+              ? openPetPage(
+                  `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=care`
+                )
               : ensureActivePetContext()
                 ? switchTabWithActivePet('/pages/PetSchedule/index', currentPetId)
                 : undefined
@@ -494,7 +548,7 @@ const PetOwner = memo(function PetOwner() {
         >
           <View className="flex items-center flex-1 mr-[10rpx]">
             <View className="w-[84rpx] h-[84rpx] rounded-full bg-[#FFC67D] border-[2rpx] border-[#ffffff] flex items-center justify-center mr-[10rpx]">
-              <Text className="text-[46rpx]">🐾</Text>
+              <Text className="text-[28rpx] text-[#2D3441]">照护</Text>
             </View>
             <View>
               <Text className="text-[24rpx] text-[#F7FBFF]">本周计划</Text>
@@ -504,17 +558,17 @@ const PetOwner = memo(function PetOwner() {
             </View>
           </View>
           <View className="w-[86rpx] h-[86rpx] rounded-full bg-[#FDC53A] border-[2rpx] border-[#FFE29C] flex items-center justify-center">
-            <Text className="text-[28rpx] font-bold text-[#2656BD]">{currentPetId && activePet ? '护理' : 'GO'}</Text>
+            <Text className="text-[28rpx] font-bold text-[#2656BD]">
+              {currentPetId && activePet ? '护理' : 'GO'}
+            </Text>
           </View>
         </View>
 
         <View className="mb-[20rpx] rounded-[30rpx] bg-white border-[3rpx] border-[#262626] px-[20rpx] py-[22rpx] shadow-[0_10rpx_0_rgba(0,0,0,0.14)]">
           <View className="flex items-center justify-between mb-[18rpx]">
-            <Text className="text-[34rpx] font-bold text-[#2D3441] relative">
-              我的宠物
-            </Text>
+            <Text className="text-[34rpx] font-bold text-[#2D3441]">我的宠物</Text>
             <View
-              className="w-[42rpx] h-[42rpx] rounded-full border-[2rpx] border-[#262626] flex items-center justify-center bg-[#FFF7D5]"
+              className="w-[50rpx] h-[50rpx] rounded-full border-[2rpx] border-[#262626] flex items-center justify-center bg-[#FFF7D5]"
               onClick={handleCreatePet}
             >
               <Text className="text-[28rpx]">+</Text>
@@ -527,9 +581,11 @@ const PetOwner = memo(function PetOwner() {
               return (
                 <View
                   key={pet.id}
-                  className="w-[48.3%] rounded-[18rpx] border-[3rpx] border-[#262626] bg-[#FFFDF4] p-[12rpx]"
+                  className="w-[48.3%] rounded-[18rpx] border-[3rpx] border-[#262626] bg-[#FFFDF4] p-[14rpx]"
                   style={{
-                    boxShadow: isActive ? '0 8rpx 0 rgba(255, 191, 54, 0.28)' : '0 8rpx 0 rgba(0,0,0,0.1)',
+                    boxShadow: isActive
+                      ? '0 8rpx 0 rgba(255, 191, 54, 0.28)'
+                      : '0 8rpx 0 rgba(0,0,0,0.1)',
                   }}
                   onClick={() => {
                     setStoredActivePetId(pet.id);
@@ -561,7 +617,7 @@ const PetOwner = memo(function PetOwner() {
                   <View className="flex items-center justify-between">
                     <Text className="text-[20rpx] text-[#6b6b6b]">{pet.species}</Text>
                     <View
-                      className="px-[12rpx] h-[40rpx] rounded-[999rpx] border-[2rpx] border-[#262626] flex items-center justify-center"
+                      className="px-[14rpx] h-[44rpx] rounded-[999rpx] border-[2rpx] border-[#262626] flex items-center justify-center"
                       style={{ backgroundColor: isActive ? '#FFD95A' : '#F4F4F4' }}
                       onClick={(event) => {
                         event.stopPropagation();
@@ -578,16 +634,18 @@ const PetOwner = memo(function PetOwner() {
             })}
 
             <View
-              className="w-full h-[92rpx] rounded-[18rpx] border-[3rpx] border-dashed border-[#262626] flex items-center justify-center bg-[#FFFDF4]"
+              className="w-full h-[96rpx] rounded-[18rpx] border-[3rpx] border-dashed border-[#262626] flex items-center justify-center bg-[#FFFDF4]"
               onClick={handleCreatePet}
             >
-              <Text className="text-[28rpx] text-[#404040]">⊕ 添加宠物</Text>
+              <Text className="text-[28rpx] text-[#404040]">+ 添加宠物</Text>
             </View>
           </View>
         </View>
 
         <View className="mt-[8rpx]">
-          <Text className="text-[32rpx] font-bold mb-[12rpx] block text-[#2D3441]">功能菜单</Text>
+          <Text className="text-[32rpx] font-bold mb-[12rpx] block text-[#2D3441]">
+            功能菜单
+          </Text>
           {menuItems.map((item) => (
             <MenuItem
               key={item.title}

@@ -72,7 +72,6 @@ const PetKnowledge = memo(function PetKnowledge() {
 
   const filteredArticles = useMemo(() => {
     const favorites = new Set(favoriteIds);
-
     return articles.filter((item) => {
       if (onlyFavorite && !favorites.has(item.id)) {
         return false;
@@ -107,7 +106,10 @@ const PetKnowledge = memo(function PetKnowledge() {
   return (
     <BasicLayout
       wrapClassName="w-full h-full"
-      wrapStyle={{ background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)', minHeight: '100vh' }}
+      wrapStyle={{
+        background: 'linear-gradient(180deg, #FFE68D 0%, #FFFCE0 100%)',
+        minHeight: '100vh',
+      }}
       navOptions={{ navTitle: '知识库', needBack: false }}
     >
       <View className="px-[24rpx] pt-[16rpx] pb-[120rpx]">
@@ -125,10 +127,15 @@ const PetKnowledge = memo(function PetKnowledge() {
             <View
               key={item.key}
               className="rounded-[16rpx] border-[2rpx] border-solid border-[#262626] p-[12rpx]"
-              style={{ backgroundColor: item.color, opacity: activeCategory === item.key ? 1 : 0.75 }}
+              style={{
+                backgroundColor: item.color,
+                opacity: activeCategory === item.key ? 1 : 0.75,
+              }}
               onClick={() => handleCategoryChange(item.key)}
             >
-              <Text className="text-[24rpx] font-semibold text-[#303030]">{item.label}</Text>
+              <Text className="text-[24rpx] font-semibold text-[#303030]">
+                {item.label}
+              </Text>
               <Text className="text-[18rpx] text-[#666] mt-[4rpx] block">
                 {item.count || 0} 篇
               </Text>
@@ -142,7 +149,9 @@ const PetKnowledge = memo(function PetKnowledge() {
             style={{ backgroundColor: onlyFavorite ? '#FFD93B' : '#F4F4F4' }}
             onClick={() => setOnlyFavorite((prev) => !prev)}
           >
-            <Text className="text-[22rpx] text-[#333]">{onlyFavorite ? '仅看收藏中' : '仅看收藏'}</Text>
+            <Text className="text-[22rpx] text-[#333]">
+              {onlyFavorite ? '仅看收藏中' : '仅看收藏'}
+            </Text>
           </View>
         </View>
 
@@ -153,9 +162,13 @@ const PetKnowledge = memo(function PetKnowledge() {
         ) : null}
 
         <View className="bg-white rounded-[18rpx] border-[2rpx] border-solid border-[#262626] p-[12rpx] mb-[14rpx]">
-          <Text className="text-[26rpx] font-bold text-[#262626] mb-[8rpx] block">推荐文章</Text>
+          <Text className="text-[26rpx] font-bold text-[#262626] mb-[8rpx] block">
+            推荐文章
+          </Text>
           {loading ? (
-            <Text className="text-[22rpx] text-[#888] py-[10rpx] block">正在加载文章...</Text>
+            <Text className="text-[22rpx] text-[#888] py-[10rpx] block">
+              正在加载文章...
+            </Text>
           ) : !filteredArticles.length ? (
             <View className="py-[10rpx]">
               <Text className="text-[22rpx] text-[#888] block">当前条件下暂无文章</Text>
@@ -173,16 +186,25 @@ const PetKnowledge = memo(function PetKnowledge() {
               <View
                 key={item.id}
                 className="py-[10rpx] border-b border-[#efefef] last:border-b-0"
-                onClick={() => Taro.navigateTo({ url: `/pages/PetArticleDetail/index?id=${item.id}` })}
+                onClick={() =>
+                  Taro.navigateTo({ url: `/pages/PetArticleDetail/index?id=${item.id}` })
+                }
               >
                 <View className="flex items-center justify-between">
                   <Text className="text-[24rpx] text-[#222] block">{item.title}</Text>
-                  <Text className="text-[22rpx]" onClick={(event) => {
-                    event.stopPropagation();
-                    handleToggleFavorite(item.id);
-                  }}>{favoriteIds.includes(item.id) ? '★' : '☆'}</Text>
+                  <Text
+                    className="text-[22rpx]"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleToggleFavorite(item.id);
+                    }}
+                  >
+                    {favoriteIds.includes(item.id) ? '★' : '☆'}
+                  </Text>
                 </View>
-                <Text className="text-[20rpx] text-[#777] mt-[4rpx] block">{item.desc}</Text>
+                <Text className="text-[20rpx] text-[#777] mt-[4rpx] block leading-[1.6]">
+                  {item.desc}
+                </Text>
                 {item.sourceName ? (
                   <Text className="text-[18rpx] text-[#9a9a9a] mt-[4rpx] block">
                     来源：{item.sourceName}
@@ -198,7 +220,7 @@ const PetKnowledge = memo(function PetKnowledge() {
           onClick={() => Taro.navigateTo({ url: '/pages/PetQa/index' })}
         >
           <Text className="text-[24rpx] text-white font-semibold block">知识问答</Text>
-          <Text className="text-[20rpx] text-[#dbeaff] mt-[4rpx] block">
+          <Text className="text-[20rpx] text-[#dbeaff] mt-[4rpx] block leading-[1.6]">
             可以直接输入常见养护问题，系统会基于当前知识库内容给出建议。
           </Text>
         </View>
