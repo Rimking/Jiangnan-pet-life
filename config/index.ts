@@ -6,7 +6,7 @@ import prodConfig from './prod';
 
 const path = require('path');
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
-export default defineConfig(async (merge, { command, mode }) => {
+export default defineConfig(async (merge) => {
   const baseConfig: UserConfigExport = {
     projectName: 'myTaroApp',
     date: '2025-6-3',
@@ -105,7 +105,7 @@ export default defineConfig(async (merge, { command, mode }) => {
         filename: 'css/[name].[hash].css',
         chunkFilename: 'css/[name].[chunkhash].css',
       },
-      esnextModules: [/@antmjs[\/]vantui/],
+      esnextModules: ['@antmjs/vantui'],
       postcss: {
         autoprefixer: {
           enable: true,

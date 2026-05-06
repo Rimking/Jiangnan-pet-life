@@ -31,7 +31,7 @@ import {
   updateScheduleData,
 } from '@/api/data';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
-import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
+import { setStoredActivePetId } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 
 const enum TabType {
@@ -301,7 +301,7 @@ const PetSchedule = memo(function PetSchedule() {
                 style={tabStyle}
                 onClick={() =>
                   Taro.navigateTo({
-                    url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${selectedDate}`,
+                    url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${selectedDate}&returnTo=schedule`,
                   })
                 }
               >
@@ -369,17 +369,22 @@ const PetSchedule = memo(function PetSchedule() {
                 records={mergedRecords}
                 onAddRecord={() =>
                   Taro.navigateTo({
-                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=record`,
+                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=record&returnTo=schedule`,
                   })
                 }
                 onAddExpense={() =>
                   Taro.navigateTo({
-                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=expense`,
+                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=expense&returnTo=schedule`,
                   })
                 }
                 onAddCare={() =>
                   Taro.navigateTo({
-                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=care`,
+                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=care&returnTo=schedule`,
+                  })
+                }
+                onEdit={(item) =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${selectedDate}&mode=${item.sourceType}&sourceId=${item.sourceId}&returnTo=schedule`,
                   })
                 }
                 onDelete={deleteRecordItem}
@@ -389,10 +394,15 @@ const PetSchedule = memo(function PetSchedule() {
                 reminders={petReminders}
                 onAdd={() =>
                   Taro.navigateTo({
-                    url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${selectedDate}`,
+                    url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${selectedDate}&returnTo=schedule`,
                   })
                 }
                 onToggle={switchReminder}
+                onEdit={(id) =>
+                  Taro.navigateTo({
+                    url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${selectedDate}&scheduleId=${id}&returnTo=schedule`,
+                  })
+                }
                 onDelete={deleteReminder}
               />
             )}
@@ -493,7 +503,7 @@ const PetSchedule = memo(function PetSchedule() {
                       style={tabStyle}
                       onClick={() =>
                         Taro.navigateTo({
-                          url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${selectedDate}&mode=record`,
+                          url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${selectedDate}&mode=record&returnTo=schedule`,
                         })
                       }
                     >
@@ -504,7 +514,7 @@ const PetSchedule = memo(function PetSchedule() {
                       style={tabStyle}
                       onClick={() =>
                         Taro.navigateTo({
-                          url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${selectedDate}&mode=care`,
+                          url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${selectedDate}&mode=care&returnTo=schedule`,
                         })
                       }
                     >
@@ -518,7 +528,7 @@ const PetSchedule = memo(function PetSchedule() {
                       style={tabStyle}
                       onClick={() =>
                         Taro.navigateTo({
-                          url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${selectedDate}`,
+                          url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${selectedDate}&returnTo=schedule`,
                         })
                       }
                     >

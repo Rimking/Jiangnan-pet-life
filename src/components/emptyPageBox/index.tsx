@@ -1,4 +1,4 @@
-import { Image, Text, View } from '@tarojs/components';
+import { Image, View } from '@tarojs/components';
 import emptyPageIcon from '@/assets/emptyPageIcon.svg';
 
 interface IProps {

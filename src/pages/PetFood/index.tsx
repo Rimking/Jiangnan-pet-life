@@ -1,7 +1,7 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input, Textarea } from '@tarojs/components';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import {
   createFoodData,
@@ -41,6 +41,7 @@ const PetFood = memo(function PetFood() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState(defaultForm);
+  const previousActivePetIdRef = useRef(activePetId);
   const loggedIn = isLoggedIn();
   const hasActivePet = Boolean(activePetId && activePet);
   const canSubmit = hasActivePet;
@@ -101,6 +102,13 @@ const PetFood = memo(function PetFood() {
     setForm(defaultForm);
     setEditingId('');
   };
+
+  useEffect(() => {
+    if (previousActivePetIdRef.current && previousActivePetIdRef.current !== activePetId) {
+      resetForm();
+    }
+    previousActivePetIdRef.current = activePetId;
+  }, [activePetId]);
 
   const handleEdit = (item: FoodItem) => {
     setEditingId(item.id);
@@ -355,6 +363,16 @@ const PetFood = memo(function PetFood() {
               </View>
             ) : null}
           </View>
+          {hasActivePet ? (
+            <View className="mb-4 rounded-[18rpx] bg-[#FFF4CC] px-4 py-3">
+              <Text className="text-[22rpx] text-[#7A5A00] block">
+                当前内容会保存到 {activePet?.name}
+              </Text>
+              <Text className="text-[20rpx] text-[#9B7A1C] mt-[6rpx] block">
+                切换宠物时会自动结束当前编辑，避免把内容保存到错误档案里。
+              </Text>
+            </View>
+          ) : null}
           <View className="grid grid-cols-2 gap-3">
             <View className="col-span-2 rounded-[16rpx] bg-[#F7F7F7] p-4">
               <Text className="text-[22rpx] text-[#666]">食物名称</Text>

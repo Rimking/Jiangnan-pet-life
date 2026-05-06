@@ -14,7 +14,7 @@ const routeConfigList = [
   {
     path: '/pages/SendPetSchedule/index',
     title: '快捷提醒',
-    isTabBar: true,
+    isTabBar: false,
   },
   {
     path: '/pages/PetKnowledge/index',

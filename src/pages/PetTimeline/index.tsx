@@ -30,7 +30,6 @@ type TimelineSourceType =
 type TimelineItem = {
   id: string;
   sourceId: string;
-  sourceType: string;
   petId: string;
   date: string;
   time: string;
@@ -70,21 +69,23 @@ const sourceActionMap: Record<
 > = {
   schedule: {
     title: '补提醒',
-    url: (petId, date) => `/pages/AddPetReminder/index?petId=${petId}&date=${date}`,
+    url: (petId, date) =>
+      `/pages/AddPetReminder/index?petId=${petId}&date=${date}&returnTo=timeline`,
   },
   record: {
     title: '补记录',
     url: (petId, date) =>
-      `/pages/AddPetRecord/index?petId=${petId}&date=${date}&mode=record`,
+      `/pages/AddPetRecord/index?petId=${petId}&date=${date}&mode=record&returnTo=timeline`,
   },
   expense: {
     title: '补花销',
     url: (petId, date) =>
-      `/pages/AddPetRecord/index?petId=${petId}&date=${date}&mode=expense`,
+      `/pages/AddPetRecord/index?petId=${petId}&date=${date}&mode=expense&returnTo=timeline`,
   },
   care: {
     title: '补护理',
-    url: (petId, date) => `/pages/AddPetRecord/index?petId=${petId}&date=${date}&mode=care`,
+    url: (petId, date) =>
+      `/pages/AddPetRecord/index?petId=${petId}&date=${date}&mode=care&returnTo=timeline`,
   },
   food: {
     title: '管食物',
@@ -96,6 +97,44 @@ const sourceActionMap: Record<
   },
   milestone: {
     title: '记里程碑',
+    url: (petId) => `/pages/PetMilestones/index?petId=${petId}`,
+  },
+};
+
+const sourceManageMap: Record<
+  TimelineSourceType,
+  { title: string; url: (petId: string, item: TimelineItem) => string }
+> = {
+  schedule: {
+    title: '编辑提醒',
+    url: (petId, item) =>
+      `/pages/AddPetReminder/index?petId=${petId}&date=${item.date}&scheduleId=${item.sourceId}&returnTo=timeline`,
+  },
+  record: {
+    title: '编辑记录',
+    url: (petId, item) =>
+      `/pages/AddPetRecord/index?petId=${petId}&date=${item.date}&mode=record&sourceId=${item.sourceId}&returnTo=timeline`,
+  },
+  expense: {
+    title: '编辑花销',
+    url: (petId, item) =>
+      `/pages/AddPetRecord/index?petId=${petId}&date=${item.date}&mode=expense&sourceId=${item.sourceId}&returnTo=timeline`,
+  },
+  care: {
+    title: '编辑护理',
+    url: (petId, item) =>
+      `/pages/AddPetRecord/index?petId=${petId}&date=${item.date}&mode=care&sourceId=${item.sourceId}&returnTo=timeline`,
+  },
+  food: {
+    title: '管理食物',
+    url: (petId) => `/pages/PetFood/index?petId=${petId}`,
+  },
+  medicine: {
+    title: '管理用药',
+    url: (petId) => `/pages/PetMedicine/index?petId=${petId}`,
+  },
+  milestone: {
+    title: '查看节点',
     url: (petId) => `/pages/PetMilestones/index?petId=${petId}`,
   },
 };
@@ -137,7 +176,6 @@ const PetTimeline = memo(function PetTimeline() {
           return {
             id: item.id,
             sourceId: item.sourceId,
-            sourceType: item.sourceType,
             petId: item.petId,
             date,
             time,
@@ -204,6 +242,32 @@ const PetTimeline = memo(function PetTimeline() {
     }
   };
 
+  const filteredTimeline = useMemo(() => {
+    return activeFilter === 'all'
+      ? timeline
+      : timeline.filter((item) => item.sourceType === activeFilter);
+  }, [activeFilter, timeline]);
+
+  const summary = useMemo(() => {
+    return timeline.reduce(
+      (acc, item) => {
+        acc.total += 1;
+        acc[item.sourceType] += 1;
+        return acc;
+      },
+      {
+        total: 0,
+        schedule: 0,
+        record: 0,
+        expense: 0,
+        care: 0,
+        food: 0,
+        medicine: 0,
+        milestone: 0,
+      } as Record<'total' | TimelineSourceType, number>
+    );
+  }, [timeline]);
+
   const groupedTimeline = useMemo(() => {
     const groups = filteredTimeline.reduce<Array<{ date: string; items: TimelineItem[] }>>(
       (acc, item) => {
@@ -233,14 +297,14 @@ const PetTimeline = memo(function PetTimeline() {
           desc: '补一条今天的安排',
           color: '#FFF9E8',
           textColor: '#5D4510',
-          url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`,
+          url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}&returnTo=timeline`,
         },
         {
           title: '新增记录',
           desc: '继续补日常或花销',
           color: '#EEF8FF',
           textColor: '#2C5F7A',
-          url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`,
+          url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record&returnTo=timeline`,
         },
         {
           title: '查看报告',
@@ -473,25 +537,39 @@ const PetTimeline = memo(function PetTimeline() {
                     <Text className="text-[22rpx] text-[#555] leading-[1.7]">
                       {item.desc}
                     </Text>
-                    <View className="mt-[10rpx] flex items-center justify-between">
+                    <View className="mt-[10rpx] flex items-center justify-between gap-[12rpx]">
                       <Text className="text-[20rpx] text-[#8a8a8a]">
                         {item.time || '00:00'}
                       </Text>
                       {currentPetId ? (
-                        <View
-                          className="px-[12rpx] py-[6rpx] rounded-[999rpx] bg-white/75"
-                          onClick={() =>
-                            Taro.navigateTo({
-                              url: sourceActionMap[item.sourceType].url(
-                                currentPetId,
-                                today
-                              ),
-                            })
-                          }
-                        >
-                          <Text className="text-[20rpx] text-[#444]">
-                            {sourceActionMap[item.sourceType].title}
-                          </Text>
+                        <View className="flex items-center gap-[8rpx]">
+                          <View
+                            className="px-[12rpx] py-[6rpx] rounded-[999rpx] bg-white/75"
+                            onClick={() =>
+                              Taro.navigateTo({
+                                url: sourceManageMap[item.sourceType].url(currentPetId, item),
+                              })
+                            }
+                          >
+                            <Text className="text-[20rpx] text-[#444]">
+                              {sourceManageMap[item.sourceType].title}
+                            </Text>
+                          </View>
+                          <View
+                            className="px-[12rpx] py-[6rpx] rounded-[999rpx] bg-white/75"
+                            onClick={() =>
+                              Taro.navigateTo({
+                                url: sourceActionMap[item.sourceType].url(
+                                  currentPetId,
+                                  today
+                                ),
+                              })
+                            }
+                          >
+                            <Text className="text-[20rpx] text-[#444]">
+                              {sourceActionMap[item.sourceType].title}
+                            </Text>
+                          </View>
                         </View>
                       ) : null}
                     </View>
@@ -512,7 +590,7 @@ const PetTimeline = memo(function PetTimeline() {
                   className="rounded-[18rpx] bg-[#FFF9E8] p-4"
                   onClick={() =>
                     Taro.navigateTo({
-                      url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`,
+                      url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}&returnTo=timeline`,
                     })
                   }
                 >
@@ -527,7 +605,7 @@ const PetTimeline = memo(function PetTimeline() {
                   className="rounded-[18rpx] bg-[#EEF8FF] p-4"
                   onClick={() =>
                     Taro.navigateTo({
-                      url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`,
+                      url: `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record&returnTo=timeline`,
                     })
                   }
                 >

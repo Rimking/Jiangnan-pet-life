@@ -71,7 +71,9 @@ const ChooseSelectCmp = memo(function ChooseSelectCmp() {
           if (!ensureActivePetContext()) {
             return;
           }
-          openPetPage(`/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`);
+          openPetPage(
+            `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}&returnTo=owner`
+          );
         },
       },
       {
@@ -83,7 +85,9 @@ const ChooseSelectCmp = memo(function ChooseSelectCmp() {
           if (!ensureActivePetContext()) {
             return;
           }
-          openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`);
+          openPetPage(
+            `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record&returnTo=owner`
+          );
         },
       },
       {

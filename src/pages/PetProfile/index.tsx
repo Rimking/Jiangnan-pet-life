@@ -71,7 +71,7 @@ const PetProfile = memo(function PetProfile() {
           onClick: () =>
             stats.reminders === 0
               ? Taro.navigateTo({
-                  url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`,
+                  url: `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}&returnTo=profile`,
                 })
               : switchTabWithActivePet('/pages/PetSchedule/index', currentPetId),
         },
@@ -244,12 +244,12 @@ const PetProfile = memo(function PetProfile() {
               }
               onAddReminder={() =>
                 Taro.navigateTo({
-                  url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${today}`,
+                  url: `/pages/AddPetReminder/index?petId=${activePet.id}&date=${today}&returnTo=profile`,
                 })
               }
               onAddRecord={() =>
                 Taro.navigateTo({
-                  url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${today}&mode=record`,
+                  url: `/pages/AddPetRecord/index?petId=${activePet.id}&date=${today}&mode=record&returnTo=profile`,
                 })
               }
             />

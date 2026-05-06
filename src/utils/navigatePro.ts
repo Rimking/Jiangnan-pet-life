@@ -4,7 +4,7 @@
  * 2. 获取转发url
  */
 
-import Taro, { navigateTo, switchTab, reLaunch } from '@tarojs/taro';
+import { navigateTo, switchTab } from '@tarojs/taro';
 import { getRouteByPath } from '@/routes/utils';
 
 type navigateOptions = Parameters<typeof navigateTo>[0];

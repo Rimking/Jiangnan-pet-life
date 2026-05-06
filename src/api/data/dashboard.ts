@@ -41,6 +41,7 @@ export interface OwnerOverviewData {
   totals: {
     pets: number;
     pendingReminderCount: number;
+    overdueReminderCount?: number;
     achievementCount: number;
     lowInventoryCount: number;
     dueMedicineCount: number;
@@ -64,9 +65,15 @@ export interface OwnerOverviewData {
   quickStats: {
     expenseCount: number;
     careCount: number;
+    recordCount?: number;
     foodCount: number;
     medicineCount: number;
     milestoneCount: number;
+  };
+  recentActivity?: {
+    lastRecordAt?: string;
+    lastCareAt?: string;
+    lastMilestoneAt?: string;
   };
   latestMilestone: {
     id: string;
@@ -130,6 +137,7 @@ export interface ReportData {
     totalExpense: number;
     recentExpense: number;
     pendingSchedules: number;
+    overdueSchedules?: number;
     totalRecords: number;
     totalCareRecords: number;
     totalFoods: number;
@@ -137,6 +145,9 @@ export interface ReportData {
     totalMedicines: number;
     dueMedicines: number;
     totalMilestones: number;
+    daysSinceLastRecord?: number;
+    daysSinceLastCare?: number;
+    daysSinceLastMilestone?: number;
   };
   recent30Days: {
     schedules: number;

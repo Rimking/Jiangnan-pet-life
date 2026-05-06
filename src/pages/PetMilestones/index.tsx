@@ -1,7 +1,7 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input, Textarea } from '@tarojs/components';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import {
   createMilestoneData,
@@ -16,12 +16,12 @@ import { setStoredActivePetId } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 import { formatLocalDateKey } from '@/utils/formatDate';
 
-const defaultForm = {
+const createDefaultForm = () => ({
   title: '',
   date: formatLocalDateKey(new Date()),
   description: '',
   tags: '',
-};
+});
 
 const splitTagText = (value: string) => {
   return value
@@ -44,9 +44,10 @@ const PetMilestones = memo(function PetMilestones() {
   const preferredPetId = params.petId || '';
   const { pets, activePet, activePetId, setActivePetId } = usePetApiPets(preferredPetId);
   const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState(createDefaultForm);
   const [editingId, setEditingId] = useState('');
   const [saving, setSaving] = useState(false);
+  const previousActivePetIdRef = useRef(activePetId);
   const loggedIn = isLoggedIn();
   const hasActivePet = Boolean(activePetId && activePet);
   const canSubmit = hasActivePet;
@@ -85,19 +86,23 @@ const PetMilestones = memo(function PetMilestones() {
     refreshMilestones();
   });
 
+  const resetForm = () => {
+    setForm(createDefaultForm());
+    setEditingId('');
+  };
+
   useEffect(() => {
     if (editingId && !milestones.some((item) => item.id === editingId)) {
-      setEditingId('');
+      resetForm();
     }
   }, [editingId, milestones]);
 
-  const resetForm = () => {
-    setForm({
-      ...defaultForm,
-      date: formatLocalDateKey(new Date()),
-    });
-    setEditingId('');
-  };
+  useEffect(() => {
+    if (previousActivePetIdRef.current && previousActivePetIdRef.current !== activePetId) {
+      resetForm();
+    }
+    previousActivePetIdRef.current = activePetId;
+  }, [activePetId]);
 
   const handleEdit = (item: MilestoneItem) => {
     setEditingId(item.id);
@@ -371,6 +376,16 @@ const PetMilestones = memo(function PetMilestones() {
               </View>
             ) : null}
           </View>
+          {hasActivePet ? (
+            <View className="mb-4 rounded-[18rpx] bg-[#FFF4CC] px-4 py-3">
+              <Text className="text-[22rpx] text-[#7A5A00] block">
+                当前内容会保存到 {activePet?.name}
+              </Text>
+              <Text className="text-[20rpx] text-[#9B7A1C] mt-[6rpx] block">
+                切换宠物时会自动结束当前编辑，避免成长节点记到别的宠物身上。
+              </Text>
+            </View>
+          ) : null}
           <View className="rounded-[16rpx] bg-[#F7F7F7] p-4 mb-3">
             <Text className="text-[22rpx] text-[#666]">标题</Text>
             <Input

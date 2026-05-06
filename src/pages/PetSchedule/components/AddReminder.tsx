@@ -17,7 +17,7 @@ const AddReminder = memo(function AddReminder() {
         <Text className="text-[22rpx] text-[#666] mt-2 block">如果你要补完整提醒信息，建议直接进入正式提醒页。</Text>
         <View
           className="mt-4 h-[84rpx] rounded-[42rpx] bg-[#FFD93B] border-[3rpx] border-solid border-[#262626] flex items-center justify-center"
-          onClick={() => Taro.navigateTo({ url: '/pages/AddPetReminder/index' })}
+          onClick={() => Taro.navigateTo({ url: '/pages/AddPetReminder/index?returnTo=schedule' })}
         >
           <Text className="text-[28rpx] font-semibold text-[#303030]">打开正式提醒页</Text>
         </View>

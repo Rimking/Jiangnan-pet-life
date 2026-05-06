@@ -1,4 +1,4 @@
-import { Button, View } from '@tarojs/components';
+import { View } from '@tarojs/components';
 import { clsx } from 'clsx';
 
 interface ConfirmButtonProps {

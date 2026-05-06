@@ -40,18 +40,18 @@ const ColorPieceBox = (props: IProps) => {
   return (
     <View className="flex w-full ">
       {/* 生成节点。 */}
-    {Array(pieceNumber)
+      {Array(pieceNumber)
         .fill(0)
-        .map((r, i) => {
-        return (
+        .map((_, i) => {
+          return (
             <View key={i}
-            className=" w-[28rpx] h-[28rpx] mr-[8px]"
-            style={{
+              className=" w-[28rpx] h-[28rpx] mr-[8px]"
+              style={{
                 backgroundImage: `linear-gradient(to right, ${colorObject.startColor} 0%, ${colorObject.startColor} ${percentageList[i]}%,
         ${colorObject.endColor} 0%,${colorObject.endColor}  ${100 - percentageList[i]}%)`,
-            }}
+              }}
             ></View>
-        );
+          );
         })}
     </View>
   );

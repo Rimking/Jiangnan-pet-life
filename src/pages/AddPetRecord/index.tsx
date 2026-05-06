@@ -18,14 +18,21 @@ import {
   updateExpenseData,
   updateRecordData,
 } from '@/api/data';
-import { setStoredActivePetId } from '@/utils/activePetState';
+import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn } from '@/utils/authState';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
-import { Input, Text, View } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
-import { memo, useMemo, useState } from 'react';
 
 type RecordMode = 'record' | 'expense' | 'care';
+type ReturnTarget =
+  | 'timeline'
+  | 'schedule'
+  | 'care-stats'
+  | 'expense-stats'
+  | 'report'
+  | 'service-center'
+  | 'owner'
+  | 'profile'
+  | 'detail';
 
 type CareTemplateItem = {
   name: string;
@@ -64,6 +71,8 @@ const AddPetRecord = memo(function AddPetRecord() {
   const { params } = useRouter();
   const initialPetId = params.petId || '';
   const sourceId = params.sourceId || '';
+  const returnTo = (params.returnTo as ReturnTarget) || 'timeline';
+  const returnMode = params.returnMode === 'subscription' ? 'subscription' : 'member';
   const defaultDate = useMemo(() => params.date || toDateInput(new Date()), [params.date]);
   const initialMode = (params.mode as RecordMode) || 'record';
   const pageMode = sourceId ? 'edit' : 'create';
@@ -153,7 +162,7 @@ const AddPetRecord = memo(function AddPetRecord() {
   };
 
   const handleSave = async () => {
-    const loginUrl = `/pages/AddPetRecord/index?petId=${selectedPetId}&date=${date}&mode=${mode}${sourceId ? `&sourceId=${sourceId}` : ''}`;
+    const loginUrl = `/pages/AddPetRecord/index?petId=${selectedPetId}&date=${date}&mode=${mode}${sourceId ? `&sourceId=${sourceId}` : ''}&returnTo=${returnTo}${returnTo === 'service-center' ? `&returnMode=${returnMode}` : ''}`;
     if (!ensureLoggedIn(loginUrl)) {
       return;
     }
@@ -257,6 +266,40 @@ const AddPetRecord = memo(function AddPetRecord() {
         icon: 'success',
       });
       setTimeout(() => {
+        if (returnTo === 'schedule') {
+          switchTabWithActivePet('/pages/PetSchedule/index', selectedPetId);
+          return;
+        }
+        if (returnTo === 'profile') {
+          switchTabWithActivePet('/pages/PetProfile/index', selectedPetId);
+          return;
+        }
+        if (returnTo === 'owner') {
+          switchTabWithActivePet('/pages/PetOwner/index', selectedPetId);
+          return;
+        }
+        if (returnTo === 'care-stats') {
+          Taro.redirectTo({ url: `/pages/PetCareStats/index?petId=${selectedPetId}` });
+          return;
+        }
+        if (returnTo === 'expense-stats') {
+          Taro.redirectTo({ url: `/pages/PetExpenseStats/index?petId=${selectedPetId}` });
+          return;
+        }
+        if (returnTo === 'report') {
+          Taro.redirectTo({ url: `/pages/PetReport/index?petId=${selectedPetId}` });
+          return;
+        }
+        if (returnTo === 'service-center') {
+          Taro.redirectTo({
+            url: `/pages/PetServiceCenter/index?mode=${returnMode}&petId=${selectedPetId}`,
+          });
+          return;
+        }
+        if (returnTo === 'detail') {
+          Taro.redirectTo({ url: `/pages/PetDetailPage/index?petId=${selectedPetId}` });
+          return;
+        }
         Taro.redirectTo({ url: `/pages/PetTimeline/index?petId=${selectedPetId}` });
       }, 300);
     } catch (error) {

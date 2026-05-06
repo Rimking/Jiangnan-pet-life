@@ -526,7 +526,9 @@ const PetDetailPage = memo(function PetDetailPage() {
               if (!ensureLoggedIn(`/pages/PetDetailPage/index?petId=${petId}`)) {
                 return;
               }
-              Taro.navigateTo({ url: `/pages/AddPetReminder/index?petId=${petId}&date=${today}` });
+              Taro.navigateTo({
+                url: `/pages/AddPetReminder/index?petId=${petId}&date=${today}&returnTo=detail`,
+              });
             }}
           >
             <Text className="text-[28rpx] text-white font-semibold">新增提醒</Text>
@@ -539,7 +541,7 @@ const PetDetailPage = memo(function PetDetailPage() {
                 return;
               }
               Taro.navigateTo({
-                url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=record`,
+                url: `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=record&returnTo=detail`,
               });
             }}
           >

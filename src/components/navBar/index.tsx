@@ -51,7 +51,12 @@ function NavTab(props: CustomNavOption) {
           backClick();
           return;
         }
-        Taro.navigateBack();
+        const pages = Taro.getCurrentPages();
+        if (pages.length > 1) {
+          Taro.navigateBack();
+          return;
+        }
+        Taro.switchTab({ url: '/pages/PetProfile/index' });
       }}
     >
       <Image src={Back} className="w-[40px] h-[40px]" />

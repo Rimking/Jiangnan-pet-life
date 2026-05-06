@@ -3,6 +3,13 @@ import { getReportData, ReportData } from '@/api/data';
 import { PET_UI } from '@/constants/petUi';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
+import {
+  buildReportFocusCards,
+  buildReportRecommendations,
+  buildReportRhythmSummary,
+  buildReportSignals,
+  getSignalToneStyles,
+} from '@/utils/petSignals';
 import { View, Text } from '@tarojs/components';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -42,6 +49,7 @@ const PetReport = memo(function PetReport() {
     report?.petOptions?.find((item) => item.active)?.petId ||
     '';
   const hasValidPetContext = Boolean(currentPetId && report?.activePet);
+  const canRenderReportContent = Boolean(loggedIn && hasValidPetContext);
   const ensureActivePetContext = () => {
     if (!ensureLoggedIn(`/pages/PetReport/index${initialPetId ? `?petId=${initialPetId}` : ''}`)) {
       return false;
@@ -201,13 +209,17 @@ const PetReport = memo(function PetReport() {
       title: '补提醒',
       visible: (report?.summary.pendingSchedules || 0) === 0,
       onClick: () =>
-        currentPetId ? openPetPage(`/pages/AddPetReminder/index?petId=${currentPetId}`) : undefined,
+        currentPetId
+          ? openPetPage(`/pages/AddPetReminder/index?petId=${currentPetId}&returnTo=report`)
+          : undefined,
     },
     {
       title: '补记录',
       visible: (report?.summary.totalRecords || 0) === 0,
       onClick: () =>
-        currentPetId ? openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&mode=record`) : undefined,
+        currentPetId
+          ? openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&mode=record&returnTo=report`)
+          : undefined,
     },
     {
       title: '补里程碑',
@@ -216,6 +228,19 @@ const PetReport = memo(function PetReport() {
         currentPetId ? openPetPage(`/pages/PetMilestones/index?petId=${currentPetId}`) : undefined,
     },
   ].filter((item) => item.visible);
+  const attentionSignals = useMemo(
+    () => buildReportSignals(report, currentPetId),
+    [currentPetId, report]
+  );
+  const focusCards = useMemo(
+    () => buildReportFocusCards(report, currentPetId),
+    [currentPetId, report]
+  );
+  const rhythmSummary = useMemo(() => buildReportRhythmSummary(report), [report]);
+  const smartRecommendations = useMemo(
+    () => buildReportRecommendations(report, currentPetId),
+    [currentPetId, report]
+  );
 
   return (
     <BasicLayout
@@ -308,6 +333,192 @@ const PetReport = memo(function PetReport() {
 
         {hasValidPetContext ? (
           <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">本周重点</Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.7]">
+              这部分会把近 7 天和近 30 天里最值得先看的变化整理成阶段重点，不用自己再从零读所有数字。
+            </Text>
+            <View className="grid grid-cols-1 gap-3 mt-4">
+              {focusCards.map((item) => {
+                const toneStyle = getSignalToneStyles(item.tone);
+                return (
+                  <View
+                    key={item.key}
+                    className="rounded-[18rpx] p-4"
+                    style={{ backgroundColor: toneStyle.background }}
+                    onClick={() => {
+                      if (item.actionType === 'switchTab') {
+                        if (!ensureActivePetContext()) {
+                          return;
+                        }
+                        switchTabWithActivePet(item.actionUrl, currentPetId);
+                        return;
+                      }
+                      openPetPage(item.actionUrl);
+                    }}
+                  >
+                    <Text
+                      className="text-[24rpx] font-semibold block"
+                      style={{ color: toneStyle.title }}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text
+                      className="text-[22rpx] mt-[8rpx] block leading-[1.6]"
+                      style={{ color: toneStyle.body }}
+                    >
+                      {item.description}
+                    </Text>
+                    <Text
+                      className="text-[20rpx] mt-[10rpx] block"
+                      style={{ color: toneStyle.action }}
+                    >
+                      {item.actionLabel}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
+
+        {hasValidPetContext && rhythmSummary ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">照护节奏评价</Text>
+            <View
+              className="rounded-[18rpx] p-4 mt-4"
+              style={{ backgroundColor: getSignalToneStyles(rhythmSummary.tone).background }}
+            >
+              <Text
+                className="text-[24rpx] font-semibold block"
+                style={{ color: getSignalToneStyles(rhythmSummary.tone).title }}
+              >
+                {rhythmSummary.title}
+              </Text>
+              <Text
+                className="text-[22rpx] mt-[8rpx] block leading-[1.6]"
+                style={{ color: getSignalToneStyles(rhythmSummary.tone).body }}
+              >
+                {rhythmSummary.description}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {hasValidPetContext ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">报告里的重点预警</Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.7]">
+              这里不是单纯展示数字，而是把最值得先处理的提醒、库存、用药和记录缺口单独拎出来。
+            </Text>
+            {attentionSignals.length ? (
+              <View className="grid grid-cols-1 gap-3 mt-4">
+                {attentionSignals.map((item) => {
+                  const toneStyle = getSignalToneStyles(item.tone);
+                  return (
+                    <View
+                      key={item.key}
+                      className="rounded-[18rpx] p-4"
+                      style={{ backgroundColor: toneStyle.background }}
+                      onClick={() => {
+                        if (item.actionType === 'switchTab') {
+                          if (!ensureActivePetContext()) {
+                            return;
+                          }
+                          switchTabWithActivePet(item.actionUrl, currentPetId);
+                          return;
+                        }
+                        openPetPage(item.actionUrl);
+                      }}
+                    >
+                      <Text
+                        className="text-[24rpx] font-semibold block"
+                        style={{ color: toneStyle.title }}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text
+                        className="text-[22rpx] mt-[8rpx] block leading-[1.6]"
+                        style={{ color: toneStyle.body }}
+                      >
+                        {item.description}
+                      </Text>
+                      <Text
+                        className="text-[20rpx] mt-[10rpx] block"
+                        style={{ color: toneStyle.action }}
+                      >
+                        {item.actionLabel}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View className="rounded-[18rpx] bg-[#EEF7F1] p-4 mt-4">
+                <Text className="text-[24rpx] font-semibold text-[#2D6B49] block">
+                  当前阶段比较平稳
+                </Text>
+                <Text className="text-[22rpx] text-[#4C7B61] mt-[8rpx] block leading-[1.6]">
+                  最近的数据已经足够连续，当前报告里没有明显积压项，可以继续保持记录节奏。
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {hasValidPetContext ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">系统建议的下一步</Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.7]">
+              这些建议会根据报告里的趋势、分类和数据缺口自动变化，适合在看完摘要之后直接继续行动。
+            </Text>
+            {smartRecommendations.length ? (
+              <View className="grid grid-cols-1 gap-3 mt-4">
+                {smartRecommendations.map((item) => {
+                  const toneStyle = getSignalToneStyles(item.tone);
+                  return (
+                    <View
+                      key={item.key}
+                      className="rounded-[18rpx] p-4"
+                      style={{ backgroundColor: '#F7FAFF' }}
+                      onClick={() => openPetPage(item.actionUrl)}
+                    >
+                      <Text
+                        className="text-[24rpx] font-semibold block"
+                        style={{ color: toneStyle.title }}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text
+                        className="text-[22rpx] mt-[8rpx] block leading-[1.6]"
+                        style={{ color: toneStyle.body }}
+                      >
+                        {item.description}
+                      </Text>
+                      <Text
+                        className="text-[20rpx] mt-[10rpx] block"
+                        style={{ color: toneStyle.action }}
+                      >
+                        {item.actionLabel}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View className="rounded-[18rpx] bg-[#EEF7F1] p-4 mt-4">
+                <Text className="text-[24rpx] font-semibold text-[#2D6B49] block">
+                  当前没有额外推荐动作
+                </Text>
+                <Text className="text-[22rpx] text-[#4C7B61] mt-[8rpx] block leading-[1.6]">
+                  当前这份报告已经比较完整，后面继续按日常节奏补提醒、记录和里程碑就可以。
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {hasValidPetContext ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
             <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">报告后的下一步</Text>
             <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.7]">
               看完摘要后，最适合继续补齐缺失数据，或者直接回到时间线和日程里处理今天的事情。
@@ -364,209 +575,221 @@ const PetReport = memo(function PetReport() {
           </View>
         ) : null}
 
-        <View className="grid grid-cols-2 gap-3 mb-5">
-          {summaryCards.map((item) => (
-            <View
-              key={item.title}
-              className={`rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)] ${item.fullWidth ? 'col-span-2' : ''}`}
-              onClick={() => {
-                if (item.url === '/pages/PetSchedule/index') {
-                  if (!ensureActivePetContext()) {
-                    return;
-                  }
-                  switchTabWithActivePet(item.url, currentPetId);
-                  return;
-                }
-                openPetPage(item.url);
-              }}
-            >
-              <Text className="text-[22rpx] text-[#777]">{item.title}</Text>
-              <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
-                {item.value}
-              </Text>
-              <Text className="text-[20rpx] text-[#5a78d4] mt-[10rpx] block">继续查看</Text>
-            </View>
-          ))}
-        </View>
-
-        <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">近 30 天数据量</Text>
-          <View className="grid grid-cols-2 gap-3">
-            <View className="rounded-[18rpx] bg-[#EEF4FF] p-4">
-              <Text className="text-[22rpx] text-[#6a7ca8]">提醒</Text>
-              <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
-                {report?.recent30Days.schedules || 0}
-              </Text>
-            </View>
-            <View className="rounded-[18rpx] bg-[#FFF7E5] p-4">
-              <Text className="text-[22rpx] text-[#8a6a2c]">花销</Text>
-              <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
-                {report?.recent30Days.expenses || 0}
-              </Text>
-            </View>
-            <View className="rounded-[18rpx] bg-[#F5F0FF] p-4">
-              <Text className="text-[22rpx] text-[#7a61a7]">护理</Text>
-              <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
-                {report?.recent30Days.careRecords || 0}
-              </Text>
-            </View>
-            <View className="rounded-[18rpx] bg-[#EFFAF4] p-4">
-              <Text className="text-[22rpx] text-[#56836a]">日常</Text>
-              <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
-                {report?.recent30Days.records || 0}
-              </Text>
-            </View>
-            <View className="rounded-[18rpx] bg-[#FFF8E6] p-4">
-              <Text className="text-[22rpx] text-[#8A6A2C]">食物</Text>
-              <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
-                {report?.recent30Days.foods || 0}
-              </Text>
-            </View>
-            <View className="rounded-[18rpx] bg-[#F4EEFF] p-4">
-              <Text className="text-[22rpx] text-[#7A61A7]">用药</Text>
-              <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
-                {report?.recent30Days.medicines || 0}
-              </Text>
-            </View>
-            <View className="rounded-[18rpx] bg-[#FFF0F6] p-4 col-span-2">
-              <Text className="text-[22rpx] text-[#8A5374]">里程碑</Text>
-              <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
-                {report?.recent30Days.milestones || 0}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">亮点总结</Text>
-          {(report?.highlights || []).length ? (
-            (report?.highlights || []).map((item) => (
-              <View key={item} className="rounded-[16rpx] bg-[#FFF9E8] p-4 mb-3">
-                <Text className="text-[22rpx] text-[#6f5a2b] leading-[1.7]">{item}</Text>
-              </View>
-            ))
-          ) : (
-            <View className="rounded-[16rpx] bg-[#FFF9E8] p-4">
-              <Text className="text-[22rpx] text-[#6f5a2b] leading-[1.7]">
-                {report?.activePet?.name || '当前宠物'}最近还没有足够的数据生成亮点总结，先补一些提醒、记录或里程碑，报告会逐步变完整。
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">近 7 天趋势</Text>
-          {(report?.recent7Days || []).length ? (
-            (report?.recent7Days || []).map((item) => (
-              <View key={item.date} className="rounded-[18rpx] bg-[#FFF9E8] p-4 mb-3">
-                <View className="flex items-center justify-between">
-                  <Text className="text-[22rpx] text-[#53411c]">{item.label}</Text>
-                  <Text className="text-[20rpx] text-[#8a7442]">花销 ￥{Number(item.expense || 0).toFixed(2)}</Text>
+        {canRenderReportContent ? (
+          <>
+            <View className="grid grid-cols-2 gap-3 mb-5">
+              {summaryCards.map((item) => (
+                <View
+                  key={item.title}
+                  className={`rounded-[22rpx] bg-white p-5 shadow-[0_14rpx_26rpx_rgba(0,0,0,0.06)] ${item.fullWidth ? 'col-span-2' : ''}`}
+                  onClick={() => {
+                    if (item.url === '/pages/PetSchedule/index') {
+                      if (!ensureActivePetContext()) {
+                        return;
+                      }
+                      switchTabWithActivePet(item.url, currentPetId);
+                      return;
+                    }
+                    openPetPage(item.url);
+                  }}
+                >
+                  <Text className="text-[22rpx] text-[#777]">{item.title}</Text>
+                  <Text className="text-[40rpx] font-semibold text-[#2c2c2c] mt-[8rpx] block">
+                    {item.value}
+                  </Text>
+                  <Text className="text-[20rpx] text-[#5a78d4] mt-[10rpx] block">继续查看</Text>
                 </View>
-                <Text className="text-[20rpx] text-[#766238] mt-[6rpx] block">
-                  日常 {item.recordCount} 条 · 护理 {item.careCount} 条
-                </Text>
-              </View>
-            ))
-          ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">最近 7 天还没有可统计的趋势数据。</Text>
-          )}
-        </View>
+              ))}
+            </View>
 
-        <View className="rounded-[24rpx] bg-white p-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">花销构成</Text>
-          <Text className="text-[22rpx] text-[#666] mb-4 block">
-            当前最高频的花销分类：{report?.topExpenseCategory || '未分类'}
-          </Text>
-          {expenseList.length ? (
-            expenseList.map(([name, amount]) => (
-              <View key={name} className="mb-3">
-                <View className="flex items-center justify-between mb-[6rpx]">
-                  <Text className="text-[22rpx] text-[#444]">{name}</Text>
-                  <Text className="text-[22rpx] text-[#777]">￥{Number(amount).toFixed(2)}</Text>
-                </View>
-                <View className="h-[14rpx] rounded-[999rpx] bg-[#F4F4F4] overflow-hidden">
-                  <View
-                    className="h-full rounded-[999rpx] bg-[#FFC58A]"
-                    style={{
-                      width: `${Math.min(
-                        (Number(amount) /
-                          Math.max(...expenseList.map(([, value]) => Number(value)), 1)) *
-                          100,
-                        100
-                      )}%`,
-                    }}
-                  />
-                </View>
-              </View>
-            ))
-          ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">当前还没有花销数据。</Text>
-          )}
-        </View>
-
-        <View className="rounded-[24rpx] bg-white p-5 mt-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">护理分布</Text>
-          {careList.length ? (
-            careList.map(([name, count]) => (
-              <View
-                key={name}
-                className="flex items-center justify-between py-[10rpx] border-b border-[#efefef] last:border-b-0"
-              >
-                <Text className="text-[22rpx] text-[#444]">{name}</Text>
-                <Text className="text-[22rpx] text-[#777]">{count} 次</Text>
-              </View>
-            ))
-          ) : (
-            <Text className="text-[24rpx] text-[#8a8a8a]">当前还没有护理分类数据。</Text>
-          )}
-        </View>
-
-        <View className="rounded-[24rpx] bg-white p-5 mt-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
-          <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">最近动态</Text>
-          {(report?.recentMoments || []).length ? (
-            (report?.recentMoments || []).map((item) => (
-              <View
-                key={item.id}
-                className="rounded-[16rpx] bg-[#F8FAFF] p-4 mb-3"
-                onClick={() => handleRecentMomentClick(item.type)}
-              >
-                <View className="flex items-center justify-between">
-                  <Text className="text-[22rpx] text-[#333]">{item.title}</Text>
-                  <Text className="text-[18rpx] text-[#8a8a8a]">
-                    {typeLabelMap[item.type] || item.type}
+            <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+              <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">近 30 天数据量</Text>
+              <View className="grid grid-cols-2 gap-3">
+                <View className="rounded-[18rpx] bg-[#EEF4FF] p-4">
+                  <Text className="text-[22rpx] text-[#6a7ca8]">提醒</Text>
+                  <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
+                    {report?.recent30Days.schedules || 0}
                   </Text>
                 </View>
-                <Text className="text-[20rpx] text-[#7b7b7b] mt-[6rpx] block">
-                  {item.date.slice(0, 10)}
-                </Text>
-                <Text className="text-[18rpx] text-[#5a78d4] mt-[8rpx] block">查看相关页面</Text>
-              </View>
-            ))
-          ) : (
-            <View className="rounded-[16rpx] bg-[#F8FAFF] p-4">
-              <Text className="text-[24rpx] text-[#8a8a8a]">
-                最近还没有新的动态，可以先去补提醒、记录或里程碑，新的数据会很快回流到这里。
-              </Text>
-              {hasValidPetContext ? (
-                <View className="flex gap-3 mt-4">
-                  <View
-                    className="flex-1 rounded-[16rpx] bg-[#FFD93B] px-4 py-3 flex items-center justify-center"
-                    onClick={() => openPetPage(`/pages/AddPetReminder/index?petId=${currentPetId}`)}
-                  >
-                    <Text className="text-[22rpx] font-semibold text-[#5D4510]">新增提醒</Text>
-                  </View>
-                  <View
-                    className="flex-1 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#D8E6FF] px-4 py-3 flex items-center justify-center"
-                    onClick={() => openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&mode=record`)}
-                  >
-                    <Text className="text-[22rpx] text-[#466481]">新增记录</Text>
-                  </View>
+                <View className="rounded-[18rpx] bg-[#FFF7E5] p-4">
+                  <Text className="text-[22rpx] text-[#8a6a2c]">花销</Text>
+                  <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
+                    {report?.recent30Days.expenses || 0}
+                  </Text>
                 </View>
-              ) : null}
+                <View className="rounded-[18rpx] bg-[#F5F0FF] p-4">
+                  <Text className="text-[22rpx] text-[#7a61a7]">护理</Text>
+                  <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
+                    {report?.recent30Days.careRecords || 0}
+                  </Text>
+                </View>
+                <View className="rounded-[18rpx] bg-[#EFFAF4] p-4">
+                  <Text className="text-[22rpx] text-[#56836a]">日常</Text>
+                  <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
+                    {report?.recent30Days.records || 0}
+                  </Text>
+                </View>
+                <View className="rounded-[18rpx] bg-[#FFF8E6] p-4">
+                  <Text className="text-[22rpx] text-[#8A6A2C]">食物</Text>
+                  <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
+                    {report?.recent30Days.foods || 0}
+                  </Text>
+                </View>
+                <View className="rounded-[18rpx] bg-[#F4EEFF] p-4">
+                  <Text className="text-[22rpx] text-[#7A61A7]">用药</Text>
+                  <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
+                    {report?.recent30Days.medicines || 0}
+                  </Text>
+                </View>
+                <View className="rounded-[18rpx] bg-[#FFF0F6] p-4 col-span-2">
+                  <Text className="text-[22rpx] text-[#8A5374]">里程碑</Text>
+                  <Text className="text-[34rpx] font-semibold text-[#2c2c2c] mt-[6rpx]">
+                    {report?.recent30Days.milestones || 0}
+                  </Text>
+                </View>
+              </View>
             </View>
-          )}
-        </View>
+
+            <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+              <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">亮点总结</Text>
+              {(report?.highlights || []).length ? (
+                (report?.highlights || []).map((item) => (
+                  <View key={item} className="rounded-[16rpx] bg-[#FFF9E8] p-4 mb-3">
+                    <Text className="text-[22rpx] text-[#6f5a2b] leading-[1.7]">{item}</Text>
+                  </View>
+                ))
+              ) : (
+                <View className="rounded-[16rpx] bg-[#FFF9E8] p-4">
+                  <Text className="text-[22rpx] text-[#6f5a2b] leading-[1.7]">
+                    {report?.activePet?.name || '当前宠物'}最近还没有足够的数据生成亮点总结，先补一些提醒、记录或里程碑，报告会逐步变完整。
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+              <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">近 7 天趋势</Text>
+              {(report?.recent7Days || []).length ? (
+                (report?.recent7Days || []).map((item) => (
+                  <View key={item.date} className="rounded-[18rpx] bg-[#FFF9E8] p-4 mb-3">
+                    <View className="flex items-center justify-between">
+                      <Text className="text-[22rpx] text-[#53411c]">{item.label}</Text>
+                      <Text className="text-[20rpx] text-[#8a7442]">花销 ￥{Number(item.expense || 0).toFixed(2)}</Text>
+                    </View>
+                    <Text className="text-[20rpx] text-[#766238] mt-[6rpx] block">
+                      日常 {item.recordCount} 条 · 护理 {item.careCount} 条
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text className="text-[24rpx] text-[#8a8a8a]">最近 7 天还没有可统计的趋势数据。</Text>
+              )}
+            </View>
+
+            <View className="rounded-[24rpx] bg-white p-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+              <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">花销构成</Text>
+              <Text className="text-[22rpx] text-[#666] mb-4 block">
+                当前最高频的花销分类：{report?.topExpenseCategory || '未分类'}
+              </Text>
+              {expenseList.length ? (
+                expenseList.map(([name, amount]) => (
+                  <View key={name} className="mb-3">
+                    <View className="flex items-center justify-between mb-[6rpx]">
+                      <Text className="text-[22rpx] text-[#444]">{name}</Text>
+                      <Text className="text-[22rpx] text-[#777]">￥{Number(amount).toFixed(2)}</Text>
+                    </View>
+                    <View className="h-[14rpx] rounded-[999rpx] bg-[#F4F4F4] overflow-hidden">
+                      <View
+                        className="h-full rounded-[999rpx] bg-[#FFC58A]"
+                        style={{
+                          width: `${Math.min(
+                            (Number(amount) /
+                              Math.max(...expenseList.map(([, value]) => Number(value)), 1)) *
+                              100,
+                            100
+                          )}%`,
+                        }}
+                      />
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text className="text-[24rpx] text-[#8a8a8a]">当前还没有花销数据。</Text>
+              )}
+            </View>
+
+            <View className="rounded-[24rpx] bg-white p-5 mt-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+              <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">护理分布</Text>
+              {careList.length ? (
+                careList.map(([name, count]) => (
+                  <View
+                    key={name}
+                    className="flex items-center justify-between py-[10rpx] border-b border-[#efefef] last:border-b-0"
+                  >
+                    <Text className="text-[22rpx] text-[#444]">{name}</Text>
+                    <Text className="text-[22rpx] text-[#777]">{count} 次</Text>
+                  </View>
+                ))
+              ) : (
+                <Text className="text-[24rpx] text-[#8a8a8a]">当前还没有护理分类数据。</Text>
+              )}
+            </View>
+
+            <View className="rounded-[24rpx] bg-white p-5 mt-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+              <Text className="text-[28rpx] font-semibold text-[#2c2c2c] mb-4 block">最近动态</Text>
+              {(report?.recentMoments || []).length ? (
+                (report?.recentMoments || []).map((item) => (
+                  <View
+                    key={item.id}
+                    className="rounded-[16rpx] bg-[#F8FAFF] p-4 mb-3"
+                    onClick={() => handleRecentMomentClick(item.type)}
+                  >
+                    <View className="flex items-center justify-between">
+                      <Text className="text-[22rpx] text-[#333]">{item.title}</Text>
+                      <Text className="text-[18rpx] text-[#8a8a8a]">
+                        {typeLabelMap[item.type] || item.type}
+                      </Text>
+                    </View>
+                    <Text className="text-[20rpx] text-[#7b7b7b] mt-[6rpx] block">
+                      {item.date.slice(0, 10)}
+                    </Text>
+                    <Text className="text-[18rpx] text-[#5a78d4] mt-[8rpx] block">查看相关页面</Text>
+                  </View>
+                ))
+              ) : (
+                <View className="rounded-[16rpx] bg-[#F8FAFF] p-4">
+                  <Text className="text-[24rpx] text-[#8a8a8a]">
+                    最近还没有新的动态，可以先去补提醒、记录或里程碑，新的数据会很快回流到这里。
+                  </Text>
+                  {hasValidPetContext ? (
+                    <View className="flex gap-3 mt-4">
+                      <View
+                        className="flex-1 rounded-[16rpx] bg-[#FFD93B] px-4 py-3 flex items-center justify-center"
+                        onClick={() =>
+                          openPetPage(
+                            `/pages/AddPetReminder/index?petId=${currentPetId}&returnTo=report`
+                          )
+                        }
+                      >
+                        <Text className="text-[22rpx] font-semibold text-[#5D4510]">新增提醒</Text>
+                      </View>
+                      <View
+                        className="flex-1 rounded-[16rpx] bg-white border-[2rpx] border-solid border-[#D8E6FF] px-4 py-3 flex items-center justify-center"
+                        onClick={() =>
+                          openPetPage(
+                            `/pages/AddPetRecord/index?petId=${currentPetId}&mode=record&returnTo=report`
+                          )
+                        }
+                      >
+                        <Text className="text-[22rpx] text-[#466481]">新增记录</Text>
+                      </View>
+                    </View>
+                  ) : null}
+                </View>
+              )}
+            </View>
+          </>
+        ) : null}
       </View>
     </BasicLayout>
   );

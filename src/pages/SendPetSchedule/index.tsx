@@ -55,7 +55,10 @@ const SendPetSchedule = memo(function SendPetSchedule() {
         {
           title: '补记录',
           subtitle: '继续补日常、花销或护理记录',
-          onClick: () => Taro.navigateTo({ url: `/pages/AddPetRecord/index?petId=${activePetId}&mode=record` }),
+          onClick: () =>
+            Taro.navigateTo({
+              url: `/pages/AddPetRecord/index?petId=${activePetId}&mode=record&returnTo=schedule`,
+            }),
         },
       ]
     : [];

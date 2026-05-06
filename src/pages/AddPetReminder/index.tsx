@@ -23,11 +23,21 @@ const typeOptions: Array<{ label: string; value: ReminderType }> = [
   { label: '健康提醒', value: 'health' },
   { label: '行为提醒', value: 'behavior' },
 ];
+type ReturnTarget =
+  | 'schedule'
+  | 'timeline'
+  | 'report'
+  | 'service-center'
+  | 'owner'
+  | 'profile'
+  | 'detail';
 
 const AddPetReminder = memo(function AddPetReminder() {
   const { params } = useRouter();
   const initialPetId = params.petId || '';
   const scheduleId = params.scheduleId || '';
+  const returnTo = (params.returnTo as ReturnTarget) || 'schedule';
+  const returnMode = params.returnMode === 'subscription' ? 'subscription' : 'member';
   const pageMode = scheduleId ? 'edit' : 'create';
   const defaultDate = useMemo(
     () => params.date || formatLocalDateKey(new Date()),
@@ -76,7 +86,7 @@ const AddPetReminder = memo(function AddPetReminder() {
   }, [defaultDate, pageMode, scheduleId]);
 
   const handleSave = async () => {
-    const loginUrl = `/pages/AddPetReminder/index?petId=${selectedPetId}&date=${date}${scheduleId ? `&scheduleId=${scheduleId}` : ''}`;
+    const loginUrl = `/pages/AddPetReminder/index?petId=${selectedPetId}&date=${date}${scheduleId ? `&scheduleId=${scheduleId}` : ''}&returnTo=${returnTo}${returnTo === 'service-center' ? `&returnMode=${returnMode}` : ''}`;
     if (!ensureLoggedIn(loginUrl)) {
       return;
     }
@@ -118,10 +128,35 @@ const AddPetReminder = memo(function AddPetReminder() {
         title: pageMode === 'edit' ? '提醒已更新' : '提醒已保存',
         icon: 'success',
       });
-      setTimeout(
-        () => switchTabWithActivePet('/pages/PetSchedule/index', selectedPetId),
-        300
-      );
+      setTimeout(() => {
+        if (returnTo === 'timeline') {
+          Taro.redirectTo({ url: `/pages/PetTimeline/index?petId=${selectedPetId}` });
+          return;
+        }
+        if (returnTo === 'report') {
+          Taro.redirectTo({ url: `/pages/PetReport/index?petId=${selectedPetId}` });
+          return;
+        }
+        if (returnTo === 'service-center') {
+          Taro.redirectTo({
+            url: `/pages/PetServiceCenter/index?mode=${returnMode}&petId=${selectedPetId}`,
+          });
+          return;
+        }
+        if (returnTo === 'owner') {
+          switchTabWithActivePet('/pages/PetOwner/index', selectedPetId);
+          return;
+        }
+        if (returnTo === 'profile') {
+          switchTabWithActivePet('/pages/PetProfile/index', selectedPetId);
+          return;
+        }
+        if (returnTo === 'detail') {
+          Taro.redirectTo({ url: `/pages/PetDetailPage/index?petId=${selectedPetId}` });
+          return;
+        }
+        switchTabWithActivePet('/pages/PetSchedule/index', selectedPetId);
+      }, 300);
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存失败';
       Taro.showToast({ title: message, icon: 'none' });

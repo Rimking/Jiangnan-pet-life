@@ -7,6 +7,13 @@ import { getOwnerOverviewData, OwnerOverviewData } from '@/api/data';
 import { setStoredActivePetId, switchTabWithActivePet } from '@/utils/activePetState';
 import { ensureLoggedIn, isLoggedIn } from '@/utils/authState';
 import { usePetApiPets } from '@/hooks/usePetApiPets';
+import {
+  buildOwnerFocusCards,
+  buildOwnerRecommendations,
+  buildOwnerRhythmSummary,
+  buildOwnerSignals,
+  getSignalToneStyles,
+} from '@/utils/petSignals';
 
 const PetServiceCenter = memo(function PetServiceCenter() {
   const { params } = useRouter();
@@ -17,6 +24,7 @@ const PetServiceCenter = memo(function PetServiceCenter() {
   const [dashboard, setDashboard] = useState<OwnerOverviewData | null>(null);
   const [loading, setLoading] = useState(false);
   const currentPetId = activePet?.id || activePetId || '';
+  const canRenderOverview = Boolean(loggedIn && pets.length > 0);
   const ensureActivePetContext = () => {
     if (
       !ensureLoggedIn(
@@ -69,11 +77,11 @@ const PetServiceCenter = memo(function PetServiceCenter() {
     }
 
     setLoading(true);
-    return getOwnerOverviewData(activePet?.id || undefined)
+    return getOwnerOverviewData(currentPetId || undefined)
       .then((res) => setDashboard(res))
       .catch(() => setDashboard(null))
       .finally(() => setLoading(false));
-  }, [activePet?.id, loggedIn]);
+  }, [currentPetId, loggedIn]);
 
   useEffect(() => {
     if (activePetId) {
@@ -129,11 +137,11 @@ const PetServiceCenter = memo(function PetServiceCenter() {
             subtitle: '已建立的宠物资料数',
             bg: '#FFF7E5',
             onClick: () =>
-              activePetId
+              currentPetId && activePet
                 ? (() => {
-                    setStoredActivePetId(activePetId);
+                    setStoredActivePetId(currentPetId);
                     Taro.navigateTo({
-                      url: `/pages/PetDetailPage/index?petId=${activePetId}`,
+                      url: `/pages/PetDetailPage/index?petId=${currentPetId}`,
                     });
                   })()
                 : undefined,
@@ -167,8 +175,10 @@ const PetServiceCenter = memo(function PetServiceCenter() {
       subtitle: '继续给当前宠物安排今天的照护任务',
       accent: '#5A78D4',
       onClick: () =>
-        activePetId
-          ? Taro.navigateTo({ url: `/pages/AddPetReminder/index?petId=${activePetId}` })
+        currentPetId && activePet
+          ? Taro.navigateTo({
+              url: `/pages/AddPetReminder/index?petId=${currentPetId}&returnTo=service-center&returnMode=${mode}`,
+            })
           : undefined,
     },
     {
@@ -177,7 +187,9 @@ const PetServiceCenter = memo(function PetServiceCenter() {
       accent: '#8A6A2C',
       onClick: () =>
         currentPetId && activePet
-          ? openPetPage(`/pages/AddPetRecord/index?petId=${currentPetId}&mode=record`)
+          ? openPetPage(
+              `/pages/AddPetRecord/index?petId=${currentPetId}&mode=record&returnTo=service-center&returnMode=${mode}`
+            )
           : undefined,
     },
     {
@@ -185,11 +197,24 @@ const PetServiceCenter = memo(function PetServiceCenter() {
       subtitle: '回看这只宠物最近的记录和成长节点',
       accent: '#7A61A7',
       onClick: () =>
-        activePetId
-          ? Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${activePetId}` })
+        currentPetId && activePet
+          ? Taro.navigateTo({ url: `/pages/PetTimeline/index?petId=${currentPetId}` })
           : undefined,
     },
   ];
+  const attentionSignals = useMemo(
+    () => buildOwnerSignals(dashboard, currentPetId),
+    [currentPetId, dashboard]
+  );
+  const focusCards = useMemo(
+    () => buildOwnerFocusCards(dashboard, currentPetId),
+    [currentPetId, dashboard]
+  );
+  const rhythmSummary = useMemo(() => buildOwnerRhythmSummary(dashboard), [dashboard]);
+  const smartRecommendations = useMemo(
+    () => buildOwnerRecommendations(dashboard, currentPetId),
+    [currentPetId, dashboard]
+  );
 
   return (
     <BasicLayout
@@ -236,6 +261,23 @@ const PetServiceCenter = memo(function PetServiceCenter() {
           </View>
         ) : null}
 
+        {loggedIn && !pets.length ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2c2c2c] block">
+              还没有宠物档案
+            </Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.7]">
+              先添加一只宠物，这里才会开始汇总提醒、库存、疗程和成长节点这些服务视图。
+            </Text>
+            <View
+              className="mt-4 inline-flex px-4 py-3 rounded-[18rpx] bg-[#FFD93B]"
+              onClick={() => Taro.navigateTo({ url: '/pages/EditPetProfile/index' })}
+            >
+              <Text className="text-[22rpx] text-[#5D4510] font-semibold">去添加宠物</Text>
+            </View>
+          </View>
+        ) : null}
+
         <View className="rounded-[28rpx] bg-[#FFF7D5] px-5 py-6 mb-5 shadow-[0_16rpx_34rpx_rgba(230,193,82,0.18)]">
           <Text className="text-[34rpx] font-semibold text-[#5D4510] block">
             {heroTitle}
@@ -270,25 +312,221 @@ const PetServiceCenter = memo(function PetServiceCenter() {
           ) : null}
         </View>
 
-        <View className="grid grid-cols-1 gap-3 mb-5">
-          {serviceCards.map((item) => (
-            <View
-              key={item.title}
-              className="rounded-[24rpx] p-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
-              style={{ backgroundColor: item.bg }}
-              onClick={item.onClick}
-            >
-              <Text className="text-[22rpx] text-[#7A7A7A]">{item.title}</Text>
-              <Text className="text-[42rpx] font-semibold text-[#2C2C2C] mt-[8rpx] block">
-                {item.value}
-              </Text>
-              <Text className="text-[22rpx] text-[#666] mt-[6rpx] leading-[1.5]">
-                {item.subtitle}
-              </Text>
-              <Text className="text-[20rpx] text-[#5A78D4] mt-[10rpx] block">查看详情</Text>
+        {canRenderOverview ? (
+          <View className="grid grid-cols-1 gap-3 mb-5">
+            {serviceCards.map((item) => (
+              <View
+                key={item.title}
+                className="rounded-[24rpx] p-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
+                style={{ backgroundColor: item.bg }}
+                onClick={item.onClick}
+              >
+                <Text className="text-[22rpx] text-[#7A7A7A]">{item.title}</Text>
+                <Text className="text-[42rpx] font-semibold text-[#2C2C2C] mt-[8rpx] block">
+                  {item.value}
+                </Text>
+                <Text className="text-[22rpx] text-[#666] mt-[6rpx] leading-[1.5]">
+                  {item.subtitle}
+                </Text>
+                <Text className="text-[20rpx] text-[#5A78D4] mt-[10rpx] block">查看详情</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {activePet ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2C2C2C] block">
+              今日重点
+            </Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.6]">
+              这里会把今天最值得先做的事情直接拎出来，不用再自己在提醒、库存、用药和成长页之间来回判断。
+            </Text>
+            <View className="grid grid-cols-1 gap-3 mt-4">
+              {focusCards.map((item) => {
+                const toneStyle = getSignalToneStyles(item.tone);
+                return (
+                  <View
+                    key={item.key}
+                    className="rounded-[18rpx] p-4"
+                    style={{ backgroundColor: toneStyle.background }}
+                    onClick={() => {
+                      if (item.actionType === 'switchTab') {
+                        switchTabWithActivePet(item.actionUrl, currentPetId);
+                        return;
+                      }
+                      openPetPage(item.actionUrl);
+                    }}
+                  >
+                    <Text
+                      className="text-[24rpx] font-semibold block"
+                      style={{ color: toneStyle.title }}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text
+                      className="text-[22rpx] mt-[8rpx] block leading-[1.6]"
+                      style={{ color: toneStyle.body }}
+                    >
+                      {item.description}
+                    </Text>
+                    <Text
+                      className="text-[20rpx] mt-[10rpx] block"
+                      style={{ color: toneStyle.action }}
+                    >
+                      {item.actionLabel}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
-          ))}
-        </View>
+          </View>
+        ) : null}
+
+        {activePet && rhythmSummary ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2C2C2C] block">
+              当前服务节奏
+            </Text>
+            <View
+              className="rounded-[18rpx] p-4 mt-4"
+              style={{ backgroundColor: getSignalToneStyles(rhythmSummary.tone).background }}
+            >
+              <Text
+                className="text-[24rpx] font-semibold block"
+                style={{ color: getSignalToneStyles(rhythmSummary.tone).title }}
+              >
+                {rhythmSummary.title}
+              </Text>
+              <Text
+                className="text-[22rpx] mt-[8rpx] block leading-[1.6]"
+                style={{ color: getSignalToneStyles(rhythmSummary.tone).body }}
+              >
+                {rhythmSummary.description}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {activePet ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2C2C2C] block">
+              当前需要优先处理
+            </Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.6]">
+              这是根据提醒、库存、用药和最近记录自动整理出来的规则预警，先处理这里，后面的服务页会更顺。
+            </Text>
+            {attentionSignals.length ? (
+              <View className="grid grid-cols-1 gap-3 mt-4">
+                {attentionSignals.map((item) => {
+                  const toneStyle = getSignalToneStyles(item.tone);
+                  return (
+                    <View
+                      key={item.key}
+                      className="rounded-[18rpx] p-4"
+                      style={{ backgroundColor: toneStyle.background }}
+                      onClick={() => {
+                        if (item.actionType === 'switchTab') {
+                          switchTabWithActivePet(item.actionUrl, currentPetId);
+                          return;
+                        }
+                        openPetPage(item.actionUrl);
+                      }}
+                    >
+                      <Text
+                        className="text-[24rpx] font-semibold block"
+                        style={{ color: toneStyle.title }}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text
+                        className="text-[22rpx] mt-[8rpx] block leading-[1.6]"
+                        style={{ color: toneStyle.body }}
+                      >
+                        {item.description}
+                      </Text>
+                      <Text
+                        className="text-[20rpx] mt-[10rpx] block"
+                        style={{ color: toneStyle.action }}
+                      >
+                        {item.actionLabel}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View className="rounded-[18rpx] bg-[#EEF7F1] p-4 mt-4">
+                <Text className="text-[24rpx] font-semibold text-[#2D6B49] block">
+                  当前没有明显风险
+                </Text>
+                <Text className="text-[22rpx] text-[#4C7B61] mt-[8rpx] block leading-[1.6]">
+                  提醒、库存、用药和成长节点目前都比较平稳，可以继续按计划补充新记录。
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {activePet ? (
+          <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
+            <Text className="text-[28rpx] font-semibold text-[#2C2C2C] block">
+              下一步推荐
+            </Text>
+            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block leading-[1.6]">
+              这些建议会根据当前提醒、记录、护理、花销和成长节点自动变化，适合在没有明显风险时继续推进。
+            </Text>
+            {smartRecommendations.length ? (
+              <View className="grid grid-cols-1 gap-3 mt-4">
+                {smartRecommendations.map((item) => {
+                  const toneStyle = getSignalToneStyles(item.tone);
+                  return (
+                    <View
+                      key={item.key}
+                      className="rounded-[18rpx] p-4"
+                      style={{ backgroundColor: '#F7FAFF' }}
+                      onClick={() => {
+                        if (item.actionType === 'switchTab') {
+                          switchTabWithActivePet(item.actionUrl, currentPetId);
+                          return;
+                        }
+                        openPetPage(item.actionUrl);
+                      }}
+                    >
+                      <Text
+                        className="text-[24rpx] font-semibold block"
+                        style={{ color: toneStyle.title }}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text
+                        className="text-[22rpx] mt-[8rpx] block leading-[1.6]"
+                        style={{ color: toneStyle.body }}
+                      >
+                        {item.description}
+                      </Text>
+                      <Text
+                        className="text-[20rpx] mt-[10rpx] block"
+                        style={{ color: toneStyle.action }}
+                      >
+                        {item.actionLabel}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View className="rounded-[18rpx] bg-[#EEF7F1] p-4 mt-4">
+                <Text className="text-[24rpx] font-semibold text-[#2D6B49] block">
+                  当前建议已经比较完整
+                </Text>
+                <Text className="text-[22rpx] text-[#4C7B61] mt-[8rpx] block leading-[1.6]">
+                  继续保持现在的记录节奏就可以，后面如果有新的提醒、库存变化或记录缺口，这里会自动更新。
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : null}
 
         {activePet ? (
           <View className="rounded-[24rpx] bg-white p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]">
@@ -345,58 +583,62 @@ const PetServiceCenter = memo(function PetServiceCenter() {
           </View>
         ) : null}
 
-        <View
-          className="rounded-[24rpx] bg-[#2B8BFF] p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(24,80,190,0.22)]"
-          onClick={openPetReport}
-        >
-          <Text className="text-[30rpx] font-semibold text-white block">宠物数据报告</Text>
-          <Text className="text-[22rpx] text-[#DBEAFF] mt-[8rpx] block leading-[1.6]">
-            查看最近 30 天记录、花销构成和照护亮点。
-          </Text>
-        </View>
+        {activePet ? (
+          <View
+            className="rounded-[24rpx] bg-[#2B8BFF] p-5 mb-5 shadow-[0_14rpx_28rpx_rgba(24,80,190,0.22)]"
+            onClick={openPetReport}
+          >
+            <Text className="text-[30rpx] font-semibold text-white block">宠物数据报告</Text>
+            <Text className="text-[22rpx] text-[#DBEAFF] mt-[8rpx] block leading-[1.6]">
+              查看最近 30 天记录、花销构成和照护亮点。
+            </Text>
+          </View>
+        ) : null}
 
-        <View className="grid grid-cols-2 gap-3 mb-5">
-          <View
-            className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
-            onClick={openPetSchedule}
-          >
-            <Text className="text-[24rpx] font-semibold text-[#2C2C2C]">提醒处理</Text>
-            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
-              还有 {dashboard?.totals.pendingReminderCount || 0} 条待办
-            </Text>
-            <Text className="text-[20rpx] text-[#5A78D4] mt-[10rpx] block">去日程页</Text>
+        {activePet ? (
+          <View className="grid grid-cols-2 gap-3 mb-5">
+            <View
+              className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
+              onClick={openPetSchedule}
+            >
+              <Text className="text-[24rpx] font-semibold text-[#2C2C2C]">提醒处理</Text>
+              <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
+                还有 {dashboard?.totals.pendingReminderCount || 0} 条待办
+              </Text>
+              <Text className="text-[20rpx] text-[#5A78D4] mt-[10rpx] block">去日程页</Text>
+            </View>
+            <View
+              className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
+              onClick={() => openPetPage(`/pages/PetMilestones/index?petId=${currentPetId}`)}
+            >
+              <Text className="text-[24rpx] font-semibold text-[#2C2C2C]">成长记录</Text>
+              <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
+                当前已记录 {dashboard?.quickStats.milestoneCount || 0} 个节点
+              </Text>
+              <Text className="text-[20rpx] text-[#B25E8B] mt-[10rpx] block">去里程碑页</Text>
+            </View>
+            <View
+              className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
+              onClick={() => openPetPage(`/pages/PetFood/index?petId=${currentPetId}`)}
+            >
+              <Text className="text-[24rpx] font-semibold text-[#2C2C2C]">库存检查</Text>
+              <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
+                低库存食物 {dashboard?.totals.lowInventoryCount || 0} 条
+              </Text>
+              <Text className="text-[20rpx] text-[#8A6A2C] mt-[10rpx] block">去食物页</Text>
+            </View>
+            <View
+              className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
+              onClick={() => openPetPage(`/pages/PetMedicine/index?petId=${currentPetId}`)}
+            >
+              <Text className="text-[24rpx] font-semibold text-[#2C2C2C]">疗程跟进</Text>
+              <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
+                临近结束用药 {dashboard?.totals.dueMedicineCount || 0} 条
+              </Text>
+              <Text className="text-[20rpx] text-[#7A61A7] mt-[10rpx] block">去用药页</Text>
+            </View>
           </View>
-          <View
-            className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
-            onClick={() => openPetPage(`/pages/PetMilestones/index?petId=${currentPetId}`)}
-          >
-            <Text className="text-[24rpx] font-semibold text-[#2C2C2C]">成长记录</Text>
-            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
-              当前已记录 {dashboard?.quickStats.milestoneCount || 0} 个节点
-            </Text>
-            <Text className="text-[20rpx] text-[#B25E8B] mt-[10rpx] block">去里程碑页</Text>
-          </View>
-          <View
-            className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
-            onClick={() => openPetPage(`/pages/PetFood/index?petId=${currentPetId}`)}
-          >
-            <Text className="text-[24rpx] font-semibold text-[#2C2C2C]">库存检查</Text>
-            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
-              低库存食物 {dashboard?.totals.lowInventoryCount || 0} 条
-            </Text>
-            <Text className="text-[20rpx] text-[#8A6A2C] mt-[10rpx] block">去食物页</Text>
-          </View>
-          <View
-            className="rounded-[22rpx] bg-white p-4 shadow-[0_14rpx_28rpx_rgba(0,0,0,0.06)]"
-            onClick={() => openPetPage(`/pages/PetMedicine/index?petId=${currentPetId}`)}
-          >
-            <Text className="text-[24rpx] font-semibold text-[#2C2C2C]">疗程跟进</Text>
-            <Text className="text-[22rpx] text-[#666] mt-[8rpx] block">
-              临近结束用药 {dashboard?.totals.dueMedicineCount || 0} 条
-            </Text>
-            <Text className="text-[20rpx] text-[#7A61A7] mt-[10rpx] block">去用药页</Text>
-          </View>
-        </View>
+        ) : null}
 
         {dashboard?.latestMilestone ? (
           <View

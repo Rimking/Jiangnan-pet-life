@@ -1,6 +1,6 @@
 ﻿import { View, Text } from '@tarojs/components';
 import { memo } from 'react';
-import { PET_UI, PET_UI_SHADOW, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
+import { PET_UI_SHADOW, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 
 interface Props {
   onOpenKnowledge?: () => void;

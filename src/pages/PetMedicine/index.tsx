@@ -1,7 +1,7 @@
 import BasicLayout from '@/layout/basicLayout';
 import { View, Text, Input, Textarea } from '@tarojs/components';
 import Taro, { useDidShow, useRouter } from '@tarojs/taro';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PET_UI } from '@/constants/petUi';
 import {
   createMedicineData,
@@ -68,6 +68,7 @@ const PetMedicine = memo(function PetMedicine() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState(defaultForm);
+  const previousActivePetIdRef = useRef(activePetId);
   const loggedIn = isLoggedIn();
   const hasActivePet = Boolean(activePetId && activePet);
   const canSubmit = hasActivePet;
@@ -128,6 +129,13 @@ const PetMedicine = memo(function PetMedicine() {
     setForm(defaultForm);
     setEditingId('');
   };
+
+  useEffect(() => {
+    if (previousActivePetIdRef.current && previousActivePetIdRef.current !== activePetId) {
+      resetForm();
+    }
+    previousActivePetIdRef.current = activePetId;
+  }, [activePetId]);
 
   const handleEdit = (item: MedicineItem) => {
     setEditingId(item.id);
@@ -218,10 +226,11 @@ const PetMedicine = memo(function PetMedicine() {
       }
 
       resetForm();
+      const createdReminder = Boolean(form.reminderDate.trim());
       Taro.showToast({
-        title: form.reminderDate.trim()
+        title: createdReminder
           ? editingId
-            ? '用药和提醒已更新'
+            ? '用药已更新并新增提醒'
             : '用药和提醒已保存'
           : editingId
             ? '用药已更新'
@@ -393,6 +402,16 @@ const PetMedicine = memo(function PetMedicine() {
               </View>
             ) : null}
           </View>
+          {hasActivePet ? (
+            <View className="mb-4 rounded-[18rpx] bg-[#F2E8FF] px-4 py-3">
+              <Text className="text-[22rpx] text-[#6C4DA0] block">
+                当前内容会保存到 {activePet?.name}
+              </Text>
+              <Text className="text-[20rpx] text-[#8B72B6] mt-[6rpx] block">
+                如果切换宠物，当前编辑会自动结束，避免提醒和用药归到错误宠物下。
+              </Text>
+            </View>
+          ) : null}
           <View className="grid grid-cols-2 gap-3">
             <View className="col-span-2 rounded-[16rpx] bg-[#F7F7F7] p-4">
               <Text className="text-[22rpx] text-[#666]">药品名称</Text>

@@ -109,7 +109,6 @@ const PetOwner = memo(function PetOwner() {
   });
 
   const today = formatLocalDateKey(new Date());
-  const loggedIn = isLoggedIn();
   const currentPetId = activePet?.id || activePetId || '';
   const handleCreatePet = () => {
     if (!ensureLoggedIn('/pages/PetOwner/index')) {
@@ -173,7 +172,7 @@ const PetOwner = memo(function PetOwner() {
                   ? switchTabWithActivePet('/pages/PetSchedule/index', currentPetId)
                   : undefined
                 : openPetPage(
-                    `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`
+                    `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}&returnTo=owner`
                   ),
           },
           {
@@ -198,7 +197,7 @@ const PetOwner = memo(function PetOwner() {
                 : dueMedicineCount > 0
                   ? openPetPage(`/pages/PetMedicine/index?petId=${currentPetId}`)
                   : openPetPage(
-                      `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`
+                      `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record&returnTo=owner`
                     ),
           },
         ]
@@ -293,7 +292,7 @@ const PetOwner = memo(function PetOwner() {
       subtitle: '日常健康观察',
       onClick: () =>
         openPetPage(
-          `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`
+          `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record&returnTo=owner`
         ),
     },
     {
@@ -419,7 +418,7 @@ const PetOwner = memo(function PetOwner() {
                 className="flex-1 rounded-[18rpx] bg-[#2B8BFF] border-[3rpx] border-[#262626] px-[16rpx] py-[14rpx] flex items-center justify-center"
                 onClick={() =>
                   openPetPage(
-                    `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}`
+                    `/pages/AddPetReminder/index?petId=${currentPetId}&date=${today}&returnTo=owner`
                   )
                 }
               >
@@ -429,7 +428,7 @@ const PetOwner = memo(function PetOwner() {
                 className="flex-1 rounded-[18rpx] bg-[#FFD93B] border-[3rpx] border-[#262626] px-[16rpx] py-[14rpx] flex items-center justify-center"
                 onClick={() =>
                   openPetPage(
-                    `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record`
+                    `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=record&returnTo=owner`
                   )
                 }
               >
@@ -539,7 +538,7 @@ const PetOwner = memo(function PetOwner() {
           onClick={() =>
             currentPetId && activePet
               ? openPetPage(
-                  `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=care`
+                  `/pages/AddPetRecord/index?petId=${currentPetId}&date=${today}&mode=care&returnTo=owner`
                 )
               : ensureActivePetContext()
                 ? switchTabWithActivePet('/pages/PetSchedule/index', currentPetId)

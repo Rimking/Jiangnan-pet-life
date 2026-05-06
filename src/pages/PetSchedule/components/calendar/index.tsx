@@ -2,7 +2,7 @@
 import clsx from 'clsx';
 import { useState, useEffect, useCallback } from 'react';
 import LeftIcon from '@/assets/leftIcon.svg';
-import { PET_UI, PET_UI_BORDER, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
+import { PET_UI, PET_UI_RADIUS, PET_UI_TEXT } from '@/constants/petUi';
 
 interface CalendarItem {
   day: number;
@@ -175,4 +175,3 @@ const CalendarCmp = ({ selectedDate, onSelectDate }: Props) => {
 };
 
 export default CalendarCmp;
-

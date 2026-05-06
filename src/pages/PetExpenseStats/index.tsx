@@ -39,6 +39,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
   const petId = preferredPetId || activePet?.id || '';
   const pet = pets.find((item) => item.id === petId) || activePet;
   const hasValidPetContext = Boolean(petId && pet && activePet);
+  const canRenderExpenseContent = Boolean(loggedIn && hasValidPetContext);
   const today = formatLocalDateKey(new Date());
   const canSaveBudget = Boolean(petId && pet && activeRawPet && activePet);
   const ensureActivePetContext = () => {
@@ -228,11 +229,11 @@ const PetExpenseStats = memo(function PetExpenseStats() {
           ))}
         </View>
 
-        <View className="mb-3">
-          <Text className="text-[26rpx] text-[#555]">
-            宠物：{pet?.name || (loggedIn && pets.length > 0 ? '未选择有效宠物' : '暂无')}
-          </Text>
-        </View>
+        {canRenderExpenseContent ? (
+          <View className="mb-3">
+            <Text className="text-[26rpx] text-[#555]">宠物：{pet?.name}</Text>
+          </View>
+        ) : null}
 
         {hasValidPetContext ? (
           <View className="grid grid-cols-2 gap-3 mb-4">
@@ -241,7 +242,7 @@ const PetExpenseStats = memo(function PetExpenseStats() {
               style={{ boxShadow: PET_UI_SHADOW }}
               onClick={() =>
                 openPetPage(
-                  `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense`
+                  `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense&returnTo=expense-stats`
                 )
               }
             >
@@ -319,184 +320,188 @@ const PetExpenseStats = memo(function PetExpenseStats() {
           </View>
         ) : null}
 
-        <View className="flex flex-wrap gap-2 mb-4">
-          {monthOptions.map((item) => (
-            <View
-              key={item.key}
-              className="px-4 py-2 rounded-[999rpx] border-[2rpx] border-solid border-[#262626]"
-              style={{ backgroundColor: activeMonth === item.key ? '#FFD93B' : '#F4F4F4' }}
-              onClick={() => setActiveMonth(item.key)}
-            >
-              <Text className="text-[22rpx] text-[#2B2B2B]">{item.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View className="grid grid-cols-3 gap-3 mb-5">
-          <View
-            className="p-4 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-[#F4F4F4]"
-            style={{ boxShadow: PET_UI_SHADOW }}
-          >
-            <Text className="text-[22rpx] text-[#666] block">本月总花销</Text>
-            <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mt-1 block">
-              ¥{summary.total.toFixed(2)}
-            </Text>
-          </View>
-          <View
-            className="p-4 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-[#F4F4F4]"
-            style={{ boxShadow: PET_UI_SHADOW }}
-          >
-            <Text className="text-[22rpx] text-[#666] block">记录笔数</Text>
-            <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mt-1 block">
-              {summary.count}
-            </Text>
-          </View>
-          <View
-            className="p-4 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-[#F4F4F4]"
-            style={{ boxShadow: PET_UI_SHADOW }}
-          >
-            <Text className="text-[22rpx] text-[#666] block">预算状态</Text>
-            <Text
-              className="text-[26rpx] font-semibold mt-1 block"
-              style={{ color: isOverBudget ? '#D65A31' : '#2B2B2B' }}
-            >
-              {budgetAmount > 0 ? (isOverBudget ? '已超支' : '预算内') : '未设置'}
-            </Text>
-          </View>
-        </View>
-
-        <View
-          className="mb-5 p-5 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-white"
-          style={{ boxShadow: PET_UI_SHADOW }}
-        >
-          <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mb-3 block">
-            月度预算
-          </Text>
-          <View className="rounded-[14rpx] border-[2rpx] border-solid border-[#262626] bg-[#F8F8F8] px-4 py-3">
-            <Input
-              type="digit"
-              value={budgetInput}
-              placeholder="输入本月预算金额"
-              onInput={(e) => setBudgetInput(e.detail.value)}
-            />
-          </View>
-          {budgetAmount > 0 ? (
-            <Text
-              className="text-[22rpx] mt-3 block"
-              style={{ color: isOverBudget ? '#D65A31' : '#33B36B' }}
-            >
-              {isOverBudget
-                ? `已超预算 ¥${Math.abs(budgetDiff).toFixed(2)}`
-                : `距离预算还剩 ¥${budgetDiff.toFixed(2)}`}
-            </Text>
-          ) : (
-            <Text className="text-[22rpx] text-[#7A7A7A] mt-3 block">
-              暂未设置预算，可先录入一个演示金额。
-            </Text>
-          )}
-          <View
-            className="mt-3 h-[72rpx] rounded-[36rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-            style={{
-              backgroundColor: canSaveBudget ? '#FFD93B' : '#E5E5E5',
-              opacity: canSaveBudget ? 1 : 0.7,
-            }}
-            onClick={() => {
-              if (!canSaveBudget) {
-                Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
-                return;
-              }
-              handleSaveBudget();
-            }}
-          >
-            <Text className="text-[24rpx] font-semibold text-[#5D4510]">
-              {savingBudget ? '保存中...' : '保存预算'}
-            </Text>
-          </View>
-        </View>
-
-        <View
-          className="mb-5 p-5 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-white"
-          style={{ boxShadow: PET_UI_SHADOW }}
-        >
-          <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mb-3 block">
-            分类占比
-          </Text>
-          {summary.byCategory.length ? (
-            summary.byCategory.map((item) => (
-              <View key={item.name} className="mb-4">
-                <View className="flex items-center justify-between mb-1">
-                  <Text className="text-[24rpx] text-[#2B2B2B]">{item.name}</Text>
-                  <Text className="text-[22rpx] text-[#666]">
-                    ¥{item.amount.toFixed(2)} · {(item.ratio * 100).toFixed(0)}%
-                  </Text>
-                </View>
-                <View className="h-[14rpx] rounded-full bg-[#F1F1F1] overflow-hidden border-[1rpx] border-solid border-[#262626]">
-                  <View
-                    className="h-full bg-[#FFB177]"
-                    style={{ width: `${Math.max(item.ratio * 100, 6)}%` }}
-                  />
-                </View>
-              </View>
-            ))
-          ) : (
-            <View className="rounded-[16rpx] bg-[#FFFBEA] p-4">
-              <Text className="text-[24rpx] text-[#8A8A8A] leading-[1.7]">
-                {pet?.name || '当前宠物'}
-                本月还没有花销记录，可以先补一笔粮食、用品或医疗开销。
-              </Text>
-              {hasValidPetContext ? (
+        {canRenderExpenseContent ? (
+          <>
+            <View className="flex flex-wrap gap-2 mb-4">
+              {monthOptions.map((item) => (
                 <View
-                  className="mt-4 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
-                  onClick={() =>
-                    openPetPage(
-                      `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense`
-                    )
-                  }
+                  key={item.key}
+                  className="px-4 py-2 rounded-[999rpx] border-[2rpx] border-solid border-[#262626]"
+                  style={{ backgroundColor: activeMonth === item.key ? '#FFD93B' : '#F4F4F4' }}
+                  onClick={() => setActiveMonth(item.key)}
                 >
-                  <Text className="text-[24rpx] font-semibold text-[#5D4510]">
-                    去补一笔花销
-                  </Text>
+                  <Text className="text-[22rpx] text-[#2B2B2B]">{item.label}</Text>
                 </View>
-              ) : null}
+              ))}
             </View>
-          )}
-        </View>
 
-        <View
-          className="p-5 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-white"
-          style={{ boxShadow: PET_UI_SHADOW }}
-        >
-          <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mb-3 block">
-            花销明细
-          </Text>
-          {monthlyExpenses.length ? (
-            monthlyExpenses.map((item) => (
+            <View className="grid grid-cols-3 gap-3 mb-5">
               <View
-                key={item.id}
-                className="mb-3 p-4 rounded-[16rpx] border-[2rpx] border-solid border-[#262626] bg-[#F8F8F8] flex items-center justify-between"
+                className="p-4 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-[#F4F4F4]"
+                style={{ boxShadow: PET_UI_SHADOW }}
               >
-                <View className="flex-1 pr-4">
-                  <Text className="text-[24rpx] text-[#2B2B2B] block">{item.category}</Text>
-                  <Text className="text-[20rpx] text-[#7A7A7A] mt-[6rpx] block">
-                    {item.date} {item.time}
-                  </Text>
-                  {item.note ? (
-                    <Text className="text-[20rpx] text-[#9A9A9A] mt-[6rpx] block">
-                      {item.note}
-                    </Text>
-                  ) : null}
-                </View>
-                <Text className="text-[26rpx] font-semibold text-[#FF6B6B]">
-                  ¥{item.amount.toFixed(2)}
+                <Text className="text-[22rpx] text-[#666] block">本月总花销</Text>
+                <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mt-1 block">
+                  ¥{summary.total.toFixed(2)}
                 </Text>
               </View>
-            ))
-          ) : (
-            <Text className="text-[24rpx] text-[#8A8A8A]">
-              {pet?.name || '当前宠物'}本月还没有花销明细。
-            </Text>
-          )}
-        </View>
+              <View
+                className="p-4 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-[#F4F4F4]"
+                style={{ boxShadow: PET_UI_SHADOW }}
+              >
+                <Text className="text-[22rpx] text-[#666] block">记录笔数</Text>
+                <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mt-1 block">
+                  {summary.count}
+                </Text>
+              </View>
+              <View
+                className="p-4 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-[#F4F4F4]"
+                style={{ boxShadow: PET_UI_SHADOW }}
+              >
+                <Text className="text-[22rpx] text-[#666] block">预算状态</Text>
+                <Text
+                  className="text-[26rpx] font-semibold mt-1 block"
+                  style={{ color: isOverBudget ? '#D65A31' : '#2B2B2B' }}
+                >
+                  {budgetAmount > 0 ? (isOverBudget ? '已超支' : '预算内') : '未设置'}
+                </Text>
+              </View>
+            </View>
+
+            <View
+              className="mb-5 p-5 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-white"
+              style={{ boxShadow: PET_UI_SHADOW }}
+            >
+              <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mb-3 block">
+                月度预算
+              </Text>
+              <View className="rounded-[14rpx] border-[2rpx] border-solid border-[#262626] bg-[#F8F8F8] px-4 py-3">
+                <Input
+                  type="digit"
+                  value={budgetInput}
+                  placeholder="输入本月预算金额"
+                  onInput={(e) => setBudgetInput(e.detail.value)}
+                />
+              </View>
+              {budgetAmount > 0 ? (
+                <Text
+                  className="text-[22rpx] mt-3 block"
+                  style={{ color: isOverBudget ? '#D65A31' : '#33B36B' }}
+                >
+                  {isOverBudget
+                    ? `已超预算 ¥${Math.abs(budgetDiff).toFixed(2)}`
+                    : `距离预算还剩 ¥${budgetDiff.toFixed(2)}`}
+                </Text>
+              ) : (
+                <Text className="text-[22rpx] text-[#7A7A7A] mt-3 block">
+                  暂未设置预算，可先录入一个演示金额。
+                </Text>
+              )}
+              <View
+                className="mt-3 h-[72rpx] rounded-[36rpx] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                style={{
+                  backgroundColor: canSaveBudget ? '#FFD93B' : '#E5E5E5',
+                  opacity: canSaveBudget ? 1 : 0.7,
+                }}
+                onClick={() => {
+                  if (!canSaveBudget) {
+                    Taro.showToast({ title: '请先选择有效宠物', icon: 'none' });
+                    return;
+                  }
+                  handleSaveBudget();
+                }}
+              >
+                <Text className="text-[24rpx] font-semibold text-[#5D4510]">
+                  {savingBudget ? '保存中...' : '保存预算'}
+                </Text>
+              </View>
+            </View>
+
+            <View
+              className="mb-5 p-5 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-white"
+              style={{ boxShadow: PET_UI_SHADOW }}
+            >
+              <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mb-3 block">
+                分类占比
+              </Text>
+              {summary.byCategory.length ? (
+                summary.byCategory.map((item) => (
+                  <View key={item.name} className="mb-4">
+                    <View className="flex items-center justify-between mb-1">
+                      <Text className="text-[24rpx] text-[#2B2B2B]">{item.name}</Text>
+                      <Text className="text-[22rpx] text-[#666]">
+                        ¥{item.amount.toFixed(2)} · {(item.ratio * 100).toFixed(0)}%
+                      </Text>
+                    </View>
+                    <View className="h-[14rpx] rounded-full bg-[#F1F1F1] overflow-hidden border-[1rpx] border-solid border-[#262626]">
+                      <View
+                        className="h-full bg-[#FFB177]"
+                        style={{ width: `${Math.max(item.ratio * 100, 6)}%` }}
+                      />
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View className="rounded-[16rpx] bg-[#FFFBEA] p-4">
+                  <Text className="text-[24rpx] text-[#8A8A8A] leading-[1.7]">
+                    {pet?.name || '当前宠物'}
+                    本月还没有花销记录，可以先补一笔粮食、用品或医疗开销。
+                  </Text>
+                  {hasValidPetContext ? (
+                    <View
+                      className="mt-4 h-[72rpx] rounded-[36rpx] bg-[#FFD93B] border-[2rpx] border-solid border-[#262626] flex items-center justify-center"
+                      onClick={() =>
+                        openPetPage(
+                          `/pages/AddPetRecord/index?petId=${petId}&date=${today}&mode=expense&returnTo=expense-stats`
+                        )
+                      }
+                    >
+                      <Text className="text-[24rpx] font-semibold text-[#5D4510]">
+                        去补一笔花销
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              )}
+            </View>
+
+            <View
+              className="p-5 rounded-[20rpx] border-[3rpx] border-solid border-[#262626] bg-white"
+              style={{ boxShadow: PET_UI_SHADOW }}
+            >
+              <Text className="text-[30rpx] font-semibold text-[#2B2B2B] mb-3 block">
+                花销明细
+              </Text>
+              {monthlyExpenses.length ? (
+                monthlyExpenses.map((item) => (
+                  <View
+                    key={item.id}
+                    className="mb-3 p-4 rounded-[16rpx] border-[2rpx] border-solid border-[#262626] bg-[#F8F8F8] flex items-center justify-between"
+                  >
+                    <View className="flex-1 pr-4">
+                      <Text className="text-[24rpx] text-[#2B2B2B] block">{item.category}</Text>
+                      <Text className="text-[20rpx] text-[#7A7A7A] mt-[6rpx] block">
+                        {item.date} {item.time}
+                      </Text>
+                      {item.note ? (
+                        <Text className="text-[20rpx] text-[#9A9A9A] mt-[6rpx] block">
+                          {item.note}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text className="text-[26rpx] font-semibold text-[#FF6B6B]">
+                      ¥{item.amount.toFixed(2)}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text className="text-[24rpx] text-[#8A8A8A]">
+                  {pet?.name || '当前宠物'}本月还没有花销明细。
+                </Text>
+              )}
+            </View>
+          </>
+        ) : null}
       </View>
     </BasicLayout>
   );
